@@ -1,0 +1,19 @@
+========================================
+DATABASE CONTENT REPORT
+========================================
+Checking User...
+  [DATA] Table 'users' has 2 rows.
+    - Fields with empty/null values: phone: 1 nulls, phone: 1 empty strings, date_of_birth: 2 nulls, gender: 1 nulls, gender: 1 empty strings
+----------------------------------------
+Checking SkinImage...
+  [EMPTY] Table 'skin_images' has 0 rows.
+----------------------------------------
+Checking PredictionResult...
+  [EMPTY] Table 'prediction_results' has 0 rows.
+----------------------------------------
+Checking ScanHistory...
+  [EMPTY] Table 'scan_history' has 0 rows.
+----------------------------------------
+Checking ChatHistory...
+  [EMPTY] Table 'chat_history' has 0 rows.
+----------------------------------------

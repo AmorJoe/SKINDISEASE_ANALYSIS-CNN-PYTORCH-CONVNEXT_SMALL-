@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinScan AI - Dashboard</title>
+    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <nav>
+        <div class="logo">
+            <i class="fas fa-dna"></i> SkinScan AI
+        </div>
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#upload">Analyze</a></li>
+            <li><a href="#about">Technology</a></li>
+            <!-- Theme Toggle -->
+            <li>
+                <button id="theme-toggle"
+                    style="background: none; border: none; color: var(--text-main); font-size: 1.2rem; cursor: pointer; padding: 0.5rem; transition: color 0.3s;">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </li>
+            <!-- Avatar Dropdown -->
+            <li class="user-menu">
+                <img src="https://ui-avatars.com/api/?name=User&background=0288d1&color=fff" alt="Profile"
+                    class="avatar" id="nav-avatar">
+                <div class="dropdown-content" id="nav-dropdown">
+                    <a href="#" id="open-profile-modal"><i class="fas fa-user-circle"></i> Profile</a>
+                    <a href="#" id="nav-analysis"><i class="fas fa-chart-line"></i> Analysis</a>
+                    <a href="#" id="open-password-modal"><i class="fas fa-key"></i> Change Password</a>
+                    <a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>Unlock Your <br><span>Skin's Health</span></h1>
+            <p>AI-powered image recognition for deep dermatological insights. Detect conditions with high accuracy.</p>
+            <a href="#upload" class="cta-button">Start Diagnosis <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="hero-image">
+            <div class="scan-overlay"></div>
+            <img src="https://images.unsplash.com/photo-1737978697863-5d65495b28ef?fm=jpg&q=60&w=800&ixlib=rb-4.1.0"
+                alt="Skin Analysis Model">
+
+            <div class="glass-card card-1">
+                <div class="icon-box"><i class="fas fa-search"></i></div>
+                <div class="card-info">
+                    <h4>Skin Analysis</h4>
+                    <p>Accuracy: <span class="highlight-green">80.5%</span></p>
+                </div>
+            </div>
+
+            <div class="glass-card card-2">
+                <div class="icon-box"><i class="fas fa-user-md"></i></div>
+                <div class="card-info">
+                    <h4>AI Diagnosis</h4>
+                    <p>Status: <span class="highlight-green">Active</span></p>
+                </div>
+            </div>
+
+            <div class="tag tag-1"><i class="fas fa-check-circle"></i> Texture Analysis</div>
+            <div class="tag tag-2"><i class="fas fa-exclamation-circle"></i> Redness Detect</div>
+        </div>
+    </section>
+
+    <section id="upload" class="upload-section">
+        <h2>AI Skin Diagnosis</h2>
+        <p class="subtitle">Upload a clear photo of the affected area for instant results.</p>
+
+        <div class="container">
+            <div class="upload-card" id="drop-area">
+                <div class="icon-container">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h3>Drag & Drop or Click to Upload</h3>
+                <p>Supports JPG, PNG, JPEG</p>
+                <input type="file" id="file-input" hidden accept="image/*">
+                <button class="upload-btn" id="upload-btn-trigger">Choose File</button>
+            </div>
+
+            <div class="loader-container" id="loader">
+                <div class="scanner"></div>
+                <p>Analyzing skin texture and pigmentation...</p>
+            </div>
+
+            <div class="result-card" id="result-card">
+                <div class="image-preview" id="image-preview"></div>
+                <div class="result-details">
+                    <span class="badge">Analysis Complete</span>
+                    <h3 id="disease-name">Detected: Eczema</h3>
+
+                    <div class="accuracy-meter">
+                        <div class="meter-label">
+                            <span>Confidence Score</span>
+                            <span id="accuracy-text">94%</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="meter-fill" id="meter-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="recommendation">
+                        <h4><i class="fas fa-user-md"></i> Recommended Action:</h4>
+                        <p>The visual symptoms suggest mild Atopic Dermatitis. It is recommended to consult a
+                            dermatologist for a prescription cream. Avoid scratching the area.</p>
+                    </div>
+
+                    <button class="reset-btn" id="reset-btn" onclick="resetUpload()">
+                        <i class="fas fa-redo"></i> Analyze Another
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="chat-widget-btn" id="chat-widget-btn">
+        <i class="fas fa-robot"></i>
+    </div>
+
+    <div class="chat-box" id="chat-box">
+        <div class="chat-header">
+            <span>SkinCare Assistant</span>
+            <i class="fas fa-times" id="close-chat"></i>
+        </div>
+        <div class="chat-body" id="chat-body">
+            <div class="message bot">
+                <p>Hello! I'm your AI assistant. How can I help you with your skin concerns today?</p>
+            </div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type a message...">
+            <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profile-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-circle"></i> My Profile</h2>
+                <span class="modal-close" id="close-profile-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="profile-form">
+                    <!-- Avatar Section -->
+                    <div class="profile-avatar-section">
+                        <div class="avatar-upload-container">
+                            <img src="https://ui-avatars.com/api/?name=User&background=0288d1&color=fff"
+                                alt="User Avatar" class="profile-avatar-large" id="profile-avatar-large">
+                            <label for="avatar-input" class="upload-overlay">
+                                <i class="fas fa-camera"></i>
+                            </label>
+                            <input type="file" id="avatar-input" hidden accept="image/*">
+                        </div>
+                        <div class="profile-info">
+                            <h3 id="display-name">Loading...</h3>
+                            <p id="display-email">loading...</p>
+                        </div>
+                    </div>
+
+                    <!-- Personal Details -->
+                    <h3 class="section-header"><i class="fas fa-user"></i> Personal Details</h3>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>First Name <span style="color: red;">*</span></label>
+                            <input type="text" id="first-name" placeholder="First Name">
+                        </div>
+                        <div class="input-group">
+                            <label>Last Name <span style="color: red;">*</span></label>
+                            <input type="text" id="last-name" placeholder="Last Name">
+                        </div>
+                        <div class="input-group">
+                            <label>Email Address</label>
+                            <input type="email" id="email" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label>Phone Number <span style="color: red;">*</span></label>
+                            <input type="tel" id="phone" placeholder="+1 234 567 8900">
+                        </div>
+                        <div class="input-group">
+                            <label>Date of Birth <span style="color: red;">*</span></label>
+                            <input type="date" id="dob">
+                        </div>
+                        <div class="input-group">
+                            <label>Gender <span style="color: red;">*</span></label>
+                            <select id="gender">
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <h3 class="section-header"><i class="fas fa-map-marker-alt"></i> Location</h3>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Country</label>
+                            <input type="text" id="country" placeholder="Country">
+                        </div>
+                        <div class="input-group full-width">
+                            <label>Address</label>
+                            <textarea id="address" rows="3" placeholder="Enter your full address"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Medical Profile -->
+                    <h3 class="section-header"><i class="fas fa-notes-medical"></i> Medical Profile</h3>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Skin Type</label>
+                            <select id="skin-type">
+                                <option value="">Select Skin Type</option>
+                                <option value="Normal">Normal</option>
+                                <option value="Oily">Oily</option>
+                                <option value="Dry">Dry</option>
+                                <option value="Combination">Combination</option>
+                                <option value="Sensitive">Sensitive</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Skin Tone</label>
+                            <select id="skin-tone">
+                                <option value="">Select Skin Tone</option>
+                                <option value="Type I">Type I (Pale White)</option>
+                                <option value="Type II">Type II (White)</option>
+                                <option value="Type III">Type III (Cream White)</option>
+                                <option value="Type IV">Type IV (Moderate Brown)</option>
+                                <option value="Type V">Type V (Dark Brown)</option>
+                                <option value="Type VI">Type VI (Deep Black)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn-submit" id="btn-save-profile">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal" id="password-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-key"></i> Change Password</h2>
+                <span class="modal-close" id="close-password-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="password-form">
+                    <div class="input-group">
+                        <label>Current Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="old-password" placeholder="••••••••" required>
+                            <i class="fas fa-eye toggle-password" data-target="old-password"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>New Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="new-password" placeholder="••••••••" required minlength="8">
+                            <i class="fas fa-eye toggle-password" data-target="new-password"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Confirm Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="confirm-password" placeholder="••••••••" required minlength="8">
+                            <i class="fas fa-eye toggle-password" data-target="confirm-password"></i>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn-submit" id="btn-update-password">Update Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

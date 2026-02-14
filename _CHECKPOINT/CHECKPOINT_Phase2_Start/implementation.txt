@@ -1,0 +1,116 @@
+SKINSCAN AI REDESIGN - MASTER IMPLEMENTATION DOCUMENT
+===================================================
+Status: PLANNING STAGE (Frozen)
+Date: February 10, 2026
+Backup Location: d:\Project\FIREBASE\_CHECKPOINT
+
+1. PROJECT OVERVIEW
+-------------------
+We are redesigning SkinScan AI to be a modern, cloud-native dermatology application.
+The codebase is moving from a local SQLite/MySQL setup to a robust Supabase (PostgreSQL) backend.
+The AI model is switching from TensorFlow to PyTorch (.pth) for Kaggle compatibility.
+
+2. ARCHITECTURE
+---------------
+- Backend Framework: Django (Python)
+- Database: Supabase (Managed PostgreSQL)
+- AI Engine (Vision): PyTorch / Torchvision (User's .pth model)
+- AI Engine (Chat): Google Gemini API (Free Tier)
+- Frontend: HTML5, CSS3 (Medical Blue Theme), Vanilla JS
+- Hosting: Localhost (Development) -> Cloud Run / Vercel (Production ready)
+
+3. DATABASE SCHEMA (4 Core Tables)
+----------------------------------
+We are simplifying the database from 8 tables to 4 core tables:
+
+1. users
+   - id, email, password_hash, full_name, created_at
+   - Handles authentication and profile data.
+
+2. skin_images
+   - id, user_id, image_url, body_location, uploaded_at
+   - Stores the raw image reference and where it is on the body.
+
+3. prediction_results
+   - id, image_id, disease_name, confidence_score, recommendation
+   - Stores the AI diagnosis specific to an image.
+
+4. chat_history
+   - id, user_id, role (user/bot), message, session_id, created_at
+   - Stores conversation logs with the Gemini chatbot.
+
+*Note: 'disease_info' table is removed and replaced by a static JSON file for better performance.*
+
+4. THE 8 NEW FEATURES
+---------------------
+These features will be implemented on top of the new foundation:
+
+[Feature 1] 🔔 Scan Comparison
+- Users can upload a new photo of a specific body part (e.g., "Left Arm").
+- The app automatically finds previous scans of "Left Arm" and shows them side-by-side.
+- Goal: Track changes in skin conditions over time.
+
+[Feature 2] 📤 PDF Report Export
+- Generate a professional medical PDF report of any scan.
+- Includes: Patient Name, Date, Image, Diagnosis, Confidence, and AI Disclaimer.
+- Goal: Users can print this and take it to a real dermatologist.
+
+[Feature 3] 📱 Progressive Web App (PWA)
+- "Add to Home Screen" functionality on mobile.
+- Works offline (loads app shell).
+- Full-screen native app experience.
+- Goal: Higher user engagement on mobile devices.
+
+[Feature 4] 🔐 Email Verification + 2FA
+- Uses Supabase Auth for secure email verification.
+- Optional Two-Factor Authentication (OTP) for account security.
+- Goal: Improved security and trust.
+
+[Feature 5] 🤖 Smarter Chatbot (Gemini AI)
+- Replaced rule-based bot with Google Gemini API.
+- Context-Aware: Knows the user's latest scan result (e.g., "I see you have Eczema...").
+- Guardrails: Strictly answers ONLY skin-related questions. Rejects off-topic queries.
+- Goal: A truly helpful medical assistant.
+
+[Feature 6] 📊 Per-User Analytics Dashboard
+- Shows personal stats: Total Scans, Most Common Condition, Severity Trend.
+- Visual charts using Chart.js or simple CSS bars.
+- Goal: Gamification and health tracking.
+
+[Feature 7] 🗺️ Body Map
+- An interactive human body SVG on the upload screen.
+- Users tap a region (e.g., Face, Back, Leg) to tag the image.
+- Powers the 'Scan Comparison' feature.
+- Goal: Better data organization and intuitive UX.
+
+[Feature 8] 📚 Disease Info Cards
+- Beautiful, expandable cards shown after a diagnosis.
+- Content: Description, Symptoms, Treatment, Prevention (from static JSON).
+- Goal: Immediate educational value for the user.
+
+5. TECHNICAL UPGRADES (Non-Functional)
+--------------------------------------
+- [ML] PyTorch Support: Backend updated to load `.pth` models instead of `.h5`.
+- [UI] Design Theme:
+  - Primary Color: Medical Blue (#0288d1)
+  - Accent: Pink (#ff4081)
+  - Font: Poppins (Google Fonts)
+  - Components: Pill buttons, Glassmorphism cards.
+
+6. IMPLEMENTATION PLAN (Summary)
+--------------------------------
+Phase 1: Foundation
+1. Connect Supabase (PostgreSQL).
+2. Clean Schema Migration (Fresh start).
+3. Auth System Integration.
+
+Phase 2: Features
+4. Implement PyTorch Inference Logic.
+5. Build Frontend Components (Charts, Body Map, Info Cards).
+6. Integrate Gemini Chatbot.
+7. Finalize PWA & PDF generation.
+
+Status: READY TO START.
+To begin, provide the Supabase Connection String.
+Connection String: postgresql://postgres.nrxvqbtjtszlunmyulot:[Amorjoe#2026]@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+(Note: Password contains '#', might need URL encoding as '%23' during implementation)

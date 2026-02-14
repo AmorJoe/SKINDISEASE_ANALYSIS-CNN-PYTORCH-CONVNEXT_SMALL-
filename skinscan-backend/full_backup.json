@@ -1,0 +1,79 @@
+[
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$rbXvvhEIDOrvgs1NBxWAwY$nt8o2svqYjOcT5AnJps1uliLCb1H5O4cBiF67YskpEw=",
+    "last_login": "2026-01-18T16:43:14.476Z",
+    "is_superuser": true,
+    "username": "amorj",
+    "first_name": "",
+    "last_name": "",
+    "email": "amorstudy0414@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-01-18T16:41:56.157Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "mb3rrqtwaihn7eyy8x3b3k7rmxrb2oim",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQRe_C2pBBYFpcuvcMzcCMUjWQlHZlvLuSdKHb_977LzXRtuZpa7JMM6uTMurwu0VKDykd8J3KrepUy7rMUXdF77TpS2V5nnf37yBTy72GEcilINE67yQYwCjiJflB0IyJPdgvASS8omWEmBgGEDZ0xEBevT_hNTfC:1vhVru:-cqXNm5JALIEu6NIh0tmMzPU-vTi_XnxT_aJ8xoTafM",
+    "expire_date": "2026-02-01T16:43:14.594Z"
+  }
+},
+{
+  "model": "authentication.user",
+  "pk": 1,
+  "fields": {
+    "full_name": "Test User",
+    "email": "test@example.com",
+    "phone": null,
+    "date_of_birth": null,
+    "gender": null,
+    "account_status": "ACTIVE",
+    "created_at": "2026-01-18T16:34:20.373Z",
+    "updated_at": "2026-01-18T16:34:20.374Z"
+  }
+},
+{
+  "model": "authentication.user",
+  "pk": 2,
+  "fields": {
+    "full_name": "AMOR",
+    "email": "amorjoe0014@gmail.com",
+    "phone": null,
+    "date_of_birth": null,
+    "gender": null,
+    "account_status": "ACTIVE",
+    "created_at": "2026-01-18T18:24:57.272Z",
+    "updated_at": "2026-01-18T18:24:57.272Z"
+  }
+},
+{
+  "model": "authentication.login",
+  "pk": 1,
+  "fields": {
+    "user": 1,
+    "password_hash": "pbkdf2_sha256$1000000$KUHkLQbhsHsZvwcjBBsmqn$0rBO3cP+aHMsTY6BrD7aTL5fZYrpXKjWO7sfDXzcfS8=",
+    "last_login": "2026-01-18T18:24:40.000Z",
+    "login_attempts": 0,
+    "locked_until": null,
+    "created_at": "2026-01-18T16:34:20.859Z"
+  }
+},
+{
+  "model": "authentication.login",
+  "pk": 2,
+  "fields": {
+    "user": 2,
+    "password_hash": "pbkdf2_sha256$1000000$cLDMnuLhMQEI5XoC1sZwsK$CQ/F7p14ClduEs47746joNpSJi4xe2MdSMRyx0XrZs8=",
+    "last_login": "2026-01-18T18:26:15.614Z",
+    "login_attempts": 0,
+    "locked_until": null,
+    "created_at": "2026-01-18T18:24:57.785Z"
+  }
+}
+]

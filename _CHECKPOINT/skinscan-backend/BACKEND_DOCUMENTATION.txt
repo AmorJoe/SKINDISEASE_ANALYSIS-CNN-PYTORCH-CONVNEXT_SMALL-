@@ -1,0 +1,1057 @@
+================================================================================
+                     SKINSCAN AI BACKEND - COMPLETE DOCUMENTATION
+                              Django REST Framework Backend
+                                    Version 2.0 (Phase 2)
+================================================================================
+
+                              TABLE OF CONTENTS
+================================================================================
+
+1. PROJECT OVERVIEW
+2. DIRECTORY STRUCTURE
+3. TECHNOLOGY STACK & DEPENDENCIES
+4. DATABASE ARCHITECTURE
+5. MIGRATIONS EXPLAINED
+6. AUTHENTICATION MODULE
+7. PREDICTION MODULE (AI ANALYSIS)
+8. CHATBOT MODULE
+9. API ENDPOINTS REFERENCE
+10. CONFIGURATION SETTINGS
+11. HOW EACH FUNCTIONALITY WORKS
+12. RUNNING THE SERVER
+13. ENVIRONMENT VARIABLES
+
+================================================================================
+                           1. PROJECT OVERVIEW
+================================================================================
+
+SkinScan AI is a Django-based backend for a skin disease detection application.
+It uses a CNN (Convolutional Neural Network) trained on dermatological images
+to analyze skin lesion photos and provide preliminary diagnostic suggestions.
+
+Key Features:
+- User authentication with JWT tokens
+- Async image processing with job-based workflow
+- TensorFlow-based CNN model for skin disease prediction
+- Medical safety gating with confidence thresholds
+- Rule-based chatbot for skin health queries
+- Multi-image support (1-3 images per analysis)
+
+Project Location: d:\Project\FIREBASE\skinscan-backend\
+
+================================================================================
+                         2. DIRECTORY STRUCTURE
+================================================================================
+
+skinscan-backend/
+├── manage.py                    # Django management script (entry point)
+├── requirements.txt             # Python dependencies
+├── .env                         # Environment variables (secrets, config)
+├── db.sqlite3                   # SQLite database (development)
+├── db.sqlite3.backup            # Database backup
+├── full_backup.json             # JSON data export
+│
+├── skinscan/                    # Main Django project configuration
+│   ├── __init__.py
+│   ├── settings.py              # All Django settings
+│   ├── urls.py                  # Root URL configuration
+│   ├── wsgi.py                  # WSGI app for production
+│   └── utils.py                 # Custom exception handlers
+│
+├── authentication/              # User authentication module
+│   ├── __init__.py
+│   ├── models.py                # User, Login, PasswordResetOTP models
+│   ├── views.py                 # Register, Login, Password Reset views
+│   ├── urls.py                  # Auth API routes
+│   ├── serializers.py           # DRF serializers for validation
+│   ├── jwt_auth.py              # JWT token generation & validation
+│   ├── admin.py                 # Django admin configuration
+│   └── migrations/              # Database migrations
+│       └── 0001_initial.py      # Initial migration (User, Login, OTP tables)
+│
+├── prediction/                  # AI skin analysis module
+│   ├── __init__.py
+│   ├── models.py                # PredictionJob, SkinImage, PredictionResult
+│   ├── views.py                 # Image upload, job status, prediction views
+│   ├── urls.py                  # Prediction API routes
+│   ├── serializers.py           # Image/Prediction serializers
+│   ├── cnn_inference.py         # TensorFlow model wrapper
+│   ├── image_validator.py       # Image quality validation (hard/soft)
+│   ├── storage_service.py       # Cloud storage abstraction
+│   ├── exceptions.py            # Custom exceptions
+│   ├── admin.py                 # Django admin for predictions
+│   └── migrations/
+│       ├── 0001_initial.py              # Initial models
+│       ├── 0002_phase2_async_processing.py  # Async job support
+│       └── 0003_phase2_user_feedback.py     # Feedback fields
+│
+├── chatbot/                     # Chatbot assistant module
+│   ├── __init__.py
+│   ├── models.py                # ChatHistory model
+│   ├── views.py                 # Message handling, history views
+│   ├── urls.py                  # Chatbot API routes
+│   ├── admin.py                 # Django admin for chat
+│   └── migrations/
+│       └── 0001_initial.py      # ChatHistory table
+│
+├── media/                       # Uploaded images storage
+│   └── uploads/                 # User-uploaded skin images
+│
+├── ml_models/                   # Machine learning model files
+│   └── skin_disease_model.h5    # Trained TensorFlow CNN model
+│
+└── staticfiles/                 # Django static files (admin CSS/JS)
+
+================================================================================
+                      3. TECHNOLOGY STACK & DEPENDENCIES
+================================================================================
+
+CORE FRAMEWORK:
+---------------
+- Django 4.2.7                   - Python web framework
+- djangorestframework 3.14.0     - REST API toolkit
+- django-cors-headers 4.3.1      - CORS handling for frontend
+
+DATABASE:
+---------
+- SQLite                         - Development database (db.sqlite3)
+- mysqlclient 2.2.0              - MySQL connector (production ready)
+
+AUTHENTICATION & SECURITY:
+--------------------------
+- PyJWT 2.8.0                    - JSON Web Token library
+- bcrypt 4.1.2                   - Password hashing
+- python-decouple 3.8            - Environment variable management
+
+AI/ML & IMAGE PROCESSING:
+-------------------------
+- TensorFlow 2.15.0              - Deep learning framework
+- numpy 1.24.3                   - Numerical computing
+- Pillow 10.1.0                  - Image processing (PIL)
+- opencv-python-headless 4.8.1   - Computer vision (blur detection)
+
+CLOUD SERVICES:
+---------------
+- google-cloud-storage 2.10.0    - Google Cloud Storage (images)
+
+EMAIL:
+------
+- django-smtp-ssl 1.0            - SMTP SSL for email sending
+
+UTILITIES:
+----------
+- python-dotenv 1.0.0            - Load .env files
+- django-extensions 3.2.3        - Developer utilities
+
+INSTALLATION COMMAND:
+---------------------
+    pip install -r requirements.txt
+
+================================================================================
+                        4. DATABASE ARCHITECTURE
+================================================================================
+
+The application uses 6 main database tables across 3 modules:
+
+AUTHENTICATION MODULE TABLES:
+-----------------------------
+
+TABLE: users
++------------------+--------------+------------------------------------------+
+| Column           | Type         | Description                              |
++------------------+--------------+------------------------------------------+
+| id               | AutoField    | Primary key                              |
+| full_name        | CharField    | User's full name (max 100 chars)         |
+| email            | EmailField   | Unique email address                     |
+| phone            | CharField    | Optional phone number                    |
+| date_of_birth    | DateField    | Optional birth date                      |
+| gender           | CharField    | Optional gender                          |
+| account_status   | CharField    | ACTIVE, UNVERIFIED, LOCKED, DELETED      |
+| created_at       | DateTime     | Auto-set on creation                     |
+| updated_at       | DateTime     | Auto-set on update                       |
++------------------+--------------+------------------------------------------+
+
+TABLE: login
++------------------+--------------+------------------------------------------+
+| Column           | Type         | Description                              |
++------------------+--------------+------------------------------------------+
+| id               | AutoField    | Primary key                              |
+| user_id          | ForeignKey   | One-to-one link to users table           |
+| password_hash    | CharField    | Bcrypt hashed password                   |
+| last_login       | DateTime     | Last successful login timestamp          |
+| login_attempts   | IntegerField | Failed login counter (resets on success) |
+| locked_until     | DateTime     | Lockout expiry (null = not locked)       |
+| created_at       | DateTime     | Auto-set on creation                     |
++------------------+--------------+------------------------------------------+
+
+TABLE: password_reset_otp
++------------------+--------------+------------------------------------------+
+| Column           | Type         | Description                              |
++------------------+--------------+------------------------------------------+
+| id               | AutoField    | Primary key                              |
+| user_id          | ForeignKey   | Link to users table                      |
+| otp_code         | CharField    | 6-digit OTP code                         |
+| is_used          | BooleanField | True if OTP was consumed                 |
+| expires_at       | DateTime     | OTP expiration time                      |
+| created_at       | DateTime     | Auto-set on creation                     |
+| ip_address       | IPAddress    | Client IP (for security audit)           |
++------------------+--------------+------------------------------------------+
+
+PREDICTION MODULE TABLES:
+-------------------------
+
+TABLE: prediction_jobs
++------------------+--------------+------------------------------------------+
+| Column           | Type         | Description                              |
++------------------+--------------+------------------------------------------+
+| id               | UUIDField    | Primary key (auto-generated UUID)        |
+| user_id          | ForeignKey   | Link to users table                      |
+| status           | CharField    | PENDING, PROCESSING, COMPLETED, FAILED   |
+| error_message    | TextField    | Error details if FAILED                  |
+| image_count      | IntegerField | Number of images in this job (1-3)       |
+| created_at       | DateTime     | Job creation timestamp                   |
+| completed_at     | DateTime     | Job completion timestamp                 |
++------------------+--------------+------------------------------------------+
+
+TABLE: skin_images
++------------------------+--------------+--------------------------------------+
+| Column                 | Type         | Description                          |
++------------------------+--------------+--------------------------------------+
+| id                     | AutoField    | Primary key                          |
+| user_id                | ForeignKey   | Link to users table                  |
+| job_id                 | ForeignKey   | Link to prediction_jobs              |
+| image_url              | CharField    | Cloud storage URL (gs://... or mock)|
+| original_filename      | CharField    | Original uploaded filename           |
+| file_size              | IntegerField | File size in bytes                   |
+| image_width            | IntegerField | Image width in pixels                |
+| image_height           | IntegerField | Image height in pixels               |
+| quality_score          | FloatField   | Blur score (Laplacian variance)      |
+| is_valid               | BooleanField | Passed hard validation               |
+| has_quality_warning    | BooleanField | Has soft validation warnings         |
+| quality_warning_message| TextField    | Warning details                      |
+| uploaded_at            | DateTime     | Upload timestamp                     |
++------------------------+--------------+--------------------------------------+
+
+TABLE: prediction_results
++------------------------+--------------+--------------------------------------+
+| Column                 | Type         | Description                          |
++------------------------+--------------+--------------------------------------+
+| id                     | AutoField    | Primary key                          |
+| job_id                 | ForeignKey   | Link to prediction_jobs              |
+| image_id               | ForeignKey   | Link to skin_images (backward compat)|
+| disease_name           | CharField    | Predicted disease or "Inconclusive"  |
+| confidence_score       | FloatField   | Confidence percentage (0-100)        |
+| raw_probabilities      | JSONField    | All class probabilities              |
+| recommendation         | TextField    | Medical advice based on confidence   |
+| model_version          | CharField    | CNN model version used               |
+| processing_time        | FloatField   | Inference time in seconds            |
+| is_inconclusive        | BooleanField | True if confidence < 60%             |
+| aggregated_from_count  | IntegerField | Number of images averaged            |
+| created_at             | DateTime     | Prediction timestamp                 |
+| user_feedback          | TextField    | User's feedback on prediction        |
+| is_user_reported_incorrect | Boolean  | User marked prediction as wrong      |
+| feedback_timestamp     | DateTime     | When feedback was submitted          |
++------------------------+--------------+--------------------------------------+
+
+TABLE: disease_info
++------------------+--------------+------------------------------------------+
+| Column           | Type         | Description                              |
++------------------+--------------+------------------------------------------+
+| id               | AutoField    | Primary key                              |
+| disease_name     | CharField    | Unique disease name                      |
+| description      | TextField    | Disease description                      |
+| symptoms         | TextField    | Common symptoms                          |
+| causes           | TextField    | Known causes                             |
+| treatment        | TextField    | Treatment options                        |
+| prevention       | TextField    | Prevention tips                          |
+| severity_level   | CharField    | Mild, Moderate, Severe                   |
+| is_contagious    | BooleanField | Whether disease spreads                  |
+| created_at       | DateTime     | Auto-set on creation                     |
+| updated_at       | DateTime     | Auto-set on update                       |
++------------------+--------------+------------------------------------------+
+
+CHATBOT MODULE TABLE:
+---------------------
+
+TABLE: chat_history
++------------------+--------------+------------------------------------------+
+| Column           | Type         | Description                              |
++------------------+--------------+------------------------------------------+
+| id               | AutoField    | Primary key                              |
+| user_id          | ForeignKey   | Link to users table                      |
+| role             | CharField    | 'user' or 'bot'                          |
+| message          | TextField    | Message content                          |
+| session_id       | CharField    | Groups related messages in conversation  |
+| created_at       | DateTime     | Message timestamp                        |
++------------------+--------------+------------------------------------------+
+
+================================================================================
+                          5. MIGRATIONS EXPLAINED
+================================================================================
+
+Django migrations are version control for the database schema. Each migration
+file contains Python code that creates, modifies, or deletes database tables.
+
+HOW MIGRATIONS ARE STORED:
+--------------------------
+
+1. Migration files are stored in each app's `migrations/` folder
+2. Each file is numbered sequentially (0001, 0002, 0003, ...)
+3. Django tracks applied migrations in the `django_migrations` table
+4. Migrations have dependencies - they must be applied in order
+
+AUTHENTICATION MIGRATIONS:
+--------------------------
+
+0001_initial.py (Created: 2026-01-18)
+-------------------------------------
+Operations:
+  - CreateModel('User')         → Creates `users` table
+  - CreateModel('Login')        → Creates `login` table with FK to User
+  - CreateModel('PasswordResetOTP') → Creates `password_reset_otp` table
+
+Dependencies: None (initial migration)
+
+PREDICTION MIGRATIONS:
+----------------------
+
+0001_initial.py (Created: 2026-01-18)
+-------------------------------------
+Operations:
+  - CreateModel('DiseaseInfo')     → Reference database for diseases
+  - CreateModel('SkinImage')       → Uploaded image metadata
+  - CreateModel('PredictionResult')→ AI prediction results
+
+Dependencies: authentication.0001_initial
+
+0002_phase2_async_processing.py (Created: 2026-01-19)
+-----------------------------------------------------
+Purpose: Add async job-based processing for Phase 2
+Operations:
+  - RenameField('SkinImage.image_path' → 'image_url') → Cloud storage support
+  - RemoveField('SkinImage.validation_message')
+  - AddField('PredictionResult.aggregated_from_count') → Multi-image support
+  - AddField('PredictionResult.is_inconclusive') → Low confidence flag
+  - AddField('SkinImage.has_quality_warning') → Soft validation
+  - AddField('SkinImage.quality_warning_message')
+  - AlterField('PredictionResult.image') → Made optional
+  - CreateModel('PredictionJob') → Async job tracking
+  - AddField('PredictionResult.job') → Link to job
+  - AddField('SkinImage.job') → Link to job
+
+Dependencies: prediction.0001_initial, authentication.0001_initial
+
+0003_phase2_user_feedback.py (Created: 2026-01-19)
+--------------------------------------------------
+Purpose: Enable user feedback collection (FR-DATA-LOOP)
+Operations:
+  - AddField('PredictionResult.user_feedback')
+  - AddField('PredictionResult.is_user_reported_incorrect')
+  - AddField('PredictionResult.feedback_timestamp')
+
+Dependencies: prediction.0002_phase2_async_processing
+
+CHATBOT MIGRATIONS:
+-------------------
+
+0001_initial.py (Created: 2026-01-18)
+-------------------------------------
+Operations:
+  - CreateModel('ChatHistory') → Chat message storage
+
+Dependencies: authentication.0001_initial
+
+MIGRATION COMMANDS:
+-------------------
+
+# Create new migrations after model changes
+python manage.py makemigrations
+
+# Apply all pending migrations
+python manage.py migrate
+
+# Check migration status
+python manage.py showmigrations
+
+# Rollback a migration (example)
+python manage.py migrate prediction 0001_initial
+
+================================================================================
+                       6. AUTHENTICATION MODULE
+================================================================================
+
+Location: skinscan-backend/authentication/
+
+PURPOSE:
+--------
+Handles user registration, login, password recovery, and JWT token management.
+
+MODELS (models.py):
+-------------------
+
+class AccountStatus(TextChoices):
+    ACTIVE = 'ACTIVE'       # Normal active account
+    UNVERIFIED = 'UNVERIFIED'   # Email not verified
+    LOCKED = 'LOCKED'       # Too many failed logins
+    DELETED = 'DELETED'     # Soft deleted
+
+class User(Model):
+    - Stores user profile information
+    - Referenced by all other modules
+    - Methods: __str__(), is_active()
+
+class Login(Model):
+    - One-to-one relationship with User
+    - Stores password hash (bcrypt)
+    - Tracks failed login attempts
+    - Auto-locks after 5 failed attempts for 1 hour
+    - Methods:
+        set_password(raw_password)  → Hash and store password
+        check_password(raw_password) → Verify password
+        increment_login_attempts()  → Track failed login
+        reset_login_attempts()      → Reset on successful login
+        is_locked()                 → Check if account is locked
+
+class PasswordResetOTP(Model):
+    - Stores 6-digit OTP codes for password recovery
+    - Expires after 10 minutes (configurable)
+    - Methods:
+        is_valid()          → Check if OTP is valid and not expired
+        mark_as_used()      → Consume the OTP
+        generate_otp()      → Static method to create 6-digit code
+
+JWT AUTHENTICATION (jwt_auth.py):
+---------------------------------
+
+class JWTAuthentication:
+    - Custom DRF authentication class
+    - Validates Bearer token from Authorization header
+    - Decodes JWT using HS256 algorithm
+    - Returns (user, token) tuple on success
+
+def generate_jwt_token(user):
+    - Creates JWT with payload: user_id, email, full_name
+    - Sets expiration: 24 hours from creation
+    - Signs with JWT_SECRET_KEY
+
+def decode_jwt_token(token):
+    - Validates and decodes existing token
+    - Raises AuthenticationFailed on invalid/expired tokens
+
+VIEWS (views.py):
+-----------------
+
+RegisterView (POST /api/auth/register):
+    1. Validate input (email, password, full_name)
+    2. Check email uniqueness
+    3. Create User record
+    4. Create Login record with hashed password
+    5. Generate JWT token
+    6. Return user data + token
+
+LoginView (POST /api/auth/login):
+    1. Find user by email
+    2. Check if account is locked
+    3. Verify password
+    4. On failure: increment_login_attempts()
+    5. On success: reset_login_attempts(), generate token
+    6. Return user data + token
+
+ForgotPasswordView (POST /api/auth/forgot-password):
+    1. Find user by email
+    2. Generate 6-digit OTP
+    3. Create PasswordResetOTP record (expires in 10 min)
+    4. Send OTP via email (or return in dev mode)
+    5. Return confirmation
+
+VerifyOTPView (POST /api/auth/verify-otp):
+    1. Find user by email
+    2. Get latest OTP record
+    3. Validate OTP code and expiry
+    4. Return verification token for password reset
+
+ResetPasswordView (POST /api/auth/reset-password):
+    1. Verify reset token
+    2. Update password hash
+    3. Mark OTP as used
+    4. Return success
+
+ValidateTokenView (GET /api/auth/validate-token):
+    1. Requires authenticated request
+    2. Returns user info if token is valid
+
+================================================================================
+                      7. PREDICTION MODULE (AI ANALYSIS)
+================================================================================
+
+Location: skinscan-backend/prediction/
+
+PURPOSE:
+--------
+Handles image upload, validation, AI inference, and prediction results.
+Implements async job-based processing for medical safety.
+
+MODELS (models.py):
+-------------------
+
+class JobStatus(TextChoices):
+    PENDING = 'PENDING'         # Job created, waiting to process
+    PROCESSING = 'PROCESSING'   # Currently running inference
+    COMPLETED = 'COMPLETED'     # Successfully finished
+    FAILED = 'FAILED'           # Error occurred
+
+class PredictionJob(Model):
+    - Tracks async prediction requests
+    - UUID primary key (not sequential)
+    - Methods:
+        mark_processing()   → Update status to PROCESSING
+        mark_completed()    → Update status + set completed_at
+        mark_failed(msg)    → Set FAILED status with error message
+
+class SkinImage(Model):
+    - Stores uploaded image metadata
+    - Links to PredictionJob for batch processing
+    - Cloud storage URL (not local path)
+    - Quality validation fields
+
+class PredictionResult(Model):
+    - Stores AI analysis results
+    - Links to job (and optionally image for backward compat)
+    - Confidence-based fields (is_inconclusive)
+    - User feedback fields for data collection
+
+class DiseaseInfo(Model):
+    - Reference database for disease information
+    - Used to provide detailed recommendations
+
+IMAGE VALIDATOR (image_validator.py):
+-------------------------------------
+
+Implements two-tier validation:
+
+HARD FAIL (Rejects image):
+- Corrupted/unreadable file
+- Resolution below 224x224 pixels
+- Completely black/empty image (>95% black pixels)
+
+SOFT WARNING (Allows with warning):
+- Blurry image (Laplacian variance < 100)
+- Too dark (brightness < 30)
+- Overexposed (brightness > 225)
+- Low contrast (std deviation < 30)
+
+class ImageQualityValidator:
+    Methods:
+    - validate_file_format(filename) → Check extension (jpg, jpeg, png)
+    - validate_file_size(size) → Check against 5MB limit
+    - validate_image(image_file) → Full validation, returns ValidationResult
+    - preprocess_for_cnn(image_file) → Resize to 224x224, normalize to [0,1]
+    - preprocess_bytes_for_cnn(bytes) → Same for raw bytes
+
+CNN INFERENCE (cnn_inference.py):
+---------------------------------
+
+Medical Safety Thresholds:
+- INCONCLUSIVE_THRESHOLD = 60%  (Below = no disease label)
+- MODERATE_CONFIDENCE = 60-79%  (Show disease + strong warning)
+- HIGH_CONFIDENCE = 80%+        (Disease-specific advice)
+
+class CNNPredictor:
+    - Loads TensorFlow model from ml_models/skin_disease_model.h5
+    - Singleton pattern (one instance per process)
+    - Disease classes: Acne, Eczema, Melanoma, Psoriasis,
+                       Rosacea, Fungal Infection, Vitiligo, Warts
+    
+    Methods:
+    - predict(image_array) → Single image inference
+    - predict_multi(image_list) → Average across multiple images
+    - _get_recommendation(disease, confidence) → Gated medical advice
+
+    Medical Safety Features:
+    - Raises ModelUnavailableError if model not loaded (NO mock predictions)
+    - Returns "Inconclusive" for confidence < 60%
+    - Adds STRONG_UNCERTAINTY_WARNING for 60-79% confidence
+    - Disease-specific recommendations only for 80%+ confidence
+
+VIEWS (views.py):
+-----------------
+
+ImageUploadView (POST /api/predict/upload):
+    1. Validate authentication
+    2. Accept 1-3 images from multipart form
+    3. For each image:
+       a. Validate file format and size
+       b. Run hard/soft image validation
+       c. Upload to cloud storage (or mock storage)
+       d. Create SkinImage record
+    4. Create PredictionJob with status=PENDING
+    5. Submit job to ThreadPoolExecutor
+    6. Return job_id immediately (async)
+
+    Background Processing:
+    - Runs in separate thread
+    - Updates job to PROCESSING
+    - Preprocesses all images
+    - Runs CNN inference (single or multi)
+    - Creates PredictionResult
+    - Updates job to COMPLETED or FAILED
+
+JobStatusView (GET /api/predict/status/<job_id>):
+    1. Find job by UUID
+    2. Verify user owns the job
+    3. Return job status
+    4. If COMPLETED: include prediction result
+    5. Polling endpoint (frontend checks periodically)
+
+PredictionHistoryView (GET /api/predict/history):
+    1. Get all completed predictions for user
+    2. Return list with pagination-ready format
+
+PredictionDetailView (GET /api/predict/result/<id>):
+    1. Find prediction by ID
+    2. Verify user owns it
+    3. Return full details including:
+       - Disease name and confidence
+       - All class probabilities
+       - Recommendation
+       - Image metadata
+       - Processing time
+
+PredictionFeedbackView (POST /api/predict/feedback/<id>):
+    1. Accept user feedback on prediction
+    2. Fields: user_feedback, is_user_reported_incorrect
+    3. Used for future model improvement (FR-DATA-LOOP)
+    4. No retraining happens in deployed system
+
+================================================================================
+                          8. CHATBOT MODULE
+================================================================================
+
+Location: skinscan-backend/chatbot/
+
+PURPOSE:
+--------
+Provides a rule-based chatbot for skin health questions and guidance.
+
+MODEL (models.py):
+------------------
+
+class ChatHistory(Model):
+    - Stores conversation history per user
+    - role: 'user' or 'bot'
+    - session_id: Groups messages in a conversation
+    - Ordered by created_at (chronological)
+
+VIEWS (views.py):
+-----------------
+
+ChatMessageView (POST /api/chat/message):
+    1. Validate message is not empty
+    2. Save user message to ChatHistory
+    3. Generate bot response using rules
+    4. Save bot response to ChatHistory
+    5. Return bot response + session_id
+
+    Response Rules (by keyword detection):
+    - "hello/hi/hey" → Welcome message
+    - "accuracy/confidence" → AI model explanation
+    - "acne/pimple" → Acne information
+    - "eczema" → Eczema guidance
+    - "melanoma/cancer" → URGENT warning, seek help immediately
+    - "psoriasis" → Psoriasis information
+    - "upload/scan/analyze" → How to use the analyzer
+    - "how work" → Technical explanation
+    - "safe/privacy/secure" → Data security info
+    - "thank/thanks" → Thank you response
+    - Default → General help message
+
+    All non-greeting responses include medical disclaimer.
+
+ChatHistoryView (GET /api/chat/history):
+    1. Optional: filter by session_id
+    2. Return all user's chat messages
+    3. Includes timestamps and roles
+
+ClearChatHistoryView (DELETE /api/chat/clear-history):
+    1. Optional: filter by session_id
+    2. Delete matching messages
+    3. Return deleted count
+
+================================================================================
+                       9. API ENDPOINTS REFERENCE
+================================================================================
+
+BASE URL: http://localhost:8000
+
+AUTHENTICATION ENDPOINTS:
+-------------------------
+POST /api/auth/register
+    Body: { full_name, email, password, phone?, date_of_birth?, gender? }
+    Response: { user, token }
+
+POST /api/auth/login
+    Body: { email, password }
+    Response: { user, token }
+
+POST /api/auth/forgot-password
+    Body: { email }
+    Response: { message, otp? (dev mode only) }
+
+POST /api/auth/verify-otp
+    Body: { email, otp_code }
+    Response: { verified, reset_token }
+
+POST /api/auth/reset-password
+    Body: { reset_token, new_password, confirm_password }
+    Response: { message }
+
+GET /api/auth/validate-token
+    Headers: Authorization: Bearer <token>
+    Response: { user }
+
+PREDICTION ENDPOINTS:
+---------------------
+POST /api/predict/upload                    [Auth Required]
+    Body (multipart/form-data): images (1-3 files)
+    Response: { job_id, status, image_count }
+
+GET /api/predict/status/<job_id>           [Auth Required]
+    Response: { job_id, status, result? (if completed), error? (if failed) }
+
+GET /api/predict/history                    [Auth Required]
+    Response: { predictions: [...] }
+
+GET /api/predict/result/<prediction_id>    [Auth Required]
+    Response: { disease_name, confidence, probabilities, recommendation, ... }
+
+POST /api/predict/feedback/<prediction_id> [Auth Required]
+    Body: { user_feedback, is_user_reported_incorrect }
+    Response: { message }
+
+CHATBOT ENDPOINTS:
+------------------
+POST /api/chat/message                      [Auth Required]
+    Body: { message, session_id? }
+    Response: { bot_message, session_id }
+
+GET /api/chat/history                       [Auth Required]
+    Query: session_id? (optional filter)
+    Response: { messages: [...] }
+
+DELETE /api/chat/clear-history              [Auth Required]
+    Query: session_id? (optional filter)
+    Response: { deleted_count }
+
+STATIC/FRONTEND ENDPOINTS:
+--------------------------
+GET /                     → Redirects to /login.html
+GET /login.html          → Login page
+GET /index.html          → Main app page
+GET /*.css               → CSS files
+GET /*.js                → JavaScript files
+GET /admin/              → Django admin panel
+
+================================================================================
+                       10. CONFIGURATION SETTINGS
+================================================================================
+
+File: skinscan-backend/skinscan/settings.py
+
+KEY SETTINGS EXPLAINED:
+-----------------------
+
+# Security
+SECRET_KEY = 'django-insecure-...'    # Change in production!
+DEBUG = True                           # False in production
+ALLOWED_HOSTS = ['*']                  # Restrict in production
+
+# Database (Development)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',  # MySQL in prod
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+# REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'authentication.jwt_auth.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# JWT Settings
+JWT_SECRET_KEY = 'jwt-secret-key-...'  # Change in production!
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRATION_DELTA = timedelta(hours=24)
+
+# CORS Settings
+CORS_ALLOW_ALL_ORIGINS = True          # Restrict in production
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:5500",           # Live Server
+]
+
+# Image Settings
+MAX_IMAGE_SIZE = 5 * 1024 * 1024       # 5MB
+ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png']
+IMAGE_MIN_RESOLUTION = (224, 224)
+
+# CNN Model
+MODEL_PATH = BASE_DIR / 'ml_models' / 'skin_disease_model.h5'
+DISEASE_CLASSES = [
+    'Acne', 'Eczema', 'Melanoma', 'Psoriasis',
+    'Rosacea', 'Fungal Infection', 'Vitiligo', 'Warts'
+]
+
+# Email (for OTP)
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+# OTP Settings
+OTP_EXPIRATION_MINUTES = 10
+OTP_MAX_ATTEMPTS = 3
+
+================================================================================
+                   11. HOW EACH FUNCTIONALITY WORKS
+================================================================================
+
+---------------------------------------------------------------------------
+A. USER REGISTRATION FLOW
+---------------------------------------------------------------------------
+
+1. Frontend sends POST to /api/auth/register with:
+   { full_name, email, password, phone?, date_of_birth?, gender? }
+
+2. Backend validates:
+   - Email format and uniqueness
+   - Password strength
+   - Required fields present
+
+3. Backend creates:
+   a. User record in `users` table
+   b. Login record in `login` table with bcrypt-hashed password
+
+4. Backend generates JWT token with 24-hour expiry
+
+5. Frontend receives:
+   { status: 'success', data: { user: {...}, token: 'eyJ...' } }
+
+6. Frontend stores token in localStorage for subsequent requests
+
+---------------------------------------------------------------------------
+B. USER LOGIN FLOW
+---------------------------------------------------------------------------
+
+1. Frontend sends POST to /api/auth/login with: { email, password }
+
+2. Backend:
+   a. Finds user by email in `users` table
+   b. Gets associated `login` record
+   c. Checks is_locked() - if locked, returns error
+   d. Verifies password using bcrypt
+
+3. On FAILED password:
+   - increment_login_attempts() called
+   - If 5+ attempts: sets locked_until = now + 1 hour
+   - Returns "Invalid credentials" error
+
+4. On SUCCESS:
+   - reset_login_attempts() called (resets counter, clears lock)
+   - Updates last_login timestamp
+   - Generates JWT token
+
+5. Frontend stores token, redirects to main app
+
+---------------------------------------------------------------------------
+C. PASSWORD RECOVERY FLOW
+---------------------------------------------------------------------------
+
+Step 1: Request OTP
+1. User enters email → POST /api/auth/forgot-password
+2. Backend finds user, generates 6-digit OTP
+3. Creates PasswordResetOTP record (expires in 10 min)
+4. Sends OTP via email (in dev mode, returned in response)
+
+Step 2: Verify OTP
+1. User enters OTP → POST /api/auth/verify-otp { email, otp_code }
+2. Backend validates OTP:
+   - Correct code
+   - Not expired
+   - Not already used
+3. Returns reset_token (temporary token for password reset)
+
+Step 3: Reset Password
+1. User enters new password → POST /api/auth/reset-password
+   { reset_token, new_password, confirm_password }
+2. Backend verifies reset_token
+3. Updates password_hash in `login` table
+4. Marks OTP as used (is_used = True)
+
+---------------------------------------------------------------------------
+D. IMAGE UPLOAD & PREDICTION FLOW
+---------------------------------------------------------------------------
+
+1. UPLOAD REQUEST
+   - Frontend sends POST /api/predict/upload (multipart/form-data)
+   - Includes 1-3 image files
+
+2. IMAGE VALIDATION (for each image)
+   Hard Validation (REJECT if fail):
+   - File format check (jpg, jpeg, png only)
+   - File size check (max 5MB)
+   - Image readability (not corrupted)
+   - Resolution check (min 224x224)
+   - Black/empty check
+
+   Soft Validation (WARNING if fail):
+   - Blur detection (Laplacian variance)
+   - Brightness check
+   - Contrast check
+
+3. IMAGE STORAGE
+   - Upload to cloud storage (or mock storage in dev)
+   - Save URL to `skin_images` table
+   - Save validation results
+
+4. JOB CREATION
+   - Create PredictionJob record (status = PENDING)
+   - Return job_id immediately to frontend
+
+5. ASYNC PROCESSING (background thread)
+   - Update job status to PROCESSING
+   - Load images from storage
+   - Preprocess each image:
+     * Resize to 224x224
+     * Normalize pixel values to [0, 1]
+     * Add batch dimension
+   - Run CNN inference:
+     * Single image: model.predict(image)
+     * Multiple images: average probabilities
+
+6. MEDICAL SAFETY GATING
+   Based on max confidence:
+   - < 60%: disease_name = "Inconclusive", generic advice
+   - 60-79%: show disease + STRONG_UNCERTAINTY_WARNING
+   - >= 80%: disease-specific recommendation
+
+7. RESULT STORAGE
+   - Create PredictionResult record
+   - Update job status to COMPLETED
+
+8. FRONTEND POLLING
+   - Frontend polls GET /api/predict/status/<job_id>
+   - Returns status until COMPLETED
+   - On COMPLETED: returns full prediction result
+
+---------------------------------------------------------------------------
+E. CHATBOT CONVERSATION FLOW
+---------------------------------------------------------------------------
+
+1. User sends message → POST /api/chat/message { message, session_id? }
+
+2. Backend saves user message to `chat_history`:
+   { user_id, role='user', message, session_id, created_at }
+
+3. Response generation (rule-based):
+   - Convert message to lowercase
+   - Check for keyword matches
+   - Return appropriate response + medical disclaimer
+
+4. Backend saves bot message to `chat_history`:
+   { user_id, role='bot', message, session_id, created_at }
+
+5. Return: { bot_message, session_id }
+
+6. History retrieval:
+   - GET /api/chat/history returns all messages
+   - Optional ?session_id filter for specific conversation
+
+================================================================================
+                         12. RUNNING THE SERVER
+================================================================================
+
+DEVELOPMENT SERVER:
+-------------------
+
+1. Navigate to project directory:
+   cd d:\Project\FIREBASE\skinscan-backend
+
+2. Install dependencies (if not already):
+   python -m pip install -r requirements.txt
+
+3. Apply migrations:
+   python manage.py migrate
+
+4. Create superuser (optional, for admin access):
+   python manage.py createsuperuser
+
+5. Run development server:
+   python manage.py runserver 0.0.0.0:8000
+
+6. Access points:
+   - API: http://localhost:8000/api/
+   - Admin: http://localhost:8000/admin/
+   - Frontend: http://localhost:8000/login.html
+
+PRODUCTION DEPLOYMENT:
+----------------------
+
+1. Set DEBUG=False in .env
+2. Configure proper SECRET_KEY and JWT_SECRET_KEY
+3. Set up MySQL database
+4. Configure ALLOWED_HOSTS
+5. Use gunicorn/uwsgi as WSGI server
+6. Set up reverse proxy (nginx)
+7. Enable HTTPS
+8. Configure proper CORS origins
+
+================================================================================
+                       13. ENVIRONMENT VARIABLES
+================================================================================
+
+File: skinscan-backend/.env
+
+REQUIRED VARIABLES:
+-------------------
+SECRET_KEY              # Django secret key (long random string)
+JWT_SECRET_KEY          # JWT signing key
+
+DATABASE:
+---------
+DB_ENGINE               # django.db.backends.mysql (or sqlite3)
+DB_NAME                 # Database name
+DB_USER                 # Database user
+DB_PASSWORD             # Database password
+DB_HOST                 # Database host (localhost)
+DB_PORT                 # Database port (3306 for MySQL)
+
+EMAIL (for OTP):
+----------------
+EMAIL_HOST_USER         # Gmail address for sending OTPs
+EMAIL_HOST_PASSWORD     # Gmail app password (not regular password)
+
+CLOUD STORAGE:
+--------------
+USE_GCS                 # True to use Google Cloud Storage
+GCS_BUCKET_NAME         # Bucket for image uploads
+GCS_MODEL_BUCKET        # Bucket for ML models
+
+DEBUG:
+------
+DEBUG                   # True for development, False for production
+ALLOWED_HOSTS           # Comma-separated list of allowed domains
+
+================================================================================
+                              END OF DOCUMENTATION
+================================================================================
+
+Document Version: 2.0
+Last Updated: 2026-01-31
+Project: SkinScan AI Backend
+Framework: Django 4.2.7 + Django REST Framework 3.14.0

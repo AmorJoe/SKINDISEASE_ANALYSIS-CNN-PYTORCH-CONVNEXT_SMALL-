@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinScan AI - Diagnostic Report</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Standard System Font -->
+    <link rel="stylesheet" href="report.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+
+<body>
+
+    <!-- Loading Skeleton (shown while data loads) -->
+    <div id="loading-skeleton" class="loading-skeleton">
+        <div class="skeleton-header">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-text-group">
+                <div class="skeleton-text skeleton-text-lg"></div>
+                <div class="skeleton-text skeleton-text-sm"></div>
+            </div>
+        </div>
+        <div class="skeleton-content">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+        </div>
+    </div>
+
+    <!-- Error State (shown on API failure) -->
+    <div id="error-state" class="error-state" style="display: none;">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h2>Unable to Load Report</h2>
+        <p id="error-message">We encountered an error loading your report. Please try again.</p>
+        <button class="btn-retry" onclick="location.reload()">
+            <i class="fas fa-redo"></i> Retry
+        </button>
+        <a href="index.html" class="btn-secondary">Back to Home</a>
+    </div>
+
+    <!-- Empty State (shown when no scan data) -->
+    <div id="empty-state" class="empty-state" style="display: none;">
+        <div class="empty-icon">
+            <i class="fas fa-file-medical"></i>
+        </div>
+        <h2>No Report Available</h2>
+        <p>You haven't performed any scans yet. Start by uploading an image for analysis.</p>
+        <a href="index.html" class="btn-primary">
+            <i class="fas fa-upload"></i> Upload Image
+        </a>
+    </div>
+
+    <div class="report-container" id="report-content" style="display: none;">
+
+        <!-- Header Section -->
+        <header class="report-header">
+            <div class="profile-section">
+                <div class="avatar-wrapper">
+                    <img src="https://ui-avatars.com/api/?name=Dr+Anya&background=random&size=128" alt="Profile"
+                        class="avatar" id="userAvatar">
+                </div>
+                <div class="user-details">
+                    <h1 id="userName">Loading...</h1>
+                    <p id="userEmail" class="user-email">loading@example.com</p>
+                </div>
+            </div>
+
+            <div class="header-title">
+                <h2>Dermatology <span class="accent-text">AI</span> Report</h2>
+            </div>
+
+            <div class="action-section">
+                <!-- Body Location & Title for Save -->
+                <div class="save-metadata-container">
+                    <!-- Title and Location removed as per user request (Auto-generated/Dashboard handled) -->
+                </div>
+
+                <button class="btn-icon" id="notification-btn" title="Notifications" aria-label="Notifications"
+                    style="position: relative;">
+                    <i class="fas fa-bell"></i>
+                    <span id="notification-badge"
+                        style="position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: none;"></span>
+                </button>
+                <a href="index.html" class="btn-icon" title="Back to Home" aria-label="Back to Home">
+                    <i class="fas fa-home"></i>
+                </a>
+                <button class="btn-icon" id="btnSaveHistory" type="button" onclick="saveReportToHistory()"
+                    title="Save to History" aria-label="Save report to history">
+                    <i class="fas fa-save"></i>
+                </button>
+                <button class="btn-download" onclick="downloadPDF()" aria-label="Download report as PDF">
+                    <i class="fas fa-file-pdf"></i> Download PDF
+                </button>
+            </div>
+        </header>
+
+        <!-- Vitals Row (4 Cards) -->
+        <div class="vitals-grid">
+            <!-- Age -->
+            <div class="vital-card">
+                <div class="card-header">Age</div>
+                <div class="card-value" id="userAge">--</div>
+            </div>
+            <!-- Gender -->
+            <div class="vital-card">
+                <div class="card-header">Gender</div>
+                <div class="card-value" id="userGender">--</div>
+            </div>
+            <!-- Skin Type -->
+            <div class="vital-card">
+                <div class="card-header">Skin Type</div>
+                <div class="card-value" id="skinType">--</div>
+            </div>
+            <!-- Skin Tone -->
+            <div class="vital-card">
+                <div class="card-header">Skin Tone</div>
+                <div class="card-value" id="skinTone">--</div>
+            </div>
+        </div>
+
+        <!-- Main Content Split -->
+        <div class="main-grid">
+
+            <!-- Left: Diagnostic Result -->
+            <div class="card analysis-card">
+                <h2>Diagnostic Result <span class="scan-date" id="scanDate">Jan 12, 2026</span></h2>
+
+                <div class="diagnosis-summary">
+                    <div class="scan-thumbnail-wrapper">
+                        <img src="skin.jpg" alt="Analyzed Area" class="scan-thumbnail" id="scanImage">
+                        <div class="scan-badge">Arm (L)</div>
+                    </div>
+
+                    <div class="diagnosis-details">
+                        <span class="diagnosis-label">Detected Condition</span>
+                        <h3 class="diagnosis-title" id="conditionName">Analyzing...</h3>
+
+                        <div class="severity-container">
+                            <span class="badgel-label">Severity Risk:</span>
+                            <span class="severity-badge badge-high" id="severityBadge">High</span>
+                        </div>
+
+                        <div class="confidence-container">
+                            <div class="label-row">
+                                <span>AI Confidence</span>
+                                <span class="status-text" id="confidenceText">--%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="fill" id="confidenceBar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="abcd-grid">
+                    <div class="abcd-item">
+                        <span class="abcd-letter">A</span>
+                        <span class="abcd-desc">Asymmetry</span>
+                        <span class="abcd-status status-good">Low</span>
+                    </div>
+                    <div class="abcd-item">
+                        <span class="abcd-letter">B</span>
+                        <span class="abcd-desc">Border</span>
+                        <span class="abcd-status status-warning">Irregular</span>
+                    </div>
+                    <div class="abcd-item">
+                        <span class="abcd-letter">C</span>
+                        <span class="abcd-desc">Color</span>
+                        <span class="abcd-status status-good">Uniform</span>
+                    </div>
+                    <div class="abcd-item">
+                        <span class="abcd-letter">D</span>
+                        <span class="abcd-desc">Diameter</span>
+                        <span class="abcd-status status-good">&lt;6mm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: AI Recommendation -->
+            <div class="card recommendation-card">
+                <h2>AI Treatment Plan</h2>
+                <div class="treatment-steps" id="treatmentSteps">
+                    <!-- Dynamic Content -->
+                </div>
+
+                <div class="lifestyle-tip">
+                    <i class="fas fa-info-circle"></i>
+                    <span><strong>Note:</strong> Avoid scratching. Keep area clean.</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Doctor's Note (Separate Card) -->
+        <div class="card doctor-note-card">
+            <div class="doctor-notes-section">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Doctor's Notes & Observations</h3>
+                    <span id="notes-timestamp" class="notes-timestamp" style="font-size: 0.85rem; color: #666;"></span>
+                </div>
+                <textarea class="doctor-notes-input" id="doctorNotes"
+                    placeholder="Clinical notes, prescriptions, or follow-up instructions..."></textarea>
+                <div class="medical-disclaimer" style="margin-top: 20px;">
+                    * AI analysis is not a substitute for professional medical advice.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="report.js"></script>
+</body>
+
+</html>

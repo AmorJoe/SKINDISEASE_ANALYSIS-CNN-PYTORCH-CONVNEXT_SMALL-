@@ -1,0 +1,30 @@
+# Core Django
+Django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+
+# Database
+mysqlclient==2.2.0  # For MySQL (optional)
+
+# Authentication & Security
+PyJWT==2.8.0
+python-decouple==3.8
+bcrypt==4.1.2
+
+# Image Processing & AI
+Pillow==10.1.0
+opencv-python-headless==4.8.1.78
+tensorflow==2.15.0
+numpy==1.24.3
+
+# Google Cloud (for production)
+google-cloud-storage==2.10.0
+
+# Email
+django-smtp-ssl==1.0
+
+# Utilities
+python-dotenv==1.0.0
+
+# Development
+django-extensions==3.2.3

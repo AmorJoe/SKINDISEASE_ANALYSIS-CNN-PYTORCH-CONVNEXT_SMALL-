@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinScan AI - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <nav>
+        <div class="logo">
+            <i class="fas fa-dna"></i> SkinScan AI
+        </div>
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#upload">Analyze</a></li>
+            <li><a href="#about">Technology</a></li>
+            <li class="btn-nav"><a href="login.html" id="logout-btn">Logout</a></li>
+        </ul>
+    </nav>
+
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>Unlock Your <br><span>Skin's Health</span></h1>
+            <p>AI-powered image recognition for deep dermatological insights. Detect conditions with high accuracy.</p>
+            <a href="#upload" class="cta-button">Start Diagnosis <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="hero-image">
+            <div class="scan-overlay"></div>
+            <img src="https://images.unsplash.com/photo-1737978697863-5d65495b28ef?fm=jpg&q=60&w=800&ixlib=rb-4.1.0"
+                alt="Skin Analysis Model">
+
+            <div class="glass-card card-1">
+                <div class="icon-box"><i class="fas fa-search"></i></div>
+                <div class="card-info">
+                    <h4>Skin Analysis</h4>
+                    <p>Accuracy: <span class="highlight-green">80.5%</span></p>
+                </div>
+            </div>
+
+            <div class="glass-card card-2">
+                <div class="icon-box"><i class="fas fa-user-md"></i></div>
+                <div class="card-info">
+                    <h4>AI Diagnosis</h4>
+                    <p>Status: <span class="highlight-green">Active</span></p>
+                </div>
+            </div>
+
+            <div class="tag tag-1"><i class="fas fa-check-circle"></i> Texture Analysis</div>
+            <div class="tag tag-2"><i class="fas fa-exclamation-circle"></i> Redness Detect</div>
+        </div>
+    </section>
+
+    <section id="upload" class="upload-section">
+        <h2>AI Skin Diagnosis</h2>
+        <p class="subtitle">Upload a clear photo of the affected area for instant results.</p>
+
+        <div class="container">
+            <div class="upload-card" id="drop-area">
+                <div class="icon-container">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h3>Drag & Drop or Click to Upload</h3>
+                <p>Supports JPG, PNG, JPEG</p>
+                <input type="file" id="file-input" hidden accept="image/*">
+                <button class="upload-btn" id="upload-btn-trigger">Choose File</button>
+            </div>
+
+            <div class="loader-container" id="loader">
+                <div class="scanner"></div>
+                <p>Analyzing skin texture and pigmentation...</p>
+            </div>
+
+            <div class="result-card" id="result-card">
+                <div class="image-preview" id="image-preview"></div>
+                <div class="result-details">
+                    <span class="badge">Analysis Complete</span>
+                    <h3 id="disease-name">Detected: Eczema</h3>
+
+                    <div class="accuracy-meter">
+                        <div class="meter-label">
+                            <span>Confidence Score</span>
+                            <span id="accuracy-text">94%</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="meter-fill" id="meter-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="recommendation">
+                        <h4><i class="fas fa-user-md"></i> Recommended Action:</h4>
+                        <p>The visual symptoms suggest mild Atopic Dermatitis. It is recommended to consult a
+                            dermatologist for a prescription cream. Avoid scratching the area.</p>
+                    </div>
+
+                    <button class="reset-btn" id="reset-btn" onclick="resetUpload()">
+                        <i class="fas fa-redo"></i> Analyze Another
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="chat-widget-btn" id="chat-widget-btn">
+        <i class="fas fa-robot"></i>
+    </div>
+
+    <div class="chat-box" id="chat-box">
+        <div class="chat-header">
+            <span>SkinCare Assistant</span>
+            <i class="fas fa-times" id="close-chat"></i>
+        </div>
+        <div class="chat-body" id="chat-body">
+            <div class="message bot">
+                <p>Hello! I'm your AI assistant. How can I help you with your skin concerns today?</p>
+            </div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type a message...">
+            <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,479 @@
+/* Color Variables */
+:root {
+    --primary: #0288d1;
+    /* Medical Blue */
+    --accent: #ff4081;
+    /* Alert/Action Color */
+    --dark: #333;
+    --white: #ffffff;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    color: var(--dark);
+    overflow-x: hidden;
+}
+
+/* Navigation */
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 5%;
+    background: var(--white);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+nav ul {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+}
+
+nav a {
+    text-decoration: none;
+    color: var(--dark);
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.btn-nav a {
+    background: var(--primary);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 20px;
+}
+
+/* Hero Section */
+.hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4rem 10%;
+    min-height: 90vh;
+}
+
+.hero-content {
+    flex: 0 0 40%;
+    width: 40%;
+}
+
+.hero-content h1 {
+    font-size: 3.5rem;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+.hero-content h1 span {
+    color: var(--primary);
+}
+
+.cta-button {
+    background: var(--primary);
+    color: white;
+    padding: 1rem 2rem;
+    text-decoration: none;
+    border-radius: 30px;
+    font-weight: 600;
+    display: inline-block;
+    transition: 0.3s;
+    margin-top: 20px;
+}
+
+.cta-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(2, 136, 209, 0.3);
+}
+
+/* Hero Image & Animation */
+.hero-image {
+    position: relative;
+    flex: 0 0 55%;
+    width: 55%;
+}
+
+.hero-image img {
+    width: 100%;
+    height: 450px;
+    object-fit: cover;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+}
+
+.tag {
+    position: absolute;
+    background: white;
+    padding: 0.8rem 1.2rem;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: float 3s ease-in-out infinite;
+}
+
+.tag-1 {
+    top: 20%;
+    left: -20px;
+    color: var(--primary);
+}
+
+.tag-2 {
+    bottom: 20%;
+    right: -20px;
+    color: var(--accent);
+    animation-delay: 1.5s;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Upload Section */
+.upload-section {
+    padding: 4rem 10%;
+    text-align: center;
+    background: white;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 3rem;
+}
+
+.upload-card {
+    border: 3px dashed #ccd;
+    padding: 3rem;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 600px;
+    cursor: pointer;
+    transition: 0.3s;
+    background: #f9f9f9;
+}
+
+.upload-card:hover {
+    border-color: var(--primary);
+    background: #eeffff;
+}
+
+.icon-container {
+    font-size: 4rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+.upload-btn {
+    margin-top: 1rem;
+    padding: 0.8rem 2rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Loader */
+.loader-container {
+    display: none;
+    margin-top: 2rem;
+}
+
+.scanner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Results Card */
+.result-card {
+    display: none;
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 800px;
+    margin-top: 2rem;
+    flex-direction: row;
+    gap: 2rem;
+    text-align: left;
+}
+
+.image-preview {
+    width: 300px;
+    height: 300px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 15px;
+    flex-shrink: 0;
+}
+
+.result-details {
+    flex-grow: 1;
+}
+
+.badge {
+    background: #e0f2f1;
+    color: #00695c;
+    padding: 0.3rem 0.8rem;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.accuracy-meter {
+    margin: 1.5rem 0;
+}
+
+.meter-bar {
+    height: 10px;
+    background: #eee;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.meter-fill {
+    height: 100%;
+    background: var(--primary);
+    width: 0%;
+    transition: width 1s ease;
+}
+
+.btn-analyze-new {
+    background: transparent;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    padding: 10px 25px;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-analyze-new:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* Chatbot */
+.chat-widget-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(2, 136, 209, 0.4);
+    z-index: 1000;
+}
+
+.chat-box {
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    width: 350px;
+    height: 450px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1000;
+}
+
+.chat-header {
+    background: var(--primary);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-body {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    background: #f9f9f9;
+}
+
+.chat-input {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #eee;
+    background: white;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    outline: none;
+}
+
+.chat-input button {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 1.2rem;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.message {
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    max-width: 80%;
+    font-size: 0.9rem;
+}
+
+.message.bot {
+    background: #e0f7fa;
+    align-self: flex-start;
+}
+
+.message.user {
+    background: var(--primary);
+    color: white;
+    align-self: flex-end;
+    margin-left: auto;
+}
+
+@media (max-width: 768px) {
+    nav {
+        flex-direction: column;
+        height: auto;
+        padding: 1rem;
+    }
+
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding-top: 8rem;
+    }
+
+    .hero-content,
+    .hero-image {
+        flex: 0 0 100%;
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+
+    .result-card {
+        flex-direction: column;
+    }
+
+    .image-preview {
+        width: 100%;
+        height: 250px;
+    }
+}
+
+/* --- Glossy Pill Button Style --- */
+.reset-btn {
+    /* Shape & Size */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    /* Space between icon and text */
+    padding: 15px 45px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    margin-top: 20px;
+
+    /* Text Styling - Adapted to match your project font */
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    /* 32px is too big for this card, 1.1rem fits perfectly */
+    color: var(--primary);
+    /* Uses your Medical Blue (#0288d1) */
+
+    /* The Glossy/Gradient Effect */
+    background: linear-gradient(180deg, #ffffff 40%, #e0f7fa 100%);
+
+    /* Shadow for the "Glow" */
+    box-shadow:
+        0px 10px 20px -5px rgba(2, 136, 209, 0.25),
+        /* Outer shadow */
+        inset 0px -4px 8px rgba(2, 136, 209, 0.1);
+    /* Inner shine */
+
+    /* Transitions */
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+/* Hover State */
+.reset-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0px 15px 25px -5px rgba(2, 136, 209, 0.35);
+    background: linear-gradient(180deg, #ffffff 30%, #b3e5fc 100%);
+    /* Slightly darker blue on hover */
+}
+
+/* Active State (Click) */
+.reset-btn:active {
+    transform: scale(0.98);
+    box-shadow: 0px 5px 10px -5px rgba(2, 136, 209, 0.2);
+}

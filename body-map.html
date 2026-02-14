@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anatomical Scan Map - SkinScan AI</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="body-map.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">
+            <i class="fas fa-dna"></i> SkinScan AI
+        </div>
+        <ul>
+            <li><a href="index.html#home">Home</a></li>
+            <li><a href="index.html#upload">Analyze</a></li>
+            <li><a href="index.html#about">Technology</a></li>
+            <li>
+                <!-- Notification Bell -->
+            <li>
+                <button id="notification-btn" title="Notifications"
+                    style="background: none; border: none; color: var(--text-main); font-size: 1.2rem; cursor: pointer; padding: 0.5rem; transition: color 0.3s; position: relative;">
+                    <i class="fas fa-bell"></i>
+                    <span id="notification-badge"
+                        style="position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: none;"></span>
+                </button>
+            </li>
+            <li class="user-menu">
+                <img src="https://ui-avatars.com/api/?name=User&background=0288d1&color=fff" alt="Profile"
+                    class="avatar" id="nav-avatar">
+                <div class="dropdown-content" id="nav-dropdown">
+                    <a href="#" id="nav-profile-link"><i class="fas fa-user-circle"></i> Profile</a>
+                    <a href="#" id="nav-change-password"><i class="fas fa-key"></i> Change Password</a>
+                    <a href="#" id="nav-analysis-toggle" class="has-submenu">
+                        <i class="fas fa-chart-line"></i> Analysis
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
+                    </a>
+                    <div class="submenu" id="analysis-submenu">
+                        <a href="report.html" class="submenu-item"><i class="fas fa-file-medical-alt"></i> Scan
+                            Report</a>
+                        <a href="body-map.html" class="submenu-item"><i class="fas fa-user-injured"></i> Body Map</a>
+                        <a href="body-map.html" class="submenu-item"><i class="fas fa-history"></i> Scan History</a>
+                    </div>
+                    <a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Body Map Container -->
+    <div class="body-map-container">
+
+        <!-- Header Section -->
+        <div class="body-map-header">
+            <div class="header-content">
+                <div class="page-title">
+                    <div class="title-icon">
+                        <i class="fas fa-user-injured"></i>
+                    </div>
+                    <div>
+                        <h1>Anatomical Scan Map</h1>
+                        <p class="subtitle">Interactive visualization of dermatological assessments by body region</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-microscope"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="totalScans">0</span>
+                        <span class="stat-label">Total Scans</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="locationsScanned">0</span>
+                        <span class="stat-label">Body Regions</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="recentScans">0</span>
+                        <span class="stat-label">Last 30 Days</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="body-map-content">
+
+            <!-- Left Panel: Body Diagram -->
+            <div class="diagram-panel">
+                <div class="panel-header">
+                    <h2>Anatomical Model</h2>
+                    <p class="help-text">
+                        <i class="fas fa-info-circle"></i>
+                        Click on any highlighted region to filter scans
+                    </p>
+                </div>
+
+                <div class="body-diagram">
+                    <!-- Front View -->
+                    <div class="body-view">
+                        <div class="view-header">
+                            <span class="view-badge">Anterior</span>
+                        </div>
+                        <svg viewBox="0 0 200 450" class="body-svg">
+                            <!-- Face -->
+                            <ellipse cx="100" cy="45" rx="32" ry="38" class="body-part" data-location="Face" />
+                            <text x="100" y="50" class="body-label">Face</text>
+
+                            <!-- Neck -->
+                            <rect x="82" y="80" width="36" height="25" rx="3" class="body-part" data-location="Neck" />
+                            <text x="100" y="95" class="body-label small">Neck</text>
+
+                            <!-- Chest -->
+                            <rect x="68" y="105" width="64" height="55" rx="4" class="body-part"
+                                data-location="Chest / Breast" />
+                            <text x="100" y="135" class="body-label">Chest / Breast</text>
+
+                            <!-- Abdomen -->
+                            <rect x="72" y="160" width="56" height="50" rx="4" class="body-part"
+                                data-location="Abdomen" />
+                            <text x="100" y="188" class="body-label">Abdomen</text>
+
+                            <!-- Left Shoulder & Arm -->
+                            <ellipse cx="55" cy="115" rx="18" ry="14" class="body-part" data-location="Left Shoulder" />
+                            <rect x="38" y="128" width="20" height="70" rx="10" class="body-part"
+                                data-location="Left Arm" />
+                            <text x="48" y="168" class="body-label small">L Arm</text>
+                            <rect x="35" y="198" width="24" height="55" rx="3" class="body-part"
+                                data-location="Left Hand" />
+
+                            <!-- Right Shoulder & Arm -->
+                            <ellipse cx="145" cy="115" rx="18" ry="14" class="body-part"
+                                data-location="Right Shoulder" />
+                            <rect x="142" y="128" width="20" height="70" rx="10" class="body-part"
+                                data-location="Right Arm" />
+                            <text x="152" y="168" class="body-label small">R Arm</text>
+                            <rect x="141" y="198" width="24" height="55" rx="3" class="body-part"
+                                data-location="Right Hand" />
+
+                            <!-- Pelvis/Groin -->
+                            <rect x="75" y="210" width="50" height="25" rx="3" class="body-part"
+                                data-location="Groin" />
+
+                            <!-- Left Leg -->
+                            <rect x="74" y="235" width="22" height="90" rx="11" class="body-part"
+                                data-location="Left Leg" />
+                            <text x="85" y="285" class="body-label small">L Leg</text>
+                            <rect x="71" y="325" width="28" height="50" rx="3" class="body-part"
+                                data-location="Left Foot" />
+
+                            <!-- Right Leg -->
+                            <rect x="104" y="235" width="22" height="90" rx="11" class="body-part"
+                                data-location="Right Leg" />
+                            <text x="115" y="285" class="body-label small">R Leg</text>
+                            <rect x="101" y="325" width="28" height="50" rx="3" class="body-part"
+                                data-location="Right Foot" />
+                        </svg>
+                    </div>
+
+                    <!-- Back View -->
+                    <div class="body-view">
+                        <div class="view-header">
+                            <span class="view-badge">Posterior</span>
+                        </div>
+                        <svg viewBox="0 0 200 450" class="body-svg">
+                            <!-- Scalp (Back) -->
+                            <ellipse cx="100" cy="45" rx="32" ry="38" class="body-part" data-location="Scalp" />
+                            <text x="100" y="50" class="body-label">Scalp</text>
+
+                            <!-- Neck (Back) -->
+                            <rect x="82" y="80" width="36" height="25" rx="3" class="body-part"
+                                data-location="Neck (Back)" />
+
+                            <!-- Upper Back -->
+                            <rect x="68" y="105" width="64" height="55" rx="4" class="body-part"
+                                data-location="Upper Back" />
+                            <text x="100" y="135" class="body-label">Upper Back</text>
+
+                            <!-- Lower Back -->
+                            <rect x="72" y="160" width="56" height="50" rx="4" class="body-part"
+                                data-location="Lower Back" />
+                            <text x="100" y="188" class="body-label">Lower Back</text>
+
+                            <!-- Shoulders & Arms (Back) -->
+                            <ellipse cx="55" cy="115" rx="18" ry="14" class="body-part"
+                                data-location="Left Shoulder (Back)" />
+                            <rect x="38" y="128" width="20" height="70" rx="10" class="body-part"
+                                data-location="Left Arm (Back)" />
+
+                            <ellipse cx="145" cy="115" rx="18" ry="14" class="body-part"
+                                data-location="Right Shoulder (Back)" />
+                            <rect x="142" y="128" width="20" height="70" rx="10" class="body-part"
+                                data-location="Right Arm (Back)" />
+
+                            <!-- Buttocks -->
+                            <rect x="75" y="210" width="50" height="25" rx="3" class="body-part"
+                                data-location="Buttocks" />
+
+                            <!-- Legs (Back) -->
+                            <rect x="74" y="235" width="22" height="90" rx="11" class="body-part"
+                                data-location="Left Leg (Back)" />
+                            <rect x="104" y="235" width="22" height="90" rx="11" class="body-part"
+                                data-location="Right Leg (Back)" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="diagram-legend">
+                    <div class="legend-item">
+                        <div class="legend-dot has-scans"></div>
+                        <span>Regions with scans</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot no-scans"></div>
+                        <span>No scans recorded</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Scan Results -->
+            <div class="results-panel">
+                <div class="results-header">
+                    <div class="results-title">
+                        <h2 id="selectedLocation">All Scans</h2>
+                        <span class="results-count" id="resultsCount">(0)</span>
+                    </div>
+                    <div class="results-actions">
+                        <button class="btn-filter" id="clearFilter" style="display: none;">
+                            <i class="fas fa-times-circle"></i>
+                            Clear Filter
+                        </button>
+                        <button class="btn-export" id="exportBtn">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Sort -->
+                <div class="results-controls">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Search scans by title or disease">
+                    </div>
+                    <div class="filter-select">
+                        <div class="disease-filter-dropdown">
+                            <button class="disease-filter-btn" id="diseaseFilterBtn"
+                                onclick="toggleDiseaseFilter(event)">
+                                <i class="fas fa-filter"></i>
+                                <span id="diseaseFilterLabel">All Diseases</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="disease-filter-menu" id="diseaseFilterMenu">
+                                <div class="disease-filter-header">
+                                    <span>Filter by Disease</span>
+                                    <button class="clear-diseases-btn" id="clearDiseasesBtn">Clear All</button>
+                                </div>
+                                <div class="disease-filter-options">
+                                    <label class="disease-option">
+                                        <input type="checkbox" value="Acne" class="disease-checkbox">
+                                        <span>Acne</span>
+                                    </label>
+                                    <label class="disease-option">
+                                        <input type="checkbox" value="Eczema" class="disease-checkbox">
+                                        <span>Eczema</span>
+                                    </label>
+                                    <label class="disease-option">
+                                        <input type="checkbox" value="Melanoma" class="disease-checkbox">
+                                        <span>Melanoma</span>
+                                    </label>
+                                    <label class="disease-option">
+                                        <input type="checkbox" value="Psoriasis" class="disease-checkbox">
+                                        <span>Psoriasis</span>
+                                    </label>
+                                    <label class="disease-option">
+                                        <input type="checkbox" value="Rosacea" class="disease-checkbox">
+                                        <span>Rosacea</span>
+                                    </label>
+                                    <label class="disease-option">
+                                        <input type="checkbox" value="Fungal Infection" class="disease-checkbox">
+                                        <span>Fungal Infection</span>
+                                    </label>
+                                    <label class="disease-option">
+                                        <input type="checkbox" value="Vitiligo" class="disease-checkbox">
+                                        <span>Vitiligo</span>
+                                    </label>
+                                    <label class="disease-option">
+                                        <input type="checkbox" value="Warts" class="disease-checkbox">
+                                        <span>Warts</span>
+                                    </label>
+                                    <label class="disease-option">
+                                        <input type="checkbox" value="Dermatitis" class="disease-checkbox">
+                                        <span>Dermatitis</span>
+                                    </label>
+                                    <label class="disease-option">
+                                        <input type="checkbox" value="Skin Cancer" class="disease-checkbox">
+                                        <span>Skin Cancer</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sort-select">
+                        <select id="sortSelect">
+                            <option value="date-desc">Most Recent</option>
+                            <option value="date-asc">Oldest First</option>
+                            <option value="confidence-desc">Highest Confidence</option>
+                            <option value="confidence-asc">Lowest Confidence</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">
+                        <i class="fas fa-hand-pointer"></i>
+                    </div>
+                    <h3>No Scans Available</h3>
+                    <p>Select a body region from the anatomical model to view related scans</p>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-state" id="loadingState" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Loading scan data...</p>
+                </div>
+
+                <!-- Scan Cards Grid -->
+                <div class="scan-grid" id="scanGrid">
+                    <!-- Scan cards will be dynamically inserted here -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Tooltip (dynamically positioned) -->
+    <div class="body-tooltip" id="bodyTooltip" style="display: none;">
+        <div class="tooltip-content">
+            <strong class="tooltip-title"></strong>
+            <span class="tooltip-count"></span>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profile-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-circle"></i> My Profile</h2>
+                <span class="modal-close" id="close-profile-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="profile-form">
+                    <!-- Avatar Section -->
+                    <div class="profile-avatar-section">
+                        <div class="avatar-upload-container">
+                            <img src="https://ui-avatars.com/api/?name=User&background=0288d1&color=fff"
+                                alt="User Avatar" class="profile-avatar-large" id="profile-avatar-large">
+                            <label for="avatar-input" class="upload-overlay">
+                                <i class="fas fa-camera"></i>
+                            </label>
+                            <input type="file" id="avatar-input" hidden accept="image/*">
+                        </div>
+                        <div class="profile-info">
+                            <h3 id="display-name">Loading...</h3>
+                            <p id="display-email">loading...</p>
+                        </div>
+                    </div>
+
+                    <!-- Personal Details -->
+                    <h3 class="section-header"><i class="fas fa-user"></i> Personal Details</h3>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>First Name <span style="color: red;">*</span></label>
+                            <input type="text" id="first-name" placeholder="First Name">
+                        </div>
+                        <div class="input-group">
+                            <label>Last Name <span style="color: red;">*</span></label>
+                            <input type="text" id="last-name" placeholder="Last Name">
+                        </div>
+                        <div class="input-group">
+                            <label>Email Address</label>
+                            <input type="email" id="email" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label>Phone Number <span style="color: red;">*</span></label>
+                            <input type="tel" id="phone" placeholder="+1 234 567 8900">
+                        </div>
+                        <div class="input-group">
+                            <label>Date of Birth <span style="color: red;">*</span></label>
+                            <input type="date" id="dob">
+                        </div>
+                        <div class="input-group">
+                            <label>Gender <span style="color: red;">*</span></label>
+                            <select id="gender">
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <h3 class="section-header"><i class="fas fa-map-marker-alt"></i> Location</h3>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Country</label>
+                            <input type="text" id="country" placeholder="Country">
+                        </div>
+                        <div class="input-group full-width">
+                            <label>Address</label>
+                            <textarea id="address" rows="3" placeholder="Enter your full address"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Medical Profile -->
+                    <h3 class="section-header"><i class="fas fa-notes-medical"></i> Medical Profile</h3>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Skin Type</label>
+                            <select id="skin-type">
+                                <option value="">Select Skin Type</option>
+                                <option value="Normal">Normal</option>
+                                <option value="Oily">Oily</option>
+                                <option value="Dry">Dry</option>
+                                <option value="Combination">Combination</option>
+                                <option value="Sensitive">Sensitive</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Skin Tone</label>
+                            <select id="skin-tone">
+                                <option value="">Select Skin Tone</option>
+                                <option value="Type I">Type I (Pale White)</option>
+                                <option value="Type II">Type II (White)</option>
+                                <option value="Type III">Type III (Cream White)</option>
+                                <option value="Type IV">Type IV (Moderate Brown)</option>
+                                <option value="Type V">Type V (Dark Brown)</option>
+                                <option value="Type VI">Type VI (Deep Black)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn-submit" id="btn-save-profile">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal" id="password-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-key"></i> Change Password</h2>
+                <span class="modal-close" id="close-password-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="password-form">
+                    <div class="input-group">
+                        <label>Current Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="old-password" placeholder="••••••••" required>
+                            <i class="fas fa-eye toggle-password" data-target="old-password"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>New Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="new-password" placeholder="••••••••" required minlength="8">
+                            <i class="fas fa-eye toggle-password" data-target="new-password"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Confirm Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="confirm-password" placeholder="••••••••" required minlength="8">
+                            <i class="fas fa-eye toggle-password" data-target="confirm-password"></i>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn-submit" id="btn-update-password">Update Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

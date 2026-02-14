@@ -1,0 +1,58 @@
+# CONVERSATION EXPORT: SkinScan AI Redesign
+Date: February 12, 2026
+Status: Phase 0 Complete (Cleanup), Ready for Phase 1 (Supabase Setup)
+
+## 1. Initial Request
+User wanted to redesign the SkinScan project, moving away from local MySQL/SQLite to a robust cloud architecture with Supabase (PostgreSQL).
+
+## 2. Key Decisions & Architecture Changes
+- **Database**: Switched from MySQL (`mysqlclient`) to Supabase (`psycopg2-binary`).
+- **AI Engine**: Switched from TensorFlow/Keras (`.h5`) to PyTorch (`.pth`) to support the user's Kaggle model.
+- **Features Dropped**: "Skin Tone Awareness" was removed from the scope.
+- **New Features Added**:
+  1. Scan Comparison (Side-by-side)
+  2. PDF Report Export
+  3. PWA (Progressive Web App)
+  4. Email Verification + 2FA
+  5. Smarter Chatbot (Gemini API)
+  6. Per-User Analytics Dashboard
+  7. Body Map (SVG interactive)
+  8. Disease Info Cards (JSON data)
+
+## 3. Actions Taken (Session Log)
+
+### A. Planning Phase
+- Created `implementation_plan.md` detailing the new 5-table schema (Users, SkinImages, PredictionResults, ChatHistory, ScanHistory).
+- Created `task.md` checklist.
+- **Checkpoint**: Created a full project backup at `d:\Project\FIREBASE\_CHECKPOINT`.
+
+### B. Cleanup Phase (Step 0) - COMPLETED
+- **Settings**: Removed `mysql` configuration from `settings.py`. Added proper `sqlite3` fallback for dev (until Supabase is linked).
+- **Dependencies**: Removed `mysqlclient` and `pymysql` from `requirements.txt` and `__init__.py`.
+- **Codebase**:
+  - `authentication/models.py`: DELETED (Empty file).
+  - `authentication/views.py`: Refactored to remove DB calls (Mock responses).
+  - `prediction/models.py`: DELETED (Empty file).
+  - `prediction/views.py`: Refactored to use In-Memory storage (Mock) for testing.
+  - `chatbot/models.py`: DELETED (Empty file).
+  - `chatbot/views.py`: Refactored to remove DB saves.
+- **Verification**: Ran `test_db.py` to confirm `psycopg2` can connect to the Supabase URL provided by the user. Connection was **SUCCESSFUL**.
+
+## 4. Current State
+- The project is in a "Clean State". Legacy code is gone.
+- `psycopg2-binary` is installed.
+- Supabase credentials are valid.
+- The next immediate step is **Phase 1: Step 1**.
+
+## 5. How to Continue (For the Next Session)
+1. **Initialize Supabase**:
+   - Update `settings.py` with the Supabase `DATABASES` config (PostgreSQL).
+   - Run `python manage.py makemigrations` and `python manage.py migrate`.
+2. **Restore Models**:
+   - Re-implement the new schema in `authentication/models.py`, `prediction/models.py`, etc.
+3. **Follow the Plan**:
+   - Refer to `EXPORT_implementation_plan.md` for the exact schema fields.
+   - Refer to `EXPORT_task.md` for the checklist.
+
+## 6. Credentials (Saved)
+- Supabase Connection: `postgresql://postgres.nrxvqbtjtszlunmyulot:Amorjoe%232026@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres`
