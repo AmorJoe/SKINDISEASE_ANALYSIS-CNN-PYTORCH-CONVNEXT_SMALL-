@@ -1,0 +1,52 @@
+--- Debug Log ---
+Starting debug...
+API Key: ...1KZY
+
+Testing: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+Status: 404
+❌ Failed Status: 404
+❌ Error JSON: {
+  "error": {
+    "code": 404,
+    "message": "models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",
+    "status": "NOT_FOUND"
+  }
+}
+
+Testing: https://generativelanguage.googleapis.com/v1beta/gemini-1.5-flash:generateContent
+Status: 404
+❌ Failed Status: 404
+❌ Error Text: 
+
+Testing: https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent
+Status: 404
+❌ Failed Status: 404
+❌ Error JSON: {
+  "error": {
+    "code": 404,
+    "message": "models/gemini-1.5-flash is not found for API version v1, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",
+    "status": "NOT_FOUND"
+  }
+}
+
+Testing: https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent
+Status: 404
+❌ Failed Status: 404
+❌ Error JSON: {
+  "error": {
+    "code": 404,
+    "message": "models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",
+    "status": "NOT_FOUND"
+  }
+}
+
+Testing: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent
+Status: 404
+❌ Failed Status: 404
+❌ Error JSON: {
+  "error": {
+    "code": 404,
+    "message": "models/gemini-1.0-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",
+    "status": "NOT_FOUND"
+  }
+}

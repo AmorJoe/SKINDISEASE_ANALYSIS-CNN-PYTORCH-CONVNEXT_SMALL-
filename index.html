@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkinScan AI - Dashboard</title>
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=6">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -47,7 +47,8 @@
                         <a href="report.html" class="submenu-item"><i class="fas fa-file-medical-alt"></i> Scan
                             Report</a>
                         <a href="body-map.html" class="submenu-item"><i class="fas fa-user-injured"></i> Body Map</a>
-                        <a href="body-map.html" class="submenu-item"><i class="fas fa-history"></i> Scan History</a>
+                        <a href="disease-info.html" class="submenu-item"><i class="fas fa-book-medical"></i> Disease
+                            Info</a>
                     </div>
                     <!-- === ANALYSIS DROPDOWN END === -->
                     <a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -191,16 +192,27 @@
 
     <div class="chat-box" id="chat-box">
         <div class="chat-header">
-            <span>SkinCare Assistant</span>
-            <i class="fas fa-times" id="close-chat"></i>
+            <div class="chat-header-info">
+                <div class="chat-avatar">
+                    <i class="fas fa-robot"></i>
+                    <span class="status-dot"></span>
+                </div>
+                <div class="chat-header-text">
+                    <span class="chat-header-name">SkinCare Assistant</span>
+                    <span class="chat-header-status">Online • AI Powered</span>
+                </div>
+            </div>
+            <button class="chat-close-btn" id="close-chat">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
         <div class="chat-body" id="chat-body">
             <div class="message bot">
-                <p>Hello! I'm your AI assistant. How can I help you with your skin concerns today?</p>
+                Hello! I'm your AI assistant. How can I help you with your skin concerns today?
             </div>
         </div>
         <div class="chat-input">
-            <input type="text" id="user-input" placeholder="Type a message...">
+            <input type="text" id="user-input" placeholder="Ask me anything about skin health...">
             <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>

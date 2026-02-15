@@ -225,3 +225,8 @@ LOGGING = {
         },
     },
 }
+
+# GOOGLE GEMINI AI SETTINGS
+GOOGLE_API_KEY = config('GOOGLE_API_KEY', default=None)
+GEMINI_MODEL_NAME = config('GEMINI_MODEL_NAME', default='gemini-2.5-flash')
+

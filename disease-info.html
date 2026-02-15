@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disease Info - SkinScan AI</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .disease-container {
+            max-width: 1000px;
+            margin: 100px auto;
+            padding: 2rem;
+        }
+
+        .disease-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .disease-card {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .disease-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .disease-card h3 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .disease-card p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            opacity: 0.8;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="logo">
+            <i class="fas fa-dna"></i> SkinScan AI
+        </div>
+        <ul>
+            <li><a href="index.html#home">Home</a></li>
+            <li><a href="index.html#upload">Analyze</a></li>
+            <li><a href="body-map.html">Back to Dashboard</a></li>
+        </ul>
+    </nav>
+
+    <div class="disease-container">
+        <h1>Skin Conditions Library</h1>
+        <p>Learn more about common skin conditions and how to manage them.</p>
+
+        <div class="disease-grid">
+            <div class="disease-card">
+                <h3><i class="fas fa-dot-circle"></i> Acne</h3>
+                <p>A common skin condition that happens when hair follicles under the skin become clogged. Sebum and
+                    dead skin cells plug the pores, and outbreaks of lesions (often called pimples or zits) can happen.
+                </p>
+            </div>
+            <div class="disease-card">
+                <h3><i class="fas fa-water"></i> Eczema</h3>
+                <p>Also known as atopic dermatitis, this condition makes your skin red and itchy. It's common in
+                    children but can occur at any age. It's long-lasting (chronic) and tends to flare periodically.</p>
+            </div>
+            <div class="disease-card">
+                <h3><i class="fas fa-exclamation-triangle"></i> Melanoma</h3>
+                <p>The most serious type of skin cancer, develops in the cells (melanocytes) that produce melanin — the
+                    pigment that gives your skin its color. Early detection is critical for successful treatment.</p>
+            </div>
+            <div class="disease-card">
+                <h3><i class="fas fa-leaf"></i> Psoriasis</h3>
+                <p>A skin disease that causes red, itchy scaly patches, most commonly on the knees, elbows, trunk and
+                    scalp. It's a common, long-term (chronic) disease with no cure.</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -135,7 +135,7 @@ function initDashboardPage() {
 
     // Chat elements
     const chatWidgetBtn = document.querySelector('.chat-widget-btn');
-    const closeChatBtn = document.querySelector('.chat-header .fa-times');
+    const closeChatBtn = document.getElementById('close-chat');
     const sendChatBtn = document.querySelector('.chat-input button');
     const userInput = document.getElementById('user-input');
 
@@ -366,10 +366,26 @@ async function sendMessage() {
 
     // Show typing indicator
     const typingMsg = document.createElement('div');
-    typingMsg.classList.add('message', 'bot', 'typing');
-    typingMsg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Typing...';
+    typingMsg.classList.add('typing-indicator'); // Use specific class, not generic message
+    typingMsg.innerHTML = `
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+    `;
     chatBody.appendChild(typingMsg);
     chatBody.scrollTop = chatBody.scrollHeight;
+
+    // Retrieve Context from LocalStorage
+    const scanResult = localStorage.getItem('latest_scan_result');
+    let context = "";
+    if (scanResult) {
+        try {
+            const prediction = JSON.parse(scanResult);
+            context = `User's latest image scan detected: ${prediction.disease_name} with ${prediction.confidence}% confidence.`;
+        } catch (e) {
+            console.error("Error parsing scan result for context", e);
+        }
+    }
 
     try {
         // Send to Django backend
@@ -380,7 +396,8 @@ async function sendMessage() {
                 'Authorization': `Bearer ${getAuthToken()}`
             },
             body: JSON.stringify({
-                message: message
+                message: message,
+                context: context // Send context separately
             })
         });
 
@@ -389,24 +406,57 @@ async function sendMessage() {
 
         const data = await response.json();
 
+        // Helper to format bot messages (Links, Bold, Newlines)
+        function formatMessage(text) {
+            // 1. Escape HTML (prevent XSS)
+            let safeText = text.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+
+            // 2. Bold (**text**)
+            safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // 3. Markdown links [text](url) — must run BEFORE raw URL detection
+            safeText = safeText.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function (match, linkText, url) {
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+            });
+
+            // 4. Raw URLs — split by existing <a> tags so we don't double-link
+            const parts = safeText.split(/(<a\s[^>]*>.*?<\/a>)/g);
+            safeText = parts.map(part => {
+                if (part.startsWith('<a ')) return part; // Already a link, skip
+                return part.replace(/(https?:\/\/[^\s<]+)/g, function (url) {
+                    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+                });
+            }).join('');
+
+            // 5. Newlines to <br>
+            return safeText.replace(/\n/g, '<br>');
+        }
+
+        // ... inside sendMessage ...
         if (data.status === 'success') {
             // Bot Response
             const botMsg = document.createElement('div');
             botMsg.classList.add('message', 'bot');
-            botMsg.innerText = data.data.bot_message;
+            botMsg.innerHTML = formatMessage(data.data.bot_message); // Use innerHTML with formatting
             chatBody.appendChild(botMsg);
-            chatBody.scrollTop = chatBody.scrollHeight;
-        } else if (response.status === 401) {
-            // Token expired
+            // Scroll to the top of the new message (User Request)
+            botMsg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (response.status === 401 || response.status === 403) {
+            // Token expired or not authenticated
             const botMsg = document.createElement('div');
             botMsg.classList.add('message', 'bot');
             botMsg.innerText = "Session expired. Please log in again.";
             chatBody.appendChild(botMsg);
         } else {
             // Error handling
+            console.error('Chatbot error response:', response.status, data);
             const botMsg = document.createElement('div');
             botMsg.classList.add('message', 'bot');
-            botMsg.innerText = "Sorry, I couldn't process that. Please try again.";
+            botMsg.innerText = data.message || "Sorry, I couldn't process that. Please try again.";
             chatBody.appendChild(botMsg);
         }
     } catch (error) {
@@ -428,7 +478,8 @@ async function sendMessage() {
         }
 
         chatBody.appendChild(botMsg);
-        chatBody.scrollTop = chatBody.scrollHeight;
+        // Scroll to the top of the new message
+        botMsg.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
 
