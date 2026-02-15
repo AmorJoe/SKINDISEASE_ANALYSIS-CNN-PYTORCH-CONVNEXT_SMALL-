@@ -28,6 +28,7 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s;
+            border-left: 5px solid var(--accent);
         }
 
         .disease-card:hover {
@@ -40,6 +41,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 1.2rem;
         }
 
         .disease-card p {
@@ -47,6 +49,17 @@
             line-height: 1.6;
             color: var(--text-main);
             opacity: 0.8;
+        }
+
+        .disease-card .category-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: rgba(2, 136, 209, 0.1);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+            font-weight: 600;
         }
     </style>
 </head>
@@ -65,29 +78,88 @@
 
     <div class="disease-container">
         <h1>Skin Conditions Library</h1>
-        <p>Learn more about common skin conditions and how to manage them.</p>
+        <p>Comprehensive guide to dermatological conditions supported by our AI model.</p>
 
         <div class="disease-grid">
+            <!-- 1. Eczema -->
             <div class="disease-card">
-                <h3><i class="fas fa-dot-circle"></i> Acne</h3>
-                <p>A common skin condition that happens when hair follicles under the skin become clogged. Sebum and
-                    dead skin cells plug the pores, and outbreaks of lesions (often called pimples or zits) can happen.
+                <span class="category-badge">Inflammatory</span>
+                <h3><i class="fas fa-water"></i> Eczema</h3>
+                <p>A condition that makes your skin red and itchy. Also known as atopic dermatitis, it's common in
+                    children but can occur at any age. It's chronic and tends to flare periodically.</p>
+            </div>
+
+            <!-- 2. Melanoma -->
+            <div class="disease-card" style="border-left-color: #ef4444;">
+                <span class="category-badge">Malignant</span>
+                <h3><i class="fas fa-exclamation-triangle"></i> Melanoma</h3>
+                <p>The most serious type of skin cancer. It develops in the cells (melanocytes) that produce melanin.
+                    Early awareness of the ABCDE rules (Asymmetry, Border, Color, Diameter, Evolving) is vital.</p>
+            </div>
+
+            <!-- 3. Atopic Dermatitis -->
+            <div class="disease-card">
+                <span class="category-badge">Chronic</span>
+                <h3><i class="fas fa-hand-holding-medical"></i> Atopic Dermatitis</h3>
+                <p>The most common form of eczema. It's a condition that causes dry, itchy and inflamed skin. It often
+                    starts in childhood and can be associated with asthma or hay fever.</p>
+            </div>
+
+            <!-- 4. Basal Cell Carcinoma (BCC) -->
+            <div class="disease-card" style="border-left-color: #f59e0b;">
+                <span class="category-badge">Skin Cancer</span>
+                <h3><i class="fas fa-microscope"></i> Basal Cell Carcinoma</h3>
+                <p>A type of skin cancer that begins in the basal cells. It often appears as a slightly transparent bump
+                    on the skin, though it can take other forms. It usually occurs on sun-exposed areas.</p>
+            </div>
+
+            <!-- 5. Melanocytic Nevi (moles) -->
+            <div class="disease-card">
+                <span class="category-badge">Benign</span>
+                <h3><i class="fas fa-circle"></i> Melanocytic Nevi</h3>
+                <p>Commonly known as moles, these are clusters of pigmented cells. Most are harmless, but monitoring
+                    them for changes in size, shape, or color is important for early skin cancer detection.</p>
+            </div>
+
+            <!-- 6. Benign Keratosis-like Lesions (BKL) -->
+            <div class="disease-card">
+                <span class="category-badge">Benign</span>
+                <h3><i class="fas fa-shield-virus"></i> Keratosis-like Lesions</h3>
+                <p>A category of benign lesions that include seborrheic keratoses, solar lentigines, and
+                    lichen-planus-like keratoses. These are non-cancerous but can sometimes resemble other conditions.
                 </p>
             </div>
+
+            <!-- 7. Psoriasis & Lichen Planus group -->
             <div class="disease-card">
-                <h3><i class="fas fa-water"></i> Eczema</h3>
-                <p>Also known as atopic dermatitis, this condition makes your skin red and itchy. It's common in
-                    children but can occur at any age. It's long-lasting (chronic) and tends to flare periodically.</p>
+                <span class="category-badge">Autoimmune</span>
+                <h3><i class="fas fa-leaf"></i> Psoriasis & Lichen</h3>
+                <p>Psoriasis causes scaly patches, most commonly on knees and elbows. Lichen planus can cause swelling
+                    and irritation in the skin, hair, nails and mucous membranes.</p>
             </div>
+
+            <!-- 8. Seborrheic Keratoses -->
             <div class="disease-card">
-                <h3><i class="fas fa-exclamation-triangle"></i> Melanoma</h3>
-                <p>The most serious type of skin cancer, develops in the cells (melanocytes) that produce melanin — the
-                    pigment that gives your skin its color. Early detection is critical for successful treatment.</p>
+                <span class="category-badge">Benign Growth</span>
+                <h3><i class="fas fa-sun"></i> Seborrheic Keratoses</h3>
+                <p>One of the most common noncancerous skin growths in older adults. It usually appears as a brown,
+                    black or light tan growth on the face, chest, shoulders or back.</p>
             </div>
-            <div class="disease-card">
-                <h3><i class="fas fa-leaf"></i> Psoriasis</h3>
-                <p>A skin disease that causes red, itchy scaly patches, most commonly on the knees, elbows, trunk and
-                    scalp. It's a common, long-term (chronic) disease with no cure.</p>
+
+            <!-- 9. Tinea / Ringworm / Candidiasis -->
+            <div class="disease-card" style="border-left-color: #10b981;">
+                <span class="category-badge">Fungal</span>
+                <h3><i class="fas fa-bacteria"></i> Fungal Infections</h3>
+                <p>Conditions caused by fungi, including Tinea (Ringworm) and Candidiasis. These often present as itchy,
+                    red, circular rashes or white patches in moist areas of the body.</p>
+            </div>
+
+            <!-- 10. Warts / Molluscum / Viral -->
+            <div class="disease-card" style="border-left-color: #8b5cf6;">
+                <span class="category-badge">Viral</span>
+                <h3><i class="fas fa-virus"></i> Viral Infections</h3>
+                <p>Includes common warts, molluscum contagiosum, and other viral skin conditions. These are caused by
+                    viruses like HPV and are often contagious through skin-to-skin contact.</p>
             </div>
         </div>
     </div>
