@@ -65,14 +65,47 @@
 </head>
 
 <body>
-    <nav>
+    <nav class="auth-protected">
         <div class="logo">
             <i class="fas fa-dna"></i> SkinScan AI
         </div>
         <ul>
             <li><a href="index.html#home">Home</a></li>
             <li><a href="index.html#upload">Analyze</a></li>
-            <li><a href="body-map.html">Back to Dashboard</a></li>
+            <li><a href="index.html#about">Technology</a></li>
+            <!-- Theme Toggle -->
+            <!-- Notification Bell -->
+            <li>
+                <button id="notification-btn" title="Notifications"
+                    style="background: none; border: none; color: var(--text-main); font-size: 1.2rem; cursor: pointer; padding: 0.5rem; transition: color 0.3s; position: relative;">
+                    <i class="fas fa-bell"></i>
+                    <span id="notification-badge"
+                        style="position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: none;"></span>
+                </button>
+            </li>
+            <!-- Avatar Dropdown -->
+            <li class="user-menu">
+                <img src="https://ui-avatars.com/api/?name=User&background=0288d1&color=fff" alt="Profile"
+                    class="avatar" id="nav-avatar">
+                <div class="dropdown-content" id="nav-dropdown">
+                    <a href="#" id="nav-profile-link"><i class="fas fa-user-circle"></i> Profile</a>
+                    <a href="#" id="nav-change-password"><i class="fas fa-key"></i> Change Password</a>
+                    <!-- === ANALYSIS DROPDOWN START === -->
+                    <a href="#" id="nav-analysis-toggle" class="has-submenu">
+                        <i class="fas fa-chart-line"></i> Analysis
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
+                    </a>
+                    <div class="submenu" id="analysis-submenu">
+                        <a href="report.html" class="submenu-item"><i class="fas fa-file-medical-alt"></i> Scan
+                            Report</a>
+                        <a href="body-map.html" class="submenu-item"><i class="fas fa-user-injured"></i> Body Map</a>
+                        <a href="disease-info.html" class="submenu-item"><i class="fas fa-book-medical"></i> Disease
+                            Info</a>
+                    </div>
+                    <!-- === ANALYSIS DROPDOWN END === -->
+                    <a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </li>
         </ul>
     </nav>
 
@@ -163,6 +196,154 @@
             </div>
         </div>
     </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profile-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-circle"></i> My Profile</h2>
+                <span class="modal-close" id="close-profile-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="profile-form">
+                    <!-- Avatar Section -->
+                    <div class="profile-avatar-section">
+                        <div class="avatar-upload-container">
+                            <img src="https://ui-avatars.com/api/?name=User&background=0288d1&color=fff"
+                                alt="User Avatar" class="profile-avatar-large" id="profile-avatar-large">
+                            <label for="avatar-input" class="upload-overlay">
+                                <i class="fas fa-camera"></i>
+                            </label>
+                            <input type="file" id="avatar-input" hidden accept="image/*">
+                        </div>
+                        <div class="profile-info">
+                            <h3 id="display-name">Loading...</h3>
+                            <p id="display-email">loading...</p>
+                        </div>
+                    </div>
+
+                    <!-- Personal Details -->
+                    <h3 class="section-header"><i class="fas fa-user"></i> Personal Details</h3>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>First Name <span style="color: red;">*</span></label>
+                            <input type="text" id="first-name" placeholder="First Name">
+                        </div>
+                        <div class="input-group">
+                            <label>Last Name <span style="color: red;">*</span></label>
+                            <input type="text" id="last-name" placeholder="Last Name">
+                        </div>
+                        <div class="input-group">
+                            <label>Email Address</label>
+                            <input type="email" id="email" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label>Phone Number <span style="color: red;">*</span></label>
+                            <input type="tel" id="phone" placeholder="+1 234 567 8900">
+                        </div>
+                        <div class="input-group">
+                            <label>Date of Birth <span style="color: red;">*</span></label>
+                            <input type="date" id="dob">
+                        </div>
+                        <div class="input-group">
+                            <label>Gender <span style="color: red;">*</span></label>
+                            <select id="gender">
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <h3 class="section-header"><i class="fas fa-map-marker-alt"></i> Location</h3>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Country</label>
+                            <input type="text" id="country" placeholder="Country">
+                        </div>
+                        <div class="input-group full-width">
+                            <label>Address</label>
+                            <textarea id="address" rows="3" placeholder="Enter your full address"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Medical Profile -->
+                    <h3 class="section-header"><i class="fas fa-notes-medical"></i> Medical Profile</h3>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Skin Type</label>
+                            <select id="skin-type">
+                                <option value="">Select Skin Type</option>
+                                <option value="Normal">Normal</option>
+                                <option value="Oily">Oily</option>
+                                <option value="Dry">Dry</option>
+                                <option value="Combination">Combination</option>
+                                <option value="Sensitive">Sensitive</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Skin Tone</label>
+                            <select id="skin-tone">
+                                <option value="">Select Skin Tone</option>
+                                <option value="Type I">Type I (Pale White)</option>
+                                <option value="Type II">Type II (White)</option>
+                                <option value="Type III">Type III (Cream White)</option>
+                                <option value="Type IV">Type IV (Moderate Brown)</option>
+                                <option value="Type V">Type V (Dark Brown)</option>
+                                <option value="Type VI">Type VI (Deep Black)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn-submit" id="btn-save-profile">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal" id="password-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-key"></i> Change Password</h2>
+                <span class="modal-close" id="close-password-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="password-form">
+                    <div class="input-group">
+                        <label>Current Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="old-password" placeholder="••••••••" required>
+                            <i class="fas fa-eye toggle-password" data-target="old-password"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>New Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="new-password" placeholder="••••••••" required minlength="8">
+                            <i class="fas fa-eye toggle-password" data-target="new-password"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Confirm Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="confirm-password" placeholder="••••••••" required minlength="8">
+                            <i class="fas fa-eye toggle-password" data-target="confirm-password"></i>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn-submit" id="btn-update-password">Update Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 
 </html>
