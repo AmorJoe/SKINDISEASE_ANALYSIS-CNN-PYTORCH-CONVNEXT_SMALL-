@@ -1,17 +1,11 @@
 """
-CNN Inference - Skin disease prediction using TensorFlow model
-
-Phase 2 v2.0 Compliant:
-- NO random/mock predictions
-- ModelUnavailableError for missing model
-- Inconclusive state for confidence < 50%
-- Confidence-based recommendation gating
+CNN Inference - Simulation Mode (Model Removed)
 """
 import logging
 import time
+import random
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
-import numpy as np
+from typing import Dict, List, Optional
 from django.conf import settings
 
 from .exceptions import ModelUnavailableError
@@ -20,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 # Medical safety thresholds (FR-CONF-R)
-INCONCLUSIVE_THRESHOLD: float = 60.0  # Below this = "Inconclusive" (no disease label)
-MODERATE_CONFIDENCE_THRESHOLD: float = 60.0  # 60-79% = show disease + strong uncertainty warning
-HIGH_CONFIDENCE_THRESHOLD: float = 80.0  # Above this = disease-specific recommendation
+INCONCLUSIVE_THRESHOLD: float = 60.0
+MODERATE_CONFIDENCE_THRESHOLD: float = 60.0
+HIGH_CONFIDENCE_THRESHOLD: float = 80.0
 
 
 # Strong uncertainty warning for 60-79% confidence (FR-CONF-R)
@@ -58,14 +52,6 @@ INCONCLUSIVE_RECOMMENDATION: str = (
 class PredictionOutput:
     """
     Structured prediction output.
-    
-    Attributes:
-        disease_name: Predicted disease or "Inconclusive"
-        confidence: Confidence percentage (0-100)
-        all_probabilities: Dict of all class probabilities
-        recommendation: Medical recommendation based on confidence
-        processing_time: Time taken for inference in seconds
-        is_inconclusive: True if confidence < 50%
     """
     disease_name: str
     confidence: float
@@ -77,370 +63,146 @@ class PredictionOutput:
 
 class CNNPredictor:
     """
-    CNN model wrapper for skin disease prediction.
-    
-    Phase 2 Medical Safety Features:
-    - Raises ModelUnavailableError if model cannot be loaded (NO mock predictions)
-    - Returns "Inconclusive" for confidence < 50%
-    - Disease-specific recommendations only for confidence ≥ 80%
+    CNN model wrapper - SIMULATION ONLY (Model Removed).
     """
     
     def __init__(self):
-        self.model = None
-        self.disease_classes: List[str] = getattr(
-            settings, 
-            'DISEASE_CLASSES', 
-            [
-                'Acne', 'Eczema', 'Melanoma', 'Psoriasis',
-                'Rosacea', 'Fungal Infection', 'Vitiligo', 'Warts'
-            ]
-        )
-        self.model_version: str = "v2.0"
-        self.is_loaded: bool = False
+        self.simulation_mode: bool = True
         
-        # Disease-specific recommendations (for high-confidence predictions)
+        # Mapped classes (Alphabetical by folder name)
+        self.disease_classes: List[str] = [
+            'Eczema',
+            'Warts Molluscum',
+            'Melanoma',
+            'Atopic Dermatitis',
+            'Basal Cell Carcinoma',
+            'Melanocytic Nevi',
+            'Benign Keratosis-like Lesions',
+            'Psoriasis',
+            'Seborrheic Keratoses',
+            'Tinea Ringworm Candidiasis'
+        ]
+        
+        self.model_version: str = "v2.0-SIMULATION"
+        
+        # Disease-specific recommendations
         self._disease_recommendations: Dict[str, str] = {
             'Acne': (
                 "Keep skin clean and avoid touching face. Consider over-the-counter "
-                "benzoyl peroxide products. If severe or persistent, consult a dermatologist "
-                "for prescription treatments like retinoids or antibiotics."
+                "benzoyl peroxide products. If severe or persistent, consult a dermatologist."
             ),
             'Eczema': (
                 "Use gentle, fragrance-free moisturizers regularly. Avoid known irritants "
-                "and triggers. For flare-ups, topical corticosteroids may be prescribed by "
-                "a dermatologist. Consider allergy testing if symptoms persist."
+                "and triggers. For flare-ups, topical corticosteroids may be prescribed."
+            ),
+            'Atopic Dermatitis': (
+                "Avoid scratching and keep skin moisturized. Identify and avoid triggers. "
+                "Consult a dermatologist for management strategies."
             ),
             'Melanoma': (
-                "⚠️ URGENT: This may be a serious condition requiring immediate attention. "
-                "Seek evaluation by a dermatologist or oncologist as soon as possible. "
-                "Early detection and treatment are critical for melanoma. "
-                "Do NOT delay seeking professional medical care."
+                "⚠️ URGENT: This may be a serious condition. "
+                "Seek evaluation by a dermatologist or oncologist IMMEDIATELY. "
+                "Early detection is critical."
+            ),
+            'Basal Cell Carcinoma': (
+                "⚠️ This is a common form of skin cancer. "
+                "Consult a dermatologist for confirmation and removal options. "
+                "Generally has a high cure rate if treated early."
+            ),
+            'Melanocytic Nevi': (
+                "This appears to be a mole. Monitor for changes in size, shape, or color (ABCDE rule). "
+                "If it changes or bleeds, see a dermatologist."
+            ),
+            'Benign Keratosis-like Lesions': (
+                "This is likely a benign growth. If it becomes irritated or changes appearance, "
+                "consult a dermatologist."
             ),
             'Psoriasis': (
-                "Use moisturizers regularly to manage dryness. Avoid skin trauma (Koebner phenomenon). "
-                "Consult a dermatologist for treatment options including topical corticosteroids, "
-                "vitamin D analogues, or systemic treatments for moderate-to-severe cases."
+                "Use moisturizers and avoids skin trauma. Consult a dermatologist for "
+                "treatment options corresponding to severity."
+            ),
+            'Seborrheic Keratoses': (
+                "Common harmless skin growth. No treatment usually needed unless irritated. "
+                "Consult a dermatologist if you are unsure."
+            ),
+            'Tinea Ringworm Candidiasis': (
+                "Keep area clean and dry. OTC antifungal creams may help. "
+                "Consult a doctor if it persists."
             ),
             'Rosacea': (
-                "Avoid known triggers (sun exposure, spicy food, alcohol, stress). "
-                "Use gentle, non-irritating skincare products. Sun protection is essential. "
-                "Consult a dermatologist for prescription treatments like topical metronidazole "
-                "or oral antibiotics."
-            ),
-            'Fungal Infection': (
-                "Keep the affected area clean and dry. Over-the-counter antifungal creams "
-                "(clotrimazole, miconazole) may help for mild cases. If symptoms persist beyond "
-                "2 weeks or spread, consult a doctor for prescription antifungals."
+                "Avoid triggers like sun and spice. Use gentle skincare. "
+                "Consult a dermatologist."
             ),
             'Vitiligo': (
-                "Use broad-spectrum sunscreen on affected areas to prevent sunburn. "
-                "Treatment options include topical corticosteroids, calcineurin inhibitors, "
-                "or phototherapy. Consult a dermatologist for a personalized management plan."
+                "Sun protection is important. Consult a dermatologist for treatment options."
             ),
-            'Warts': (
-                "Over-the-counter salicylic acid treatments may help remove warts. "
-                "Avoid picking or scratching warts to prevent spreading. If warts are painful, "
-                "spreading, or not responding to treatment, consult a doctor for cryotherapy or "
-                "other treatments."
+            'Warts Molluscum': (
+                "OTC salicylic acid may help. Avoid picking. Consult a doctor if painful or spreading."
             ),
         }
-        
-        # Attempt to load model on initialization
-        self._load_model()
     
-    def _load_model(self) -> None:
-        """
-        Load CNN model from file.
+    def _get_recommendation(self, disease_name: str, confidence: float) -> str:
+        disclaimer = (
+            "\n\n⚠️ DISCLAIMER: This is an AI-based preliminary screening tool only. "
+            "Not a substitute for professional medical diagnosis."
+        )
         
-        Raises:
-            ModelUnavailableError: If model cannot be loaded
-        """
-        model_path = getattr(settings, 'MODEL_PATH', None)
+        base_rec = self._disease_recommendations.get(
+            disease_name,
+            "Consult a dermatologist for proper diagnosis and treatment."
+        )
         
-        if not model_path:
-            logger.warning("MODEL_PATH not configured. Enabling SIMULATION MODE.")
-            self.simulation_mode = True
-            return
-        
-        try:
-            import tensorflow as tf
-            
-            if not model_path.exists():
-                logger.warning(f"Model file not found at {model_path}. Enabling SIMULATION MODE.")
-                self.simulation_mode = True
-                return
-            
-            self.model = tf.keras.models.load_model(str(model_path))
-            self.is_loaded = True
-            self.simulation_mode = False
-            logger.info(f"✓ CNN model loaded successfully from {model_path}")
-            
-        except ImportError:
-            logger.error("TensorFlow not installed. Enabling SIMULATION MODE.")
-            self.simulation_mode = True
-        except Exception as e:
-            logger.error(f"Failed to load CNN model: {str(e)}. Enabling SIMULATION MODE.")
-            self.simulation_mode = True
-    
-    def _ensure_model_loaded(self) -> None:
-        """
-        Ensure model is loaded or simulation mode is active.
-        """
-        if self.simulation_mode:
-            return
+        if confidence >= HIGH_CONFIDENCE_THRESHOLD:
+            return base_rec + disclaimer
+        elif confidence >= MODERATE_CONFIDENCE_THRESHOLD:
+            return STRONG_UNCERTAINTY_WARNING + base_rec + disclaimer
+        else:
+            return GENERIC_RECOMMENDATION
 
-        if not self.is_loaded or self.model is None:
-            raise ModelUnavailableError(
-                "CNN model is not available. Predictions cannot be made. "
-                "Please ensure the model file exists and TensorFlow is installed."
-            )
-    
     def _predict_mock(self) -> PredictionOutput:
         """Generate a simulated prediction for testing."""
-        import random
-        import time
-        
-        # Simulate processing time
         time.sleep(0.5)
-        
-        # Pick a random disease (weighted to be interesting)
-        # 80% chance of a specific disease, 20% chance of being inconclusive (for testing)
-        if random.random() < 0.2:
-             confidence = random.uniform(30.0, 55.0) # Low confidence
-        else:
-             confidence = random.uniform(75.0, 98.0) # High confidence
-
-        # Random disease
         disease = random.choice(self.disease_classes)
+        confidence = random.uniform(70.0, 95.0)
         
-        # Generate probs
         all_probs = {d: 0.0 for d in self.disease_classes}
-        remaining = 100.0 - confidence
         all_probs[disease] = confidence
-        
-        # Distribute remaining
-        others = [d for d in self.disease_classes if d != disease]
-        for other in others:
-            share = remaining / len(others)
-            all_probs[other] = share
-            
-        processing_time = 0.5
-        
-        if confidence < INCONCLUSIVE_THRESHOLD:
-             return PredictionOutput(
-                disease_name="Inconclusive",
-                confidence=confidence,
-                all_probabilities=all_probs,
-                recommendation=INCONCLUSIVE_RECOMMENDATION,
-                processing_time=processing_time,
-                is_inconclusive=True
-            )
-            
-        recommendation = self._get_recommendation(disease, confidence)
-        
-        # Add a simulation note
-        recommendation = "🔍 [SIMULATION MODE] " + recommendation
-        
+        remaining = 100.0 - confidence
+        for d in self.disease_classes:
+            if d != disease:
+                all_probs[d] = remaining / (len(self.disease_classes) - 1)
+                
         return PredictionOutput(
             disease_name=disease,
             confidence=confidence,
             all_probabilities=all_probs,
-            recommendation=recommendation,
-            processing_time=processing_time,
+            recommendation="🔍 [SIMULATION] " + self._get_recommendation(disease, confidence),
+            processing_time=0.5,
             is_inconclusive=False
         )
 
-    def predict(self, preprocessed_image: np.ndarray) -> PredictionOutput:
+    def predict(self, preprocessed_image: any) -> PredictionOutput:
         """
-        Perform inference on preprocessed image (or mock if in simulation mode).
+        Perform simulation inference.
         """
-        self._ensure_model_loaded()
-        
-        if self.simulation_mode:
-            logger.info("Running in SIMULATION MODE - Generating mock prediction")
-            return self._predict_mock()
-        
-        start_time = time.time()
-        
-        # Run model prediction
-        predictions = self.model.predict(preprocessed_image, verbose=0)
-        probabilities = predictions[0]
-        
-        # Get predicted class and confidence
-        predicted_idx = int(np.argmax(probabilities))
-        max_confidence = float(probabilities[predicted_idx] * 100)
-        
-        # Create probability dictionary
-        all_probs = {
-            cls: float(prob * 100)
-            for cls, prob in zip(self.disease_classes, probabilities)
-        }
-        
-        processing_time = time.time() - start_time
-        
-        # Apply medical safety gating
-        if max_confidence < INCONCLUSIVE_THRESHOLD:
-            # Inconclusive: confidence too low to make a diagnosis
-            return PredictionOutput(
-                disease_name="Inconclusive",
-                confidence=max_confidence,
-                all_probabilities=all_probs,
-                recommendation=INCONCLUSIVE_RECOMMENDATION,
-                processing_time=processing_time,
-                is_inconclusive=True
-            )
-        
-        # Get disease name
-        disease_name = self.disease_classes[predicted_idx]
-        
-        # Get appropriate recommendation based on confidence
-        recommendation = self._get_recommendation(disease_name, max_confidence)
-        
-        return PredictionOutput(
-            disease_name=disease_name,
-            confidence=max_confidence,
-            all_probabilities=all_probs,
-            recommendation=recommendation,
-            processing_time=processing_time,
-            is_inconclusive=False
-        )
-    
-    def predict_multi(
-        self, 
-        preprocessed_images: List[np.ndarray]
-    ) -> PredictionOutput:
-        """
-        Perform inference on multiple images and aggregate results.
-        
-        Averages confidence scores across all images and applies
-        safety gating on the aggregated result.
-        
-        Args:
-            preprocessed_images: List of numpy arrays, each (1, 224, 224, 3)
-            
-        Returns:
-            Aggregated PredictionOutput
-            
-        Raises:
-            ModelUnavailableError: If model is not loaded
-        """
-        if not preprocessed_images:
-            raise ValueError("At least one image is required")
-        
-        if len(preprocessed_images) == 1:
-            return self.predict(preprocessed_images[0])
-        
-        self._ensure_model_loaded()
+        return self._predict_mock()
 
-        if self.simulation_mode:
-             logger.info("Running in SIMULATION MODE - Generating mock prediction for multi-image")
-             return self._predict_mock()
-        
-        start_time = time.time()
-        
-        # Collect predictions from all images
-        all_predictions = []
-        for img in preprocessed_images:
-            predictions = self.model.predict(img, verbose=0)
-            all_predictions.append(predictions[0])
-        
-        # Average probabilities across all images
-        avg_probabilities = np.mean(all_predictions, axis=0)
-        
-        # Get predicted class and confidence
-        predicted_idx = int(np.argmax(avg_probabilities))
-        max_confidence = float(avg_probabilities[predicted_idx] * 100)
-        
-        # Create probability dictionary
-        all_probs = {
-            cls: float(prob * 100)
-            for cls, prob in zip(self.disease_classes, avg_probabilities)
-        }
-        
-        processing_time = time.time() - start_time
-        
-        # Apply medical safety gating on aggregated result
-        if max_confidence < INCONCLUSIVE_THRESHOLD:
-            return PredictionOutput(
-                disease_name="Inconclusive",
-                confidence=max_confidence,
-                all_probabilities=all_probs,
-                recommendation=INCONCLUSIVE_RECOMMENDATION,
-                processing_time=processing_time,
-                is_inconclusive=True
-            )
-        
-        disease_name = self.disease_classes[predicted_idx]
-        recommendation = self._get_recommendation(disease_name, max_confidence)
-        
-        return PredictionOutput(
-            disease_name=disease_name,
-            confidence=max_confidence,
-            all_probabilities=all_probs,
-            recommendation=recommendation,
-            processing_time=processing_time,
-            is_inconclusive=False
-        )
-    
-    def _get_recommendation(self, disease_name: str, confidence: float) -> str:
+    def predict_multi(self, preprocessed_images: List[any]) -> PredictionOutput:
         """
-        Generate medical recommendation based on prediction confidence.
-        
-        Medical Safety Gating:
-        - confidence ≥ 80%: Disease-specific recommendation
-        - confidence < 80%: Generic advice only
-        
-        Args:
-            disease_name: Predicted disease name
-            confidence: Confidence percentage
-            
-        Returns:
-            Recommendation string
+        Inference on multiple images (averaged simulation).
         """
-        disclaimer = (
-            "\n\n⚠️ DISCLAIMER: This is an AI-based preliminary screening tool only. "
-            "Not a substitute for professional medical diagnosis. "
-            "Always consult a qualified dermatologist for accurate diagnosis and treatment."
-        )
-        
-        if confidence >= HIGH_CONFIDENCE_THRESHOLD:
-            # High confidence (≥80%): provide disease-specific recommendation
-            base_rec = self._disease_recommendations.get(
-                disease_name,
-                "Consult a dermatologist for proper diagnosis and treatment."
-            )
-            return base_rec + disclaimer
-        elif confidence >= MODERATE_CONFIDENCE_THRESHOLD:
-            # Moderate confidence (60-79%): show disease + strong uncertainty warning
-            base_rec = self._disease_recommendations.get(
-                disease_name,
-                "Consult a dermatologist for proper diagnosis and treatment."
-            )
-            return STRONG_UNCERTAINTY_WARNING + base_rec + disclaimer
-        else:
-            # Low confidence (<60%): generic advice only (shouldn't reach here normally
-            # since <60% is Inconclusive, but included for safety)
-            return GENERIC_RECOMMENDATION
+        return self._predict_mock()
 
 
-# Singleton instance
+# Singleton
 _predictor: Optional[CNNPredictor] = None
 
-
 def get_predictor() -> CNNPredictor:
-    """
-    Get or create predictor instance.
-    
-    Returns:
-        CNNPredictor singleton instance
-    """
     global _predictor
     if _predictor is None:
         _predictor = CNNPredictor()
     return _predictor
 
-
 def reset_predictor() -> None:
-    """Reset the singleton (for testing purposes)."""
     global _predictor
     _predictor = None

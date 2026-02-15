@@ -1,13 +1,22 @@
 # Core Django
-Django==4.2.7
-djangorestframework==3.14.0
-django-cors-headers==4.3.1
+Django>=4.2.0
+djangorestframework>=3.14.0
+django-cors-headers>=4.0.0
+Pillow>=9.5.0
+psycopg2-binary>=2.9.0
+python-dotenv>=1.0.0
+gunicorn>=21.2.0
+whitenoise>=6.5.0
+requests>=2.31.0
+google-generativeai>=0.3.0
+markdown>=3.4.0
 
-# Database
-psycopg2-binary==2.9.9
-
-# Security
-django-ratelimit==4.1.0
+# Machine Learning
+torch
+torchvision
+timm
+albumentations
+opencv-python-headless
 
 # Authentication & Security
 PyJWT==2.8.0
@@ -15,9 +24,9 @@ python-decouple==3.8
 bcrypt==4.1.2
 
 # Image Processing & AI
-Pillow==10.1.0
 opencv-python-headless==4.8.1.78
-tensorflow==2.15.0
+torch==2.2.0
+torchvision==0.17.0
 numpy==1.24.3
 
 # Google Cloud (for production)

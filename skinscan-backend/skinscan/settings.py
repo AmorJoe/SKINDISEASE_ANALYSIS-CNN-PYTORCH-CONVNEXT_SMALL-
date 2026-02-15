@@ -169,7 +169,7 @@ ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png']
 IMAGE_MIN_RESOLUTION = (50, 50)
 
 # CNN MODEL SETTINGS
-MODEL_PATH = BASE_DIR / 'ml_models' / 'skin_disease_model.h5'
+# MODEL_PATH = BASE_DIR / 'ml_models' / 'skin_disease_model.pth'
 DISEASE_CLASSES = [
     'Acne',
     'Eczema',

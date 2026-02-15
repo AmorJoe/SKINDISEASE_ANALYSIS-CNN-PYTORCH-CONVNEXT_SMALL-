@@ -259,28 +259,48 @@ class ImageUploadView(APIView):
             except Exception as e:
                 return Response({'status': 'error', 'message': str(e)}, status=400)
 
-        # Create Job in Memory
-        job_id = str(uuid.uuid4())
-        _JOBS_STORE[job_id] = {
-            'id': job_id,
-            'status': JobStatus.PENDING,
-            'created_at': datetime.now().isoformat(),
-            'image_count': len(validated_bytes),
-            'user_id': getattr(request.user, 'id', 'anonymous')
-        }
-
-        # Start background task
-        _executor.submit(_process_prediction_job_in_memory, job_id, validated_bytes)
-
-        return Response({
-            'status': 'success',
-            'message': 'Prediction job created (In-Memory)',
-            'data': {
-                'job_id': job_id,
-                'status': JobStatus.PENDING,
-                'image_count': len(validated_bytes)
+        # ---------------------------------------------------------
+        # SYNCHRONOUS PREDICTION (Fix for "undefined" in frontend)
+        # ---------------------------------------------------------
+        try:
+            # Preprocess all images for CNN
+            predictor = get_predictor()
+            preprocessed_images = []
+            
+            for img_bytes in validated_bytes:
+                preprocessed = ImageQualityValidator.preprocess_bytes_for_cnn(img_bytes)
+                preprocessed_images.append(preprocessed)
+            
+            # Run prediction
+            if len(preprocessed_images) == 1:
+                prediction_output = predictor.predict(preprocessed_images[0])
+            else:
+                prediction_output = predictor.predict_multi(preprocessed_images)
+            
+            # Create result object (dict)
+            result = {
+                'prediction_id': int(time.time()), # Mock ID
+                'disease_name': prediction_output.disease_name,
+                'confidence': prediction_output.confidence,
+                'raw_probabilities': prediction_output.all_probabilities,
+                'recommendation': prediction_output.recommendation,
+                'model_version': predictor.model_version,
+                'processing_time': prediction_output.processing_time,
+                'is_inconclusive': prediction_output.is_inconclusive,
+                'created_at': datetime.now().isoformat(),
+                'images': [] # Simplified
             }
-        }, status=status.HTTP_202_ACCEPTED)
+
+            # Return DIRECTLY to frontend (matches script.js expectation)
+            return Response({
+                'status': 'success',
+                'message': 'Prediction completed successfully',
+                'data': result
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Prediction failed: {str(e)}")
+            return Response({'status': 'error', 'message': str(e)}, status=500)
 
 
 class JobStatusView(APIView):

@@ -248,8 +248,8 @@ class ImageQualityValidator:
     @staticmethod
     def preprocess_for_cnn(
         image_file, 
-        target_size: Tuple[int, int] = (224, 224)
-    ) -> np.ndarray:
+        target_size: Tuple[int, int] = (256, 256)
+    ) -> any:
         """
         Preprocess image for CNN model input.
         
@@ -258,23 +258,16 @@ class ImageQualityValidator:
             target_size: Target dimensions (width, height)
             
         Returns:
-            Numpy array ready for model inference, shape (1, H, W, 3)
+            Placeholder (Simulation mode active)
         """
-        image_file.seek(0)
-        img = Image.open(image_file)
-        img = img.convert('RGB')
-        img = img.resize(target_size, Image.Resampling.LANCZOS)
-        
-        img_array = np.array(img, dtype=np.float32) / 255.0  # Normalize to [0, 1]
-        img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
-        
-        return img_array
+        # In simulation mode, we don't need actual tensors
+        return None
     
     @staticmethod
     def preprocess_bytes_for_cnn(
         image_bytes: bytes,
-        target_size: Tuple[int, int] = (224, 224)
-    ) -> np.ndarray:
+        target_size: Tuple[int, int] = (256, 256)
+    ) -> any:
         """
         Preprocess image bytes for CNN model input.
         
@@ -283,13 +276,7 @@ class ImageQualityValidator:
             target_size: Target dimensions (width, height)
             
         Returns:
-            Numpy array ready for model inference, shape (1, H, W, 3)
+            Placeholder (Simulation mode active)
         """
-        img = Image.open(io.BytesIO(image_bytes))
-        img = img.convert('RGB')
-        img = img.resize(target_size, Image.Resampling.LANCZOS)
-        
-        img_array = np.array(img, dtype=np.float32) / 255.0
-        img_array = np.expand_dims(img_array, axis=0)
-        
-        return img_array
+        # In simulation mode, we don't need actual tensors
+        return None
