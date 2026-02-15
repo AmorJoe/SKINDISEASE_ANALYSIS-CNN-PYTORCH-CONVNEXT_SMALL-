@@ -60,8 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- BODY MAP PAGE OR OTHER AUTHENTICATED PAGES ---
     if (bodyMapContainer || (!loginForm && !dropArea)) {
-        // Initialize navigation for body map and other pages
-        // Don't require auth check here as body-map.js handles it
+        // Check authentication and reveal protected elements
+        if (requireAuth()) {
+            const protectedElements = document.querySelectorAll('.auth-protected');
+            protectedElements.forEach(el => {
+                el.classList.remove('auth-protected');
+                el.style.display = '';
+            });
+        }
         initNavigation();
     }
 
