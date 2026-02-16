@@ -133,8 +133,9 @@
 
                         <!-- Body Location Dropdown (Replacing Recommendation) -->
                         <div class="body-location-selector">
-                            <label for="quickBodyLocation"><i class="fas fa-map-marker-alt"></i> Body Location:</label>
-                            <select id="quickBodyLocation" class="modern-select">
+                            <label for="quickBodyLocation"><i class="fas fa-map-marker-alt"></i> Body Location: <span
+                                    style="color: #e74c3c;">*</span></label>
+                            <select id="quickBodyLocation" class="modern-select" required>
                                 <option value="" disabled selected>Select location...</option>
                                 <option value="Face">Face</option>
                                 <option value="Neck">Neck</option>
@@ -172,8 +173,7 @@
                             <button class="round-icon-btn" id="reset-btn" title="Re-analyze">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
-                            <button class="round-icon-btn" onclick="window.location.href='report.html'"
-                                title="View Full Report">
+                            <button class="round-icon-btn" id="view-report-btn" title="View Full Report">
                                 <i class="fas fa-file-medical-alt"></i>
                             </button>
                             <button class="round-icon-btn" title="Edit / Future Modifications">

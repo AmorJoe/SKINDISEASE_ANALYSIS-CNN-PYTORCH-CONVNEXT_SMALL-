@@ -276,7 +276,8 @@ class ImageQualityValidator:
             target_size: Target dimensions (width, height)
             
         Returns:
-            Placeholder (Simulation mode active)
+            Raw image bytes (preprocessing handled by CNNPredictor.transform)
         """
-        # In simulation mode, we don't need actual tensors
-        return None
+        # Return raw bytes — CNNPredictor._prepare_image() converts to PIL,
+        # and self.transform handles resize + normalize + toTensor.
+        return image_bytes

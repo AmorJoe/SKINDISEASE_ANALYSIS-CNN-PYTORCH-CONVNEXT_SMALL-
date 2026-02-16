@@ -270,14 +270,36 @@ function initDashboardPage() {
                     localStorage.removeItem('latest_scan_location');
 
                     // Add listener to save immediately on change
-                    // Note: We use a named function or ensure we don't duplicate listeners if handleFiles is called multiple times.
-                    // Better approach: Add listener globally once, or handle here carefully.
-                    // Since handleFiles runs per upload, let's just update the storage on change.
                     quickLocation.onchange = function () {
                         if (this.value) {
                             localStorage.setItem('latest_scan_location', this.value);
                             console.log('Location tagged for report:', this.value);
+                            // Clear validation styling when user selects a location
+                            this.style.borderColor = '';
+                            this.style.boxShadow = '';
+                            this.classList.remove('shake-highlight');
                         }
+                    };
+                }
+
+                // View Report Button — requires body location
+                const viewReportBtn = document.getElementById('view-report-btn');
+                if (viewReportBtn) {
+                    viewReportBtn.onclick = function () {
+                        const loc = document.getElementById('quickBodyLocation');
+                        if (!loc || !loc.value) {
+                            // Highlight the dropdown
+                            loc.style.borderColor = '#e74c3c';
+                            loc.style.boxShadow = '0 0 0 3px rgba(231, 76, 60, 0.25)';
+                            loc.classList.add('shake-highlight');
+                            loc.focus();
+                            loc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                            // Remove shake after animation
+                            setTimeout(() => loc.classList.remove('shake-highlight'), 600);
+                            return;
+                        }
+                        window.location.href = 'report.html';
                     };
                 }
 

@@ -169,16 +169,18 @@ ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png']
 IMAGE_MIN_RESOLUTION = (50, 50)
 
 # CNN MODEL SETTINGS
-# MODEL_PATH = BASE_DIR / 'ml_models' / 'skin_disease_model.pth'
+MODEL_PATH = BASE_DIR / 'ml_models' / 'skinscan1.pth'
 DISEASE_CLASSES = [
-    'Acne',
     'Eczema',
+    'Warts Molluscum',
     'Melanoma',
+    'Atopic Dermatitis',
+    'Basal Cell Carcinoma',
+    'Melanocytic Nevi',
+    'Benign Keratosis-like Lesions',
     'Psoriasis',
-    'Rosacea',
-    'Fungal Infection',
-    'Vitiligo',
-    'Warts',
+    'Seborrheic Keratoses',
+    'Tinea Ringworm Candidiasis',
 ]
 
 # GOOGLE CLOUD STORAGE (for production)

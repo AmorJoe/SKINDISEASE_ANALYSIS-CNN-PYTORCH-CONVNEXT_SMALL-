@@ -1,5 +1,5 @@
 """
-CNN Inference - EfficientNet-B0 (PyTorch)
+CNN Inference - ConvNeXt Small (PyTorch)
 """
 import os
 import logging
@@ -10,8 +10,10 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import models, transforms
+import timm
+from torchvision import transforms
 from PIL import Image
 from django.conf import settings
 
@@ -33,9 +35,63 @@ class PredictionOutput:
     processing_time: float
     is_inconclusive: bool
 
+# --- Model Architecture from Notebook ---
+
+class GeM(nn.Module):
+    """Generalized Mean Pooling."""
+    def __init__(self, p=3, eps=1e-6):
+        super().__init__()
+        self.p = nn.Parameter(torch.ones(1) * p)
+        self.eps = eps
+    
+    def forward(self, x):
+        return F.avg_pool2d(
+            x.clamp(min=self.eps).pow(self.p),
+            (x.size(-2), x.size(-1))
+        ).pow(1. / self.p)
+
+class ImageClassifier(nn.Module):
+    """CNN Model for Skin Disease Classification."""
+    def __init__(self, backbone='convnext_small.fb_in22k_ft_in1k', num_classes=10, 
+                 drop_path_rate=0.3, dropout=0.4, use_gem=True, gem_p=3.0):
+        super().__init__()
+        
+        self.backbone = timm.create_model(
+            backbone,
+            pretrained=False, # We load weights later
+            num_classes=0,
+            drop_path_rate=drop_path_rate,
+            global_pool=''
+        )
+        
+        # Determine features dim
+        with torch.no_grad():
+            dummy_input = torch.randn(1, 3, 224, 224)
+            features = self.backbone(dummy_input)
+            num_features = features.shape[1]
+        
+        if use_gem:
+            self.global_pool = GeM(p=gem_p)
+        else:
+            self.global_pool = nn.AdaptiveAvgPool2d(1)
+        
+        self.head = nn.Sequential(
+            nn.Dropout(dropout),
+            nn.Linear(num_features, num_classes)
+        )
+    
+    def forward(self, x):
+        features = self.backbone(x)
+        pooled = self.global_pool(features)
+        pooled = pooled.view(pooled.size(0), -1)
+        output = self.head(pooled)
+        return output
+
+# ----------------------------------------
+
 class CNNPredictor:
     """
-    CNN model wrapper using EfficientNet-B0.
+    CNN model wrapper using ConvNeXt Small.
     """
     
     def __init__(self):
@@ -45,9 +101,11 @@ class CNNPredictor:
         
         # Hardcoded for now, should match training
         self.disease_classes = settings.DISEASE_CLASSES
+        self.model_version = "2.0.0" # ConvNeXt
         
+        # Notebook uses 256x256
         self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
+            transforms.Resize((256, 256)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
@@ -62,23 +120,56 @@ class CNNPredictor:
                 self.simulation_mode = True
                 return
 
-            logger.info(f"Loading model from {model_path}...")
-            # Load Architecture
-            self.model = models.efficientnet_b0(weights=None)
-            
-            # Adjust Classifier
-            num_ftrs = self.model.classifier[1].in_features
-            self.model.classifier[1] = torch.nn.Linear(num_ftrs, len(self.disease_classes))
-            
-            # Load Weights
-            checkpoint = torch.load(model_path, map_location=self.device)
-            if isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
-                 self.model.load_state_dict(checkpoint['state_dict'])
-            elif isinstance(checkpoint, dict):
-                 self.model.load_state_dict(checkpoint)
-            else:
-                 self.model = checkpoint
+            # Inject Config class if needed (user notebook has one)
+            import sys
+            if not hasattr(sys.modules['__main__'], 'Config'):
+                class Config: pass
+                setattr(sys.modules['__main__'], 'Config', Config)
 
+            logger.info(f"Loading model from {model_path}...")
+            
+            # Load Checkpoint
+            # weights_only=False is required for pickle-serialized objects like Config
+            try:
+                checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
+            except TypeError:
+                checkpoint = torch.load(model_path, map_location=self.device)
+            
+            # Initialize Model Architecture
+            self.model = ImageClassifier(
+                backbone='convnext_small.fb_in22k_ft_in1k',
+                num_classes=len(self.disease_classes),
+                use_gem=True
+            )
+            
+            # Load State Dict
+            state_dict = None
+            if isinstance(checkpoint, dict):
+                if 'model_state_dict' in checkpoint:
+                     state_dict = checkpoint['model_state_dict']
+                elif 'ema_shadow' in checkpoint:
+                     # Prefer EMA weights if available (usually better)
+                     state_dict = checkpoint['ema_shadow']
+                     logger.info("Using EMA weights from checkpoint.")
+                else:
+                     state_dict = checkpoint
+            else:
+                 state_dict = checkpoint
+
+            if state_dict:
+                # Clean keys if needed (e.g. remove 'module.')
+                clean_state_dict = {}
+                for k, v in state_dict.items():
+                    name = k.replace('module.', '')
+                    clean_state_dict[name] = v
+                
+                # Careful load
+                missing, unexpected = self.model.load_state_dict(clean_state_dict, strict=False)
+                if missing:
+                    logger.warning(f"Missing keys: {missing[:5]}...")
+                if unexpected:
+                    logger.warning(f"Unexpected keys: {unexpected[:5]}...")
+            
             self.model.to(self.device)
             self.model.eval()
             logger.info("Model loaded successfully.")
@@ -127,11 +218,9 @@ class CNNPredictor:
 
         except Exception as e:
             logger.error(f"Prediction Error: {e}")
-            # Fallback to mock if runtime error
             return self._predict_mock()
 
     def predict_multi(self, images: List[any]) -> PredictionOutput:
-        # Simple ensemble: predict first image for now
         return self.predict(images[0])
 
     def _prepare_image(self, image_input):
@@ -142,14 +231,12 @@ class CNNPredictor:
         return image_input
 
     def _get_recommendation(self, disease_name: str, confidence: float) -> str:
-        # ... Reuse existing logic ...
         base_rec = f"Consult a dermatologist regarding {disease_name}."
         if confidence < MODERATE_CONFIDENCE_THRESHOLD:
              return "Results inconclusive. Please consult a doctor."
         return base_rec
 
     def _predict_mock(self) -> PredictionOutput:
-        # Fallback simulation
         disease = random.choice(self.disease_classes)
         confidence = random.uniform(70.0, 95.0)
         return PredictionOutput(
