@@ -55,12 +55,8 @@ class ChatMessageView(APIView):
             session_id=session_id
         )
         
-        # Generate Bot Response (with Context)
-        full_prompt = message
-        if context_data:
-            full_prompt = f"Context from SkinScan App: {context_data}\n\nUser Question: {message}"
-            
-        bot_response = self.generate_bot_response(full_prompt)
+        # Generate Bot Response (No Context Injection)
+        bot_response = self.generate_bot_response(message)
         
         # Save Bot Response
         ChatHistory.objects.create(

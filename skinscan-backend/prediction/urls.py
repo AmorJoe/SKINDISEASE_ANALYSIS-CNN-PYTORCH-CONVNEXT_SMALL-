@@ -18,10 +18,16 @@ from .views import (
     SaveReportView,
     UpdateDoctorNotesView,
     ScanHistoryView,
-    ImageUploadAndPredictView  # Legacy compatibility
+    UpdateDoctorNotesView,
+    ScanHistoryView,
+    ImageUploadAndPredictView,  # Legacy compatibility
+
 )
 
 urlpatterns = [
+    # Diseases Info
+
+    
     # Phase 2 async endpoints
     path('upload', ImageUploadView.as_view(), name='upload_images'),
     path('status/<str:job_id>', JobStatusView.as_view(), name='job_status'),

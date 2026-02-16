@@ -141,3 +141,5 @@ class ScanHistorySerializer(serializers.Serializer):
     notes = serializers.CharField(allow_blank=True)
     is_bookmarked = serializers.BooleanField()
 
+
+

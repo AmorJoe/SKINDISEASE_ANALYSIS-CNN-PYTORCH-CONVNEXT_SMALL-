@@ -468,3 +468,5 @@ class ScanHistoryView(APIView):
 class ImageUploadAndPredictView(ImageUploadView):
     pass
 
+
+

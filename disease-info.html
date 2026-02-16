@@ -10,38 +10,87 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         .disease-container {
-            max-width: 1000px;
+            max-width: 900px;
             margin: 100px auto;
             padding: 2rem;
         }
 
+        .disease-container h1 {
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .disease-container p {
+            margin-bottom: 1rem;
+            color: var(--text-light);
+            max-width: 600px;
+        }
+
         .disease-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: 1rem;
         }
 
         .disease-card {
             background: var(--bg-card);
-            padding: 2rem;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            /* Smooth transition for everything including border-radius */
             border-left: 5px solid var(--accent);
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            padding: 0;
+            position: relative;
+            /* For z-index stacking */
         }
 
         .disease-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            border-radius: 25px;
+            /* More pronounced rounding */
         }
 
-        .disease-card h3 {
-            color: var(--accent);
-            margin-bottom: 1rem;
+        /* Left name box */
+        .disease-label {
+            min-width: 180px;
+            max-width: 180px;
             display: flex;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1.2rem 0.8rem;
+            background: linear-gradient(135deg, rgba(2, 136, 209, 0.08) 0%, rgba(2, 136, 209, 0.03) 100%);
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
             gap: 0.5rem;
-            font-size: 1.2rem;
+        }
+
+        .disease-label i {
+            font-size: 2.5rem;
+            color: var(--accent);
+            opacity: 0.9;
+        }
+
+        .disease-label .label-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--accent);
+            line-height: 1.3;
+            margin-top: 0.5rem;
+        }
+
+        /* Right content area */
+        .disease-content {
+            flex: 1;
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
         }
 
         .disease-card p {
@@ -49,6 +98,8 @@
             line-height: 1.6;
             color: var(--text-main);
             opacity: 0.8;
+            margin-bottom: 1rem;
+            flex-grow: 1;
         }
 
         .disease-card .category-badge {
@@ -60,6 +111,53 @@
             margin-bottom: 0.5rem;
             color: var(--accent);
             font-weight: 600;
+            align-self: flex-start;
+        }
+
+        .learn-more {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-decoration: none;
+            margin-top: auto;
+            align-self: flex-start;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            /* Add padding for clickable area */
+            border-radius: 20px;
+            /* Pill shape */
+            background: transparent;
+            /* Default transparent */
+        }
+
+        .learn-more:hover,
+        .learn-more:focus {
+            gap: 0.8rem;
+            background: rgba(2, 136, 209, 0.1);
+            /* Soft background on hover */
+            outline: none;
+            /* Remove default focus box */
+            box-shadow: none;
+            /* Ensure no shadow */
+        }
+
+        /* Responsive: stack on small screens */
+        @media (max-width: 600px) {
+            .disease-card {
+                flex-direction: column;
+            }
+
+            .disease-label {
+                min-width: 100%;
+                max-width: 100%;
+                flex-direction: row;
+                padding: 1rem;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
         }
     </style>
 </head>
@@ -116,84 +214,190 @@
         <div class="disease-grid">
             <!-- 1. Eczema -->
             <div class="disease-card">
-                <span class="category-badge">Inflammatory</span>
-                <h3><i class="fas fa-water"></i> Eczema</h3>
-                <p>A condition that makes your skin red and itchy. Also known as atopic dermatitis, it's common in
-                    children but can occur at any age. It's chronic and tends to flare periodically.</p>
+                <div class="disease-label">
+                    <i class="fas fa-water"></i>
+                    <span class="label-name">Eczema</span>
+                </div>
+                <div class="disease-content">
+                    <span class="category-badge">Inflammatory</span>
+
+                    <p>Eczema is a condition where patches of skin become inflamed, itchy, cracked, and rough. It's
+                        often triggered by a combination of genetic factors, an overactive immune system, and
+                        environmental irritants or allergens like soaps, detergents, certain fabrics, or pet dander.
+                        Stress, hormonal changes, and extreme temperatures can also be triggers. It's not contagious but
+                        can cause significant discomfort and impact quality of life.</p>
+                    <a href="https://dermnetnz.org/topics/dermatitis" class="learn-more" target="_blank"
+                        rel="noopener noreferrer">Learn more <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
 
             <!-- 2. Melanoma -->
             <div class="disease-card" style="border-left-color: #ef4444;">
-                <span class="category-badge">Malignant</span>
-                <h3><i class="fas fa-exclamation-triangle"></i> Melanoma</h3>
-                <p>The most serious type of skin cancer. It develops in the cells (melanocytes) that produce melanin.
-                    Early awareness of the ABCDE rules (Asymmetry, Border, Color, Diameter, Evolving) is vital.</p>
+                <div class="disease-label">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span class="label-name">Melanoma</span>
+                </div>
+                <div class="disease-content">
+                    <span class="category-badge">Malignant</span>
+
+                    <p>Melanoma is the most aggressive and dangerous form of skin cancer, originating in the
+                        pigment-producing cells called melanocytes. It frequently develops from an existing mole or as a
+                        new dark, irregular spot. Intense, intermittent exposure to ultraviolet (UV) radiation, often
+                        from sunburns or tanning beds, is a primary cause. If not detected and treated early, melanoma
+                        can rapidly spread to other parts of the body, making early identification crucial.</p>
+                    <a href="https://dermnetnz.org/topics/melanoma" class="learn-more" target="_blank"
+                        rel="noopener noreferrer">Learn more <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
 
             <!-- 3. Atopic Dermatitis -->
             <div class="disease-card">
-                <span class="category-badge">Chronic</span>
-                <h3><i class="fas fa-hand-holding-medical"></i> Atopic Dermatitis</h3>
-                <p>The most common form of eczema. It's a condition that causes dry, itchy and inflamed skin. It often
-                    starts in childhood and can be associated with asthma or hay fever.</p>
+                <div class="disease-label">
+                    <i class="fas fa-hand-holding-medical"></i>
+                    <span class="label-name">Atopic Dermatitis</span>
+                </div>
+                <div class="disease-content">
+                    <span class="category-badge">Chronic</span>
+
+                    <p>Atopic Dermatitis is a chronic, inflammatory skin condition, often referred to as a common type
+                        of eczema. It typically causes intensely itchy, red, dry, and scaly patches of skin. People
+                        develop it due to a combination of genetic factors, an impaired skin barrier, and an overactive
+                        immune system. Triggers like allergens (e.g., pollen, dust mites), irritants (e.g., harsh
+                        soaps), stress, and climate changes can cause flare-ups.</p>
+                    <a href="https://dermnetnz.org/topics/atopic-dermatitis" class="learn-more" target="_blank"
+                        rel="noopener noreferrer">Learn more <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
 
             <!-- 4. Basal Cell Carcinoma (BCC) -->
             <div class="disease-card" style="border-left-color: #f59e0b;">
-                <span class="category-badge">Skin Cancer</span>
-                <h3><i class="fas fa-microscope"></i> Basal Cell Carcinoma</h3>
-                <p>A type of skin cancer that begins in the basal cells. It often appears as a slightly transparent bump
-                    on the skin, though it can take other forms. It usually occurs on sun-exposed areas.</p>
+                <div class="disease-label">
+                    <i class="fas fa-microscope"></i>
+                    <span class="label-name">Basal Cell Carcinoma</span>
+                </div>
+                <div class="disease-content">
+                    <span class="category-badge">Skin Cancer</span>
+
+                    <p>Basal Cell Carcinoma is the most prevalent form of skin cancer, arising from the basal cells in
+                        the outermost layer of the skin. It usually appears as a pearly or waxy bump, a persistent sore,
+                        or a reddish patch, typically on sun-exposed areas like the face and neck. Prolonged exposure to
+                        ultraviolet (UV) radiation from the sun or tanning beds is the main cause. BCC grows slowly and
+                        rarely metastasizes but can be locally destructive if left untreated.</p>
+                    <a href="https://dermnetnz.org/topics/basal-cell-carcinoma" class="learn-more" target="_blank"
+                        rel="noopener noreferrer">Learn more <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
 
             <!-- 5. Melanocytic Nevi (moles) -->
             <div class="disease-card">
-                <span class="category-badge">Benign</span>
-                <h3><i class="fas fa-circle"></i> Melanocytic Nevi</h3>
-                <p>Commonly known as moles, these are clusters of pigmented cells. Most are harmless, but monitoring
-                    them for changes in size, shape, or color is important for early skin cancer detection.</p>
+                <div class="disease-label">
+                    <i class="fas fa-circle"></i>
+                    <span class="label-name">Melanocytic Nevi</span>
+                </div>
+                <div class="disease-content">
+                    <span class="category-badge">Benign</span>
+
+                    <p>Melanocytic Nevi, commonly known as moles, are benign (non-cancerous) growths on the skin
+                        composed of melanocytes, the cells that produce pigment. They can be present at birth or develop
+                        later in life. While most moles are harmless, their formation can be influenced by genetics and
+                        sun exposure. Monitor moles for changes in size, shape, color, or texture, as these could
+                        indicate a potential transformation into melanoma.</p>
+                    <a href="https://dermnetnz.org/topics/melanocytic-naevus" class="learn-more" target="_blank"
+                        rel="noopener noreferrer">Learn more <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
 
             <!-- 6. Benign Keratosis-like Lesions (BKL) -->
             <div class="disease-card">
-                <span class="category-badge">Benign</span>
-                <h3><i class="fas fa-shield-virus"></i> Keratosis-like Lesions</h3>
-                <p>A category of benign lesions that include seborrheic keratoses, solar lentigines, and
-                    lichen-planus-like keratoses. These are non-cancerous but can sometimes resemble other conditions.
-                </p>
+                <div class="disease-label">
+                    <i class="fas fa-shield-virus"></i>
+                    <span class="label-name">Keratosis-like Lesions</span>
+                </div>
+                <div class="disease-content">
+                    <span class="category-badge">Benign</span>
+
+                    <p>Benign Keratosis-like Lesions encompass several non-cancerous skin growths, including seborrheic
+                        keratoses and stucco keratoses. They often appear as waxy, "stuck-on" looking spots that can be
+                        tan, brown, or black. These lesions are very common, especially as people age, and are thought
+                        to be influenced by genetics and sun exposure. They are generally harmless but can be removed if
+                        they become irritated or for cosmetic reasons.</p>
+                    <a href="https://dermnetnz.org/topics/seborrhoeic-keratosis" class="learn-more" target="_blank"
+                        rel="noopener noreferrer">Learn more <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
 
             <!-- 7. Psoriasis & Lichen Planus group -->
             <div class="disease-card">
-                <span class="category-badge">Autoimmune</span>
-                <h3><i class="fas fa-leaf"></i> Psoriasis & Lichen</h3>
-                <p>Psoriasis causes scaly patches, most commonly on knees and elbows. Lichen planus can cause swelling
-                    and irritation in the skin, hair, nails and mucous membranes.</p>
+                <div class="disease-label">
+                    <i class="fas fa-leaf"></i>
+                    <span class="label-name">Psoriasis & Lichen Planus</span>
+                </div>
+                <div class="disease-content">
+                    <span class="category-badge">Autoimmune</span>
+                    <p>Psoriasis is a chronic autoimmune condition where skin cells multiply too quickly, leading to
+                        thick, red, scaly patches, often accompanied by itching or burning. Lichen Planus is another
+                        inflammatory condition causing purplish, itchy, flat-topped bumps on the skin or in the mouth.
+                        Both conditions are non-contagious and are believed to be caused by an overactive immune system,
+                        often triggered by stress, infections, or certain medications.</p>
+                    <a href="https://dermnetnz.org/topics/psoriasis" class="learn-more" target="_blank"
+                        rel="noopener noreferrer">Learn more <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
 
             <!-- 8. Seborrheic Keratoses -->
             <div class="disease-card">
-                <span class="category-badge">Benign Growth</span>
-                <h3><i class="fas fa-sun"></i> Seborrheic Keratoses</h3>
-                <p>One of the most common noncancerous skin growths in older adults. It usually appears as a brown,
-                    black or light tan growth on the face, chest, shoulders or back.</p>
+                <div class="disease-label">
+                    <i class="fas fa-sun"></i>
+                    <span class="label-name">Seborrheic Keratoses</span>
+                </div>
+                <div class="disease-content">
+                    <span class="category-badge">Benign Growth</span>
+                    <p>Seborrheic Keratoses are extremely common, harmless skin growths that often appear as brown,
+                        black, or light tan "pasted-on" spots, increasing in number with age. Other benign skin tumors
+                        include skin tags (small, soft growths) or cherry angiomas (small, red spots). These are
+                        generally genetic and often appear spontaneously. They pose no health risk but can sometimes
+                        become irritated by clothing or friction.</p>
+                    <a href="https://dermnetnz.org/topics/seborrhoeic-keratosis" class="learn-more" target="_blank"
+                        rel="noopener noreferrer">Learn more <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
 
             <!-- 9. Tinea / Ringworm / Candidiasis -->
             <div class="disease-card" style="border-left-color: #10b981;">
-                <span class="category-badge">Fungal</span>
-                <h3><i class="fas fa-bacteria"></i> Fungal Infections</h3>
-                <p>Conditions caused by fungi, including Tinea (Ringworm) and Candidiasis. These often present as itchy,
-                    red, circular rashes or white patches in moist areas of the body.</p>
+                <div class="disease-label">
+                    <i class="fas fa-bacteria"></i>
+                    <span class="label-name">Tinea Ringworm & Candidiasis</span>
+                </div>
+                <div class="disease-content">
+                    <span class="category-badge">Fungal</span>
+                    <p>These are common skin infections caused by various types of fungi. Tinea, or ringworm, typically
+                        presents as a red, itchy, circular rash. Candidiasis, a yeast infection, often appears in warm,
+                        moist areas of the body. People contract these infections through direct contact with infected
+                        individuals, animals, or contaminated surfaces. Factors like humidity, poor hygiene, a weakened
+                        immune system, or certain medications can lead to fungal overgrowth.</p>
+                    <a href="https://dermnetnz.org/topics/tinea-incognito" class="learn-more" target="_blank"
+                        rel="noopener noreferrer">Learn more <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
 
             <!-- 10. Warts / Molluscum / Viral -->
             <div class="disease-card" style="border-left-color: #8b5cf6;">
-                <span class="category-badge">Viral</span>
-                <h3><i class="fas fa-virus"></i> Viral Infections</h3>
-                <p>Includes common warts, molluscum contagiosum, and other viral skin conditions. These are caused by
-                    viruses like HPV and are often contagious through skin-to-skin contact.</p>
+                <div class="disease-label">
+                    <i class="fas fa-virus"></i>
+                    <span class="label-name">Warts Molluscum & Viral</span>
+                </div>
+                <div class="disease-content">
+                    <span class="category-badge">Viral</span>
+                    <p>These are skin growths caused by various viruses. Warts, often due to HPV, are rough, firm bumps,
+                        while Molluscum Contagiosum presents as small, flesh-colored, pearly lesions. They are typically
+                        acquired through direct skin-to-skin contact, self-inoculation, or shared objects. Children and
+                        individuals with compromised immune systems are particularly susceptible. They can be itchy,
+                        irritating, or a cosmetic concern, and are contagious.</p>
+                    <a href="https://dermnetnz.org/topics/molluscum-contagiosum" class="learn-more" target="_blank"
+                        rel="noopener noreferrer">Learn more <i class="fas fa-arrow-right"></i></a>
+                </div>
             </div>
+
         </div>
     </div>
 

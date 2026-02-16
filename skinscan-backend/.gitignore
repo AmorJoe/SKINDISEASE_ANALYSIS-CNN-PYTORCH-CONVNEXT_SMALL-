@@ -1,3 +1,4 @@
+
 # Python
 __pycache__/
 *.py[cod]
@@ -56,3 +57,13 @@ logs/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Machine Learning - EXCLUDE LARGE MODELS
+*.pth
+*.pt
+*.h5
+*.keras
+*.ckpt
+ml_models/*.pth
+ml_models/*.h5
+skinscan-backend/ml_models/
