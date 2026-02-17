@@ -22,13 +22,21 @@
             <li><a href="#about">Technology</a></li>
             <!-- Theme Toggle -->
             <!-- Notification Bell -->
-            <li>
-                <button id="notification-btn" title="Notifications"
-                    style="background: none; border: none; color: var(--text-main); font-size: 1.2rem; cursor: pointer; padding: 0.5rem; transition: color 0.3s; position: relative;">
+            <li style="position: relative;">
+                <button id="notification-btn" title="Notifications">
                     <i class="fas fa-bell"></i>
-                    <span id="notification-badge"
-                        style="position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: none;"></span>
+                    <span id="notification-badge" class="notif-count-badge"></span>
                 </button>
+                <!-- Notification Dropdown -->
+                <div class="notification-dropdown" id="notification-dropdown">
+                    <div class="notif-header">
+                        <span>Notifications</span>
+                        <button class="notif-clear-btn" onclick="clearAllNotifications()">Clear All</button>
+                    </div>
+                    <div class="notif-list" id="notif-list">
+                        <div class="notif-empty">No notifications</div>
+                    </div>
+                </div>
             </li>
             <!-- Avatar Dropdown -->
             <li class="user-menu">
@@ -105,7 +113,11 @@
             </div>
 
             <div class="loader-container" id="loader">
-                <div class="scanner"></div>
+                <div class="thinking-bubbles">
+                    <div class="bubble"></div>
+                    <div class="bubble"></div>
+                    <div class="bubble"></div>
+                </div>
                 <p>Analyzing skin texture and pigmentation...</p>
             </div>
 

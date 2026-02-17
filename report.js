@@ -167,7 +167,9 @@ function loadDiagnosticData() {
                     confidence: result.confidence || 0,
                     abcd: result.abcd || { a: "Low", b: "Regular", c: "Uniform", d: "<6mm" }
                 },
-                treatmentSteps: parseTreatment(result.treatment || result.recommendation),
+                treatmentSteps: result.treatment || parseTreatment(result.recommendation),
+                lifestyleTip: result.lifestyle_tip || 'Consult a healthcare professional for personalized advice.',
+                aiModelUsed: result.ai_model_used || 'gemini',
                 image: storedImage
             };
         } catch (e) {
@@ -236,24 +238,22 @@ function loadDiagnosticData() {
     document.getElementById('confidenceText').textContent = reportData.diagnosis.confidence + "%";
     document.getElementById('confidenceBar').style.width = reportData.diagnosis.confidence + "%";
 
-    // Treatment Steps
+    // Treatment Steps (no checkboxes)
     const stepsContainer = document.getElementById('treatmentSteps');
     if (stepsContainer) {
-        stepsContainer.innerHTML = '';
-        reportData.treatmentSteps.forEach(item => {
-            const stepId = `step-${item.step}`;
-            const isChecked = localStorage.getItem(stepId) === 'true';
-            const stepHTML = `
-                <div class="step-item">
-                    <input type="checkbox" class="step-checkbox" id="${stepId}" ${isChecked ? 'checked' : ''} onchange="saveCheckboxState('${stepId}', this.checked)">
-                    <div class="step-number">${item.step}</div>
-                    <div class="step-content">
-                        <strong>${item.title}</strong>
-                        <p>${item.description}</p>
-                    </div>
-                </div>
-            `;
-            stepsContainer.innerHTML += stepHTML;
+        renderTreatmentSteps(reportData.treatmentSteps);
+    }
+
+    // Lifestyle Tip
+    const tipText = document.getElementById('tipText');
+    if (tipText && reportData.lifestyleTip) {
+        tipText.textContent = reportData.lifestyleTip;
+    }
+
+    // Highlight active model button
+    if (reportData.aiModelUsed) {
+        document.querySelectorAll('.model-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.model === reportData.aiModelUsed);
         });
     }
 
@@ -265,7 +265,7 @@ function loadDiagnosticData() {
 // Helper to parse treatment text into steps
 function parseTreatment(text) {
     if (!text) return [];
-    if (Array.isArray(text)) return text; // If already array
+    if (Array.isArray(text)) return text; // Already structured array from AI
 
     // Split by newlines or periods if it's a block of text
     const sentences = text.split(/\.|\n/).filter(s => s.trim().length > 5);
@@ -274,6 +274,120 @@ function parseTreatment(text) {
         title: `Step ${i + 1}`,
         description: s.trim()
     })).slice(0, 4); // Limit to 4 steps
+}
+
+// Render treatment steps (no checkboxes)
+function renderTreatmentSteps(steps) {
+    const container = document.getElementById('treatmentSteps');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!steps || steps.length === 0) {
+        container.innerHTML = '<p style="opacity: 0.6; text-align: center; padding: 20px;">No treatment plan available.</p>';
+        return;
+    }
+
+    steps.forEach(item => {
+        const stepHTML = `
+            <div class="step-item">
+                <div class="step-number">${item.step}</div>
+                <div class="step-content">
+                    <strong>${item.title}</strong>
+                    <p>${item.description}</p>
+                </div>
+            </div>
+        `;
+        container.innerHTML += stepHTML;
+    });
+}
+
+// ============================================
+// MODEL SWITCHER
+// ============================================
+let currentModelUsed = 'gemini';
+
+async function switchModel(model) {
+    if (model === currentModelUsed) return;
+
+    // Get disease data from stored result
+    const storedResult = localStorage.getItem('latest_scan_result');
+    if (!storedResult) {
+        console.warn('No scan result available for model switching');
+        return;
+    }
+
+    let result;
+    try {
+        result = JSON.parse(storedResult);
+    } catch (e) {
+        console.error('Error parsing scan result:', e);
+        return;
+    }
+
+    // Update button states
+    document.querySelectorAll('.model-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.model === model);
+    });
+
+    // Show loading in treatment area
+    const container = document.getElementById('treatmentSteps');
+    if (container) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 30px; opacity: 0.7;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 10px;"></i>
+                <p>Generating treatment plan with ${model === 'llama' ? 'Meta LLaMA' : 'Google Gemini'}...</p>
+            </div>
+        `;
+    }
+
+    const tipText = document.getElementById('tipText');
+    if (tipText) tipText.textContent = 'Updating...';
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/predict/generate-treatment`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                disease_name: result.disease_name,
+                confidence: result.confidence,
+                model: model
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.status === 'success') {
+            const treatment = data.data;
+            renderTreatmentSteps(treatment.steps || []);
+
+            if (tipText && treatment.tip) {
+                tipText.textContent = treatment.tip;
+            }
+
+            // Update severity badge if provided
+            if (treatment.severity) {
+                const severityBadge = document.getElementById('severityBadge');
+                if (severityBadge) {
+                    severityBadge.textContent = treatment.severity;
+                    const level = treatment.severity.toLowerCase();
+                    severityBadge.className = `severity-badge badge-${level === 'high' || level === 'critical' ? 'high' : level === 'low' ? 'low' : 'mid'}`;
+                }
+            }
+
+            currentModelUsed = treatment.model_used || model;
+        } else {
+            renderTreatmentSteps([]);
+            if (tipText) tipText.textContent = 'Failed to generate. Try another model.';
+        }
+    } catch (error) {
+        console.error('Model switch error:', error);
+        renderTreatmentSteps([]);
+        if (tipText) tipText.textContent = 'Network error. Please try again.';
+    }
 }
 
 // Helper: Convert Base64 to Blob
@@ -446,12 +560,7 @@ async function saveDoctorNotes(notes, timestampEl) {
     }
 }
 
-// ============================================
-// CHECKBOX STATE PERSISTENCE
-// ============================================
-function saveCheckboxState(stepId, isChecked) {
-    localStorage.setItem(stepId, isChecked.toString());
-}
+// (Checkbox persistence removed - treatment steps no longer have checkboxes)
 
 // ============================================
 // PRINT PREVIEW
@@ -507,7 +616,7 @@ function toggleDarkMode() {
 }
 
 // Initialize dark mode on page load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const darkMode = localStorage.getItem('darkMode');
     const darkModeBtn = document.getElementById('btnDarkMode');
 
@@ -527,13 +636,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (needsAutosave === 'true') {
         localStorage.removeItem('needs_autosave');
 
-        // Use pre-selected location OR default to Unspecified
-        const initialLocation = preSelectedLocation || 'Unspecified';
+        // Check if this scan was already saved (prevents duplicates on page refresh)
+        const scanResult = localStorage.getItem('latest_scan_result');
+        const savedHash = sessionStorage.getItem('scan_already_saved');
+        const currentHash = scanResult ? scanResult.substring(0, 100) : '';
 
-        console.log(`Triggering auto-save with location: ${initialLocation}`);
+        if (savedHash === currentHash) {
+            console.log('Scan already saved this session, skipping duplicate auto-save.');
+        } else {
+            // Use pre-selected location OR default to Unspecified
+            const initialLocation = preSelectedLocation || 'Unspecified';
 
-        // Save immediately with the determined location
-        saveScanToBackend(false, initialLocation);
+            console.log(`Triggering auto-save with location: ${initialLocation}`);
+
+            // Save immediately with the determined location
+            await saveScanToBackend(false, initialLocation);
+
+            // Mark as saved for this session
+            sessionStorage.setItem('scan_already_saved', currentHash);
+
+            // Update save button to show it's already saved
+            const btnSave = document.getElementById('btnSaveHistory');
+            if (btnSave) {
+                btnSave.innerHTML = '<i class="fas fa-check"></i>';
+                btnSave.title = 'Already saved';
+                btnSave.disabled = true;
+                btnSave.style.opacity = '0.5';
+            }
+        }
 
         // Clear the temp location so it doesn't persist forever
         if (preSelectedLocation) {
@@ -545,11 +675,32 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 // SAVE SCAN TO BACKEND
 // ============================================
+let isSaving = false; // Prevent duplicate saves
+
 async function saveReportToHistory() {
+    // Check if already saved this session
+    const scanResult = localStorage.getItem('latest_scan_result');
+    const savedHash = sessionStorage.getItem('scan_already_saved');
+    const currentHash = scanResult ? scanResult.substring(0, 100) : '';
+
+    if (savedHash === currentHash) {
+        alert('This scan has already been saved to your history!');
+        return;
+    }
+
     await saveScanToBackend(true);
+
+    // Mark as saved
+    sessionStorage.setItem('scan_already_saved', currentHash);
 }
 
 async function saveScanToBackend(isManual = false, forceLocation = null) {
+    // Guard: prevent duplicate saves
+    if (isSaving) {
+        console.warn('Save already in progress, skipping duplicate call.');
+        return;
+    }
+    isSaving = true;
     const token = getAuthToken();
     if (!token) {
         if (isManual) alert('Please log in to save your scan history.');
@@ -636,6 +787,8 @@ async function saveScanToBackend(isManual = false, forceLocation = null) {
             btnSave.innerHTML = originalContent;
             btnSave.disabled = false;
         }
+    } finally {
+        isSaving = false;
     }
 }
 

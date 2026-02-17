@@ -595,7 +595,8 @@ body {
     .btn-download,
     .btn-icon,
     .action-section,
-    .footer-brand {
+    .footer-brand,
+    .model-selector {
         display: none !important;
     }
 

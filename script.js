@@ -299,6 +299,7 @@ function initDashboardPage() {
                             setTimeout(() => loc.classList.remove('shake-highlight'), 600);
                             return;
                         }
+                        localStorage.setItem('latest_scan_location', loc.value);
                         window.location.href = 'report.html';
                     };
                 }
@@ -306,6 +307,7 @@ function initDashboardPage() {
                 // SAVE DATA FOR REPORT
                 localStorage.setItem('latest_scan_result', JSON.stringify(prediction));
                 localStorage.setItem('needs_autosave', 'true'); // Trigger auto-save on report load
+                sessionStorage.removeItem('scan_already_saved'); // Clear dedup flag for new scan
 
                 // Save Image (already read in previewFile, but we need to ensure it's saved)
                 const reader = new FileReader();
@@ -320,6 +322,13 @@ function initDashboardPage() {
                 }, 100);
 
                 console.log('Prediction result:', prediction);
+
+                // Fire scan-complete notification
+                addNotification(
+                    'Scan Complete',
+                    `Analysis finished: ${prediction.disease_name} (${prediction.confidence}% confidence)`,
+                    'success'
+                );
 
             } else if (response.status === 401) {
                 // Token expired or invalid
@@ -609,10 +618,20 @@ function initTheme() {
     // 4. Notification Logic
     const notifBtn = document.getElementById('notification-btn');
     if (notifBtn) {
-        notifBtn.addEventListener('click', () => {
-            alert("You have 0 new notifications.");
+        notifBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleNotificationDropdown();
+        });
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('notification-dropdown');
+            if (dropdown && !dropdown.contains(e.target) && e.target !== notifBtn) {
+                dropdown.classList.remove('show');
+            }
         });
     }
+    // Load any existing notifications on page load
+    renderNotifications();
 }
 
 function setThemePalette(paletteName) {
@@ -622,8 +641,176 @@ function setThemePalette(paletteName) {
     console.log(`Theme palette set to: ${paletteName}`);
 }
 
+// ============================================
+// NOTIFICATION SYSTEM
+// ============================================
 
+function getNotifications() {
+    try {
+        return JSON.parse(localStorage.getItem('skinscan_notifications') || '[]');
+    } catch { return []; }
+}
 
+function saveNotifications(notifs) {
+    localStorage.setItem('skinscan_notifications', JSON.stringify(notifs));
+}
+
+function addNotification(title, message, type = 'info') {
+    const notifs = getNotifications();
+    notifs.unshift({
+        id: Date.now(),
+        title,
+        message,
+        type,
+        time: new Date().toISOString(),
+        read: false
+    });
+    if (notifs.length > 20) notifs.length = 20;
+    saveNotifications(notifs);
+    renderNotifications();
+
+    // Auto-popup toast for 2 seconds
+    showNotificationToast(title, message, type);
+}
+
+function renderNotifications() {
+    const list = document.getElementById('notif-list');
+    const badge = document.getElementById('notification-badge');
+    const notifs = getNotifications();
+
+    if (!list) return;
+
+    const unread = notifs.filter(n => !n.read).length;
+
+    // Update badge with count
+    if (badge) {
+        if (unread > 0) {
+            badge.textContent = unread > 9 ? '9+' : unread;
+            badge.style.display = 'flex';
+        } else {
+            badge.textContent = '';
+            badge.style.display = 'none';
+        }
+    }
+
+    // Update header count
+    const headerSpan = document.querySelector('.notif-header span');
+    if (headerSpan) {
+        headerSpan.textContent = unread > 0 ? `Notifications (${unread})` : 'Notifications';
+    }
+
+    if (notifs.length === 0) {
+        list.innerHTML = `
+            <div class="notif-empty">
+                <i class="fas fa-bell-slash"></i>
+                <span>You're all caught up!</span>
+            </div>`;
+        return;
+    }
+
+    const iconMap = {
+        success: 'fa-check-circle',
+        info: 'fa-info-circle',
+        warning: 'fa-exclamation-triangle'
+    };
+    const bgMap = {
+        success: 'rgba(40, 167, 69, 0.12)',
+        info: 'rgba(2, 136, 209, 0.12)',
+        warning: 'rgba(255, 193, 7, 0.12)'
+    };
+    const colorMap = {
+        success: '#28a745',
+        info: '#0288d1',
+        warning: '#e67e00'
+    };
+
+    list.innerHTML = notifs.map(n => `
+        <div class="notif-item ${n.read ? 'read' : 'unread'}" onclick="markRead(${n.id})">
+            <div class="notif-icon-wrap" style="background: ${bgMap[n.type] || bgMap.info}; color: ${colorMap[n.type] || colorMap.info}">
+                <i class="fas ${iconMap[n.type] || iconMap.info}"></i>
+            </div>
+            <div class="notif-body">
+                <div class="notif-title">${n.title}</div>
+                <div class="notif-msg">${n.message}</div>
+                <div class="notif-time"><i class="far fa-clock"></i> ${getTimeAgo(n.time)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showNotificationToast(title, message, type) {
+    // Remove any existing toast
+    const existing = document.getElementById('notif-toast');
+    if (existing) existing.remove();
+
+    const colorMap = { success: '#28a745', info: '#0288d1', warning: '#e67e00' };
+    const iconMap = { success: 'fa-check-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+    const color = colorMap[type] || colorMap.info;
+
+    const toast = document.createElement('div');
+    toast.id = 'notif-toast';
+    toast.className = 'notif-toast';
+    toast.innerHTML = `
+        <div class="notif-toast-accent" style="background: ${color}"></div>
+        <div class="notif-toast-icon" style="color: ${color}">
+            <i class="fas ${iconMap[type] || iconMap.info}"></i>
+        </div>
+        <div class="notif-toast-body">
+            <div class="notif-toast-title">${title}</div>
+            <div class="notif-toast-msg">${message}</div>
+        </div>
+        <button class="notif-toast-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    document.body.appendChild(toast);
+
+    // Trigger animation
+    requestAnimationFrame(() => toast.classList.add('show'));
+
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
+
+function toggleNotificationDropdown() {
+    const dropdown = document.getElementById('notification-dropdown');
+    if (!dropdown) return;
+    dropdown.classList.toggle('show');
+
+    if (dropdown.classList.contains('show')) {
+        const notifs = getNotifications();
+        notifs.forEach(n => n.read = true);
+        saveNotifications(notifs);
+        renderNotifications();
+        dropdown.classList.add('show');
+    }
+}
+
+function markRead(id) {
+    const notifs = getNotifications();
+    const n = notifs.find(n => n.id === id);
+    if (n) n.read = true;
+    saveNotifications(notifs);
+    renderNotifications();
+}
+
+function clearAllNotifications() {
+    saveNotifications([]);
+    renderNotifications();
+    const dropdown = document.getElementById('notification-dropdown');
+    if (dropdown) dropdown.classList.remove('show');
+}
+
+function getTimeAgo(isoString) {
+    const diff = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+}
 
 
 // ============================================
@@ -1570,6 +1757,7 @@ function initBodyMapPage() {
     function createScanCard(scan, index) {
         const card = document.createElement('div');
         card.className = 'scan-card';
+        card.id = `scan-card-${scan.id}`;
         card.onclick = () => viewScanReport(scan.id);
         card.style.animationDelay = `${index * 0.05}s`;
 
@@ -1577,6 +1765,9 @@ function initBodyMapPage() {
         const confidenceColor = getConfidenceColor(scan.confidence);
 
         card.innerHTML = `
+            <button class="scan-delete-btn" onclick="event.stopPropagation(); deleteScan(${scan.id})" title="Delete scan">
+                <i class="fas fa-trash-alt"></i>
+            </button>
             <img src="${scan.image}" alt="${scan.title}" class="scan-card-image" loading="lazy">
             <div class="scan-card-content">
                 <div class="scan-card-title">${escapeHtml(scan.title)}</div>
@@ -1611,6 +1802,43 @@ function initBodyMapPage() {
             window.location.href = `report.html?scan_id=${scanId}`;
         }, 200);
     }
+
+    // Global delete function (called from onclick in card HTML)
+    window.deleteScan = async function (scanId) {
+        if (!confirm('Are you sure you want to delete this scan? This cannot be undone.')) return;
+
+        const token = getAuthToken();
+        if (!token) { alert('Please log in.'); return; }
+
+        const card = document.getElementById(`scan-card-${scanId}`);
+        if (card) {
+            card.style.opacity = '0.4';
+            card.style.pointerEvents = 'none';
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/predict/scan-history/${scanId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if (response.ok && data.status === 'success') {
+                // Remove from state
+                bodyMapState.allScans = bodyMapState.allScans.filter(s => s.id !== scanId);
+                updateStats();
+                highlightBodyPartsWithScans();
+                applyFilters();
+            } else {
+                alert('Failed to delete: ' + (data.message || 'Unknown error'));
+                if (card) { card.style.opacity = '1'; card.style.pointerEvents = ''; }
+            }
+        } catch (err) {
+            console.error('Delete error:', err);
+            alert('Network error while deleting.');
+            if (card) { card.style.opacity = '1'; card.style.pointerEvents = ''; }
+        }
+    };
 
     function formatDate(dateString) {
         const date = new Date(dateString);

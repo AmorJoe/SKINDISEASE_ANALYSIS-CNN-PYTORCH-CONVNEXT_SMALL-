@@ -232,3 +232,7 @@ LOGGING = {
 GOOGLE_API_KEY = config('GOOGLE_API_KEY', default=None)
 GEMINI_MODEL_NAME = config('GEMINI_MODEL_NAME', default='gemini-2.5-flash')
 
+# NVIDIA API (Meta LLaMA)
+NVIDIA_API_KEY = config('NVIDIA_API_KEY', default=None)
+NVIDIA_MODEL_NAME = config('NVIDIA_MODEL_NAME', default='meta/llama-3.1-8b-instruct')
+

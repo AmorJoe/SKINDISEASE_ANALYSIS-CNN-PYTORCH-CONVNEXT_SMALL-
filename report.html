@@ -80,12 +80,7 @@
                     <!-- Title and Location removed as per user request (Auto-generated/Dashboard handled) -->
                 </div>
 
-                <button class="btn-icon" id="notification-btn" title="Notifications" aria-label="Notifications"
-                    style="position: relative;">
-                    <i class="fas fa-bell"></i>
-                    <span id="notification-badge"
-                        style="position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: none;"></span>
-                </button>
+
                 <a href="index.html" class="btn-icon" title="Back to Home" aria-label="Back to Home">
                     <i class="fas fa-home"></i>
                 </a>
@@ -188,9 +183,9 @@
                     <!-- Dynamic Content -->
                 </div>
 
-                <div class="lifestyle-tip">
+                <div class="lifestyle-tip" id="lifestyleTip">
                     <i class="fas fa-info-circle"></i>
-                    <span><strong>Note:</strong> Avoid scratching. Keep area clean.</span>
+                    <span><strong>Note:</strong> <span id="tipText">Loading tip...</span></span>
                 </div>
             </div>
 

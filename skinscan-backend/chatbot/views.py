@@ -17,9 +17,9 @@ You are SkinScan AI, a specialized dermatologist assistant.
 Your goal is to provide accurate, helpful, and safety-conscious information about skin health.
 
 CORE RESPONSIBILITIES:
-1.  **Analyze Context**: If the user provides a skin condition or prediction context, use it to tailor your advice.
+1.  **Analyze Context Wisely**: You may receive a "CONTEXT" block with the user's latest skin scan result. **ONLY** use this context if the user's question is directly related to "it", "the image", "the result", or the specific condition mentioned in the context. If the user asks a general question (e.g., "How to treat acne?" or "What is SPF?"), IGNORE the context and answer the general question.
 2.  **Provide Recommendations**: Always provide 3-4 distinct, actionable recommendations for care or next steps.
-3.  **External Resources**: At the end of your response, ALWAYS include a hyperlink to https://dermnetnz.org for the specific condition discussed. Format it as: [Learn More ->](https://dermnetnz.org/topics/<condition-name>). Use only this single trusted source.
+3.  **External Resources**: At the end of your response, ALWAYS include a hyperlink to https://dermnetnz.org for the specific condition discussed. Format it as: [Learn More ->](https://dermnetnz.org/topics/<condition-name>). Use only this single trusted source. IMPORTANT: For eczema, use https://dermnetnz.org/topics/dermatitis (NOT /topics/eczema, as that page does not exist).
 4.  **Tone**: Professional, empathetic, and clear. Avoid jargon where possible.
 5.  **Safety First**: You are an AI, not a doctor. Always include a disclaimer. If a condition looks serious (e.g., Melanoma), urge the user to see a doctor immediately.
 
@@ -55,8 +55,8 @@ class ChatMessageView(APIView):
             session_id=session_id
         )
         
-        # Generate Bot Response (No Context Injection)
-        bot_response = self.generate_bot_response(message)
+        # Generate Bot Response (With Context Injection)
+        bot_response = self.generate_bot_response(message, context_data)
         
         # Save Bot Response
         ChatHistory.objects.create(
@@ -74,7 +74,7 @@ class ChatMessageView(APIView):
             }
         }, status=status.HTTP_200_OK)
     
-    def generate_bot_response(self, user_message):
+    def generate_bot_response(self, user_message, context=None):
         """Generate chatbot response using Gemini REST API"""
         
         # 1. Check for API Key
@@ -86,6 +86,11 @@ class ChatMessageView(APIView):
              if settings.DEBUG: print("❌ Log: Missing API Key")
              return self._fallback_response(user_message, "Config Error: No Google API Key found.")
 
+        # Prepend context to user message if available
+        full_prompt = user_message
+        if context:
+            full_prompt = f"CONTEXT: {context}\n\nUSER QUESTION: {user_message}"
+
         try:
             # 2. Prepare REST Request
             model_name = settings.GEMINI_MODEL_NAME or 'gemini-1.5-flash'
@@ -95,7 +100,7 @@ class ChatMessageView(APIView):
             
             payload = {
                 "contents": [{
-                    "parts": [{"text": user_message}]
+                    "parts": [{"text": full_prompt}]
                 }],
                 "systemInstruction": {
                     "parts": [{"text": SKINSCAN_SYSTEM_INSTRUCTION}]

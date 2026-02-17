@@ -22,6 +22,7 @@ from .models import PredictionResult, SkinImage
 from .image_validator import ImageQualityValidator, ValidationResult
 from .cnn_inference import get_predictor, PredictionOutput
 from .storage_service import get_storage_service
+from .treatment_generator import generate_treatment_plan
 from .exceptions import (
     ImageValidationError,
     ModelUnavailableError,
@@ -291,6 +292,25 @@ class ImageUploadView(APIView):
                 'images': [] # Simplified
             }
 
+            # Generate AI Treatment Plan
+            model_choice = request.data.get('ai_model', 'gemini')
+            try:
+                treatment = generate_treatment_plan(
+                    prediction_output.disease_name,
+                    prediction_output.confidence,
+                    model=model_choice
+                )
+                result['treatment'] = treatment.get('steps', [])
+                result['severity'] = treatment.get('severity', 'Moderate')
+                result['lifestyle_tip'] = treatment.get('tip', '')
+                result['ai_model_used'] = treatment.get('model_used', model_choice)
+            except Exception as e:
+                logger.error(f"Treatment generation failed: {e}")
+                result['treatment'] = []
+                result['severity'] = 'Moderate'
+                result['lifestyle_tip'] = ''
+                result['ai_model_used'] = 'fallback'
+
             # Return DIRECTLY to frontend (matches script.js expectation)
             return Response({
                 'status': 'success',
@@ -461,6 +481,76 @@ class ScanHistoryView(APIView):
             return Response({
                 'status': 'error',
                 'message': 'Failed to fetch scan history'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DeleteScanView(APIView):
+    """Delete a specific scan history entry."""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, scan_id):
+        try:
+            from .models import ScanHistory
+            scan = ScanHistory.objects.filter(id=scan_id, user_id=request.user.id).first()
+
+            if not scan:
+                return Response({
+                    'status': 'error',
+                    'message': 'Scan not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            scan.delete()
+
+            return Response({
+                'status': 'success',
+                'message': 'Scan deleted successfully'
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error deleting scan: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': 'Failed to delete scan'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GenerateTreatmentView(APIView):
+    """
+    Regenerate treatment plan with a different AI model.
+    Does NOT require re-uploading the image.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        disease_name = request.data.get('disease_name')
+        confidence = request.data.get('confidence', 0)
+        model = request.data.get('model', 'gemini')
+
+        if not disease_name:
+            return Response({
+                'status': 'error',
+                'message': 'disease_name is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            confidence = float(confidence)
+        except (ValueError, TypeError):
+            confidence = 0
+
+        if model not in ('gemini', 'llama'):
+            model = 'gemini'
+
+        try:
+            treatment = generate_treatment_plan(disease_name, confidence, model=model)
+            return Response({
+                'status': 'success',
+                'data': treatment
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Treatment regeneration failed: {e}")
+            return Response({
+                'status': 'error',
+                'message': 'Failed to generate treatment plan'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

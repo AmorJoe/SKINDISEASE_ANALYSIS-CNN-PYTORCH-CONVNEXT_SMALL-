@@ -18,10 +18,9 @@ from .views import (
     SaveReportView,
     UpdateDoctorNotesView,
     ScanHistoryView,
-    UpdateDoctorNotesView,
-    ScanHistoryView,
+    DeleteScanView,
+    GenerateTreatmentView,
     ImageUploadAndPredictView,  # Legacy compatibility
-
 )
 
 urlpatterns = [
@@ -38,7 +37,10 @@ urlpatterns = [
     path('update-notes/<int:prediction_id>', UpdateDoctorNotesView.as_view(), name='update_notes'),
     # Scan History for Body Map
     path('scan-history', ScanHistoryView.as_view(), name='scan_history'),
+    path('scan-history/<int:scan_id>', DeleteScanView.as_view(), name='delete_scan'),
     # User feedback (FR-DATA-LOOP)
     path('feedback/<int:prediction_id>', PredictionFeedbackView.as_view(), name='prediction_feedback'),
+    # AI Treatment Plan Regeneration
+    path('generate-treatment', GenerateTreatmentView.as_view(), name='generate_treatment'),
 ]
 
