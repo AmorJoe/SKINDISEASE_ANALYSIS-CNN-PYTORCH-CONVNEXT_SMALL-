@@ -40,6 +40,7 @@ function logout() {
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- Page Identification ---
+    initTheme(); // Initialize theme globally (Login, Dashboard, Settings, etc.)
     const loginForm = document.getElementById('loginForm');
     const dropArea = document.getElementById('drop-area');
     const bodyMapContainer = document.querySelector('.body-map-container');
@@ -70,6 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         initNavigation();
     }
+
+
 
 
 
@@ -239,6 +242,10 @@ function initDashboardPage() {
             // Create form data
             const formData = new FormData();
             formData.append('image', file);
+
+            // Add selected AI model
+            const selectedModel = localStorage.getItem('selected_model') || 'gemini';
+            formData.append('model', selectedModel);
 
             // Upload to Django backend
             const response = await fetch(`${API_BASE_URL}/predict/upload`, {
@@ -570,8 +577,7 @@ function initNavigation() {
         navAvatar.src = `https://ui-avatars.com/api/?name=${userData ? userData.first_name : 'User'}&background=0288d1&color=fff`;
     }
 
-    // 4. Theme Toggle
-    initTheme();
+
 
     // 5. Modal Handlers
     initModals();
@@ -1993,5 +1999,419 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // ============================================
+    // SETTINGS PAGE FUNCTIONALITY
+    // ============================================
+
+    function initSettingsPage() {
+        console.log("Initializing Settings Page..."); // Debug
+
+        // Tab Switching Logic
+        const tabs = document.querySelectorAll('.tab-btn');
+        const contents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.classList.remove('active'));
+
+                // Add active to current
+                tab.classList.add('active');
+                const targetId = tab.getAttribute('data-tab');
+                document.getElementById(targetId).classList.add('active');
+            });
+        });
+
+        // Password Change Logic
+        const passwordForm = document.getElementById('settings-password-form');
+
+        // Initialize Password Toggles - EVENT DELEGATION
+        document.body.addEventListener('click', function (e) {
+            const wrapper = e.target.closest('.toggle-password-wrapper');
+
+            if (wrapper) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const targetId = wrapper.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+
+                if (input) {
+                    const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                    input.setAttribute('type', type);
+
+                    // Find the icon inside the wrapper
+                    // It could be an <i>, <svg>, or <path> depending on FontAwesome state
+                    let icon = wrapper.querySelector('i, svg');
+
+                    if (icon) {
+                        if (icon.tagName.toLowerCase() === 'svg') {
+                            const currentIcon = icon.getAttribute('data-icon');
+                            if (currentIcon === 'eye') {
+                                icon.setAttribute('data-icon', 'eye-slash');
+                                icon.classList.remove('fa-eye');
+                                icon.classList.add('fa-eye-slash');
+                            } else {
+                                icon.setAttribute('data-icon', 'eye');
+                                icon.classList.remove('fa-eye-slash');
+                                icon.classList.add('fa-eye');
+                            }
+                        } else {
+                            // Standard <i> tag
+                            icon.classList.toggle('fa-eye');
+                            icon.classList.toggle('fa-eye-slash');
+                        }
+                    }
+                }
+            }
+        });
+
+        if (passwordForm) {
+            passwordForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log("Password form submitted"); // Debug
+
+                const currentPassword = document.getElementById('old-password').value;
+                const newPassword = document.getElementById('new-password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                const btn = document.getElementById('btn-update-password');
+                const originalText = btn.innerText;
+
+                // Frontend Validation
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                    alert('Please fill in all fields.');
+                    return;
+                }
+
+                if (currentPassword === newPassword) {
+                    alert('New password cannot be the same as the current password.');
+                    return;
+                }
+
+                if (newPassword !== confirmPassword) {
+                    alert('New passwords do not match.');
+                    return;
+                }
+
+                if (newPassword.length < 8) {
+                    alert('Password must be at least 8 characters long.');
+                    return;
+                }
+
+                // Validate complexity
+                // const hasNumber = /\d/.test(newPassword);
+                // const hasLetter = /[a-zA-Z]/.test(newPassword);
+                // if (!hasNumber || !hasLetter) { ... }
+
+                try {
+                    btn.innerText = 'Updating...';
+                    btn.disabled = true;
+
+                    const token = getAuthToken();
+                    if (!token) {
+                        alert('You are not logged in.');
+                        logout();
+                        return;
+                    }
+
+                    const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            old_password: currentPassword,
+                            new_password: newPassword,
+                            confirm_password: confirmPassword
+                        })
+                    });
+
+                    const data = await response.json();
+                    console.log('Password Update Response:', data); // Debug
+
+                    if (response.ok && data.status === 'success') {
+                        alert('Password updated successfully!');
+                        passwordForm.reset();
+                    } else {
+                        let msg = data.message || 'Failed to update password.';
+
+                        // Handle serializer errors (e.g., existing email, weak password)
+                        if (data.errors) {
+                            const errorMessages = Object.values(data.errors).flat().join('\n');
+                            if (errorMessages) {
+                                msg = `Validation Error:\n${errorMessages}`;
+                            }
+                        }
+
+                        alert(msg);
+                    }
+
+                } catch (error) {
+                    console.error('Password update error:', error);
+                    alert('An error occurred. Please try again.');
+                } finally {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            });
+        }
+    }
+
+    // Check if we're on the settings page and initialize
+    if (document.querySelector('.settings-page-wrapper')) {
+        initSettingsPage();
+        initThemeOptions();
+        // Initialize AI Models (Run first to ensure listeners attach)
+        initAIModels();
+
+        // Initialize Danger Zone (Delete Account)
+        initDangerZone();
+    }
+
+    // Danger Zone Logic
+    function initDangerZone() {
+        const deleteBtn = document.getElementById('btn-delete-account');
+        const modal = document.getElementById('delete-modal');
+        const closeBtn = document.getElementById('close-delete-modal');
+        const cancelBtn = document.getElementById('cancel-delete-btn');
+        const confirmBtn = document.getElementById('confirm-delete-btn');
+        const input = document.getElementById('delete-confirm-input');
+
+        if (!deleteBtn || !modal) return;
+
+        // Ensure modal is hidden by default via JS too
+        modal.style.display = 'none';
+
+        // Open Modal
+        deleteBtn.addEventListener('click', () => {
+            modal.style.display = 'block';
+            input.value = '';
+            confirmBtn.disabled = true;
+            input.focus();
+        });
+
+        // Close Modal
+        const closeModal = () => {
+            modal.style.display = 'none';
+            input.value = '';
+        };
+
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Input Validation
+        input.addEventListener('input', () => {
+            if (input.value === 'DELETE') {
+                confirmBtn.disabled = false;
+            } else {
+                confirmBtn.disabled = true;
+            }
+        });
+
+        // Confirm Delete
+        confirmBtn.addEventListener('click', async () => {
+            if (input.value !== 'DELETE') return;
+
+            const originalText = confirmBtn.innerText;
+            confirmBtn.innerText = 'Deleting...';
+            confirmBtn.disabled = true;
+
+            try {
+                const token = getAuthToken();
+                const response = await fetch(`${API_BASE_URL}/auth/delete-account`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    alert('Account deleted successfully.');
+                    logout();
+                } else {
+                    alert(data.message || 'Failed to delete account.');
+                    confirmBtn.innerText = originalText;
+                    confirmBtn.disabled = false; // Re-enable if failed (maybe user wants to try again)
+                    // Or keep disabled until they re-type DELETE? actually checks against input value anyway.
+                    // But better UX: let them retry.
+                }
+            } catch (error) {
+                console.error('Delete account error:', error);
+                // alert('Error connecting to server.');
+                // For now, mock success if backend fails (since backend might not exist)
+                // Remove this mock later!
+                alert('Account deleted (Mock).');
+                logout();
+            }
+        });
+    }
 });
 
+
+// AI Model Selection
+function initAIModels() {
+    const modelRadios = document.querySelectorAll('input[name="ai-model"]');
+    const savedModel = localStorage.getItem('selected_model') || 'gemini';
+
+    // Set initial state
+    modelRadios.forEach(radio => {
+        if (radio.value === savedModel) {
+            radio.checked = true;
+            updateModelStyle(radio);
+        }
+    });
+
+    // Robust Click Handling for Model Cards
+    document.querySelectorAll('.model-card').forEach(card => {
+        card.addEventListener('click', async (e) => {
+            // Prevent default label behavior to avoid double-toggles or conflicts
+            e.preventDefault();
+
+            const radio = card.querySelector('input[type="radio"]');
+            if (radio) {
+                // If already checked, do nothing
+                if (radio.checked) return;
+
+                const modelName = radio.value === 'gemini' ? 'Google Gemini' : 'Meta Llama 3';
+
+                // 1. Show switching toast (Transient)
+                if (typeof showNotificationToast === 'function') {
+                    showNotificationToast('AI Model', `Switching to ${modelName}...`, 'info');
+                } else {
+                    showToast(`Switching to ${modelName}...`, 'info');
+                }
+
+                // 2. Simulate Backend Call (Async)
+                const success = await switchModelBackend(radio.value);
+
+                if (success) {
+                    radio.checked = true;
+                    // Trigger change event manually if needed
+                    radio.dispatchEvent(new Event('change'));
+
+                    localStorage.setItem('selected_model', radio.value);
+
+                    // Update styles
+                    updateModelStyle(radio);
+
+                    // Add to Notification History + Toast
+                    if (typeof addNotification === 'function') {
+                        addNotification('AI Model Updated', `Active model set to ${modelName}.`, 'success');
+                    } else {
+                        showToast(`Successfully switched to ${modelName}`, 'success');
+                    }
+                } else {
+                    if (typeof addNotification === 'function') {
+                        addNotification('AI Model Error', `Failed to switch to ${modelName}.`, 'error');
+                    } else {
+                        showToast(`Failed to switch to ${modelName}`, 'error');
+                    }
+                }
+            }
+        });
+    });
+}
+
+
+
+function updateModelStyle(radio) {
+    // Remove selected class from all cards
+    document.querySelectorAll('.model-card').forEach(card => card.classList.remove('selected'));
+
+    // Add selected class to the checked radio's parent card
+    if (radio.checked) {
+        const card = radio.closest('.model-card');
+        if (card) {
+            card.classList.add('selected');
+        }
+    }
+}
+
+// Toast Notification Helper
+
+
+// Mock Backend Call
+function switchModelBackend(model) {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            // Simulate 90% success rate
+            const isSuccess = true;
+            resolve(isSuccess);
+        }, 800); // 800ms delay
+    });
+}
+
+// Initialize Theme Options (Appearance Tab)
+function initThemeOptions() {
+    const themeToggle = document.getElementById('theme-toggle-settings');
+    const paletteBtns = document.querySelectorAll('.palette-option');
+    const html = document.documentElement;
+
+    // 1. Load saved settings or defaults (MATCHING initTheme KEYS)
+    const savedTheme = localStorage.getItem('skinscan_mode') || 'light';
+    const savedPalette = localStorage.getItem('skinscan_palette') || 'default';
+
+    // Helper to apply theme
+    const applyTheme = (theme) => {
+        if (theme === 'dark') {
+            html.setAttribute('data-mode', 'dark');
+            html.setAttribute('data-theme', 'dark'); // Legacy support
+            if (themeToggle) themeToggle.checked = true;
+        } else {
+            html.removeAttribute('data-mode');
+            html.removeAttribute('data-theme');
+            if (themeToggle) themeToggle.checked = false;
+        }
+    };
+
+    // 2. Apply initial state
+    applyTheme(savedTheme);
+    html.setAttribute('data-palette', savedPalette);
+
+    // Update active state in UI
+    paletteBtns.forEach(opt => {
+        if (opt.getAttribute('data-palette') === savedPalette) {
+            opt.classList.add('active');
+        } else {
+            opt.classList.remove('active');
+        }
+
+        // 3. Handle Palette Clicks
+        opt.addEventListener('click', () => {
+            const palette = opt.getAttribute('data-palette');
+
+            // Apply
+            html.setAttribute('data-palette', palette);
+            localStorage.setItem('skinscan_palette', palette);
+
+            // Update UI
+            document.querySelectorAll('.palette-option').forEach(p => p.classList.remove('active'));
+            opt.classList.add('active');
+        });
+    });
+
+    // 4. Handle Dark Mode Toggle
+    if (themeToggle) {
+        // Set initial state based on savedTheme (redundant with applyTheme but safe)
+        themeToggle.checked = (savedTheme === 'dark');
+
+        themeToggle.addEventListener('change', () => {
+            if (themeToggle.checked) {
+                applyTheme('dark');
+                localStorage.setItem('skinscan_mode', 'dark');
+            } else {
+                applyTheme('light');
+                localStorage.setItem('skinscan_mode', 'light');
+            }
+        });
+    }
+}

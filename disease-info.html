@@ -173,19 +173,29 @@
             <li><a href="index.html#about">Technology</a></li>
             <!-- Theme Toggle -->
             <!-- Notification Bell -->
-            <li>
+            <li style="position: relative;">
                 <button id="notification-btn" title="Notifications">
                     <i class="fas fa-bell"></i>
                     <span id="notification-badge" class="notif-count-badge"></span>
                 </button>
+                <!-- Notification Dropdown -->
+                <div class="notification-dropdown" id="notification-dropdown">
+                    <div class="notif-header">
+                        <span>Notifications</span>
+                        <button class="notif-clear-btn" onclick="clearAllNotifications()">Clear All</button>
+                    </div>
+                    <div class="notif-list" id="notif-list">
+                        <div class="notif-empty">No notifications</div>
+                    </div>
+                </div>
             </li>
             <!-- Avatar Dropdown -->
             <li class="user-menu">
                 <img src="https://ui-avatars.com/api/?name=User&background=0288d1&color=fff" alt="Profile"
                     class="avatar" id="nav-avatar">
                 <div class="dropdown-content" id="nav-dropdown">
+                    <!-- Profile and Change Password were likely modals before -->
                     <a href="#" id="nav-profile-link"><i class="fas fa-user-circle"></i> Profile</a>
-                    <a href="#" id="nav-change-password"><i class="fas fa-key"></i> Change Password</a>
                     <!-- === ANALYSIS DROPDOWN START === -->
                     <a href="#" id="nav-analysis-toggle" class="has-submenu">
                         <i class="fas fa-chart-line"></i> Analysis
@@ -195,10 +205,12 @@
                         <a href="report.html" class="submenu-item"><i class="fas fa-file-medical-alt"></i> Scan
                             Report</a>
                         <a href="body-map.html" class="submenu-item"><i class="fas fa-user-injured"></i> Body Map</a>
-                        <a href="disease-info.html" class="submenu-item"><i class="fas fa-book-medical"></i> Disease
+                        <a href="disease-info.html" class="submenu-item active"><i class="fas fa-book-medical"></i>
+                            Disease
                             Info</a>
                     </div>
                     <!-- === ANALYSIS DROPDOWN END === -->
+                    <a href="settings.html" id="nav-settings-link"><i class="fas fa-cog"></i> Settings</a>
                     <a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 </div>
             </li>

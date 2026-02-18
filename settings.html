@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - SkinScan AI</title>
+    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="auth-protected">
+        <div class="logo">
+            <a href="index.html" style="text-decoration: none; color: inherit;">
+                <i class="fas fa-dna"></i> SkinScan AI
+            </a>
+        </div>
+        <ul>
+            <li><a href="index.html#home">Home</a></li>
+            <li><a href="index.html#upload">Analyze</a></li>
+            <li><a href="index.html#about">Technology</a></li>
+
+            <!-- Notification Bell -->
+            <li style="position: relative;">
+                <button id="notification-btn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span id="notification-badge" class="notif-count-badge"></span>
+                </button>
+                <!-- Notification Dropdown -->
+                <div class="notification-dropdown" id="notification-dropdown">
+                    <div class="notif-header">
+                        <span>Notifications</span>
+                        <button class="notif-clear-btn" onclick="clearAllNotifications()">Clear All</button>
+                    </div>
+                    <div class="notif-list" id="notif-list">
+                        <div class="notif-empty">No notifications</div>
+                    </div>
+                </div>
+            </li>
+            <!-- Avatar Dropdown -->
+            <li class="user-menu">
+                <img src="https://ui-avatars.com/api/?name=User&background=0288d1&color=fff" alt="Profile"
+                    class="avatar" id="nav-avatar">
+                <div class="dropdown-content" id="nav-dropdown">
+                    <a href="#" id="nav-profile-link"><i class="fas fa-user-circle"></i> Profile</a>
+                    <!-- === ANALYSIS DROPDOWN START === -->
+                    <a href="#" id="nav-analysis-toggle" class="has-submenu">
+                        <i class="fas fa-chart-line"></i> Analysis
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
+                    </a>
+                    <div class="submenu" id="analysis-submenu">
+                        <a href="report.html" class="submenu-item"><i class="fas fa-file-medical-alt"></i> Scan
+                            Report</a>
+                        <a href="body-map.html" class="submenu-item"><i class="fas fa-user-injured"></i> Body Map</a>
+                        <a href="disease-info.html" class="submenu-item"><i class="fas fa-book-medical"></i> Disease
+                            Info</a>
+                    </div>
+                    <!-- === ANALYSIS DROPDOWN END === -->
+                    <a href="settings.html" class="active"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="settings-page-wrapper">
+
+        <div class="settings-header-block">
+            <!-- Horizontal Tab Navigation -->
+            <div class="settings-tabs">
+                <button class="tab-btn active" data-tab="security">Security</button>
+                <button class="tab-btn" data-tab="appearance">Appearance</button>
+                <button class="tab-btn" data-tab="ai-models">AI Models</button>
+                <button class="tab-btn danger" data-tab="danger-zone">Danger Zone</button>
+            </div>
+        </div>
+
+        <div class="settings-content-container">
+
+            <!-- Security Section -->
+            <div id="security" class="tab-content active">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-shield-alt" style="margin-right: 10px; color: var(--primary);"></i>Security
+                            Settings</h3>
+                        <p>Manage your password and account security.</p>
+                    </div>
+
+                    <form id="settings-password-form">
+                        <div class="input-group">
+                            <label>Current Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="old-password" placeholder="••••••••">
+                                <span class="toggle-password-wrapper" data-target="old-password"
+                                    style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); cursor: pointer; z-index: 100;">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- New Password -->
+                        <div class="input-group">
+                            <label>New Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="new-password" placeholder="••••••••">
+                                <span class="toggle-password-wrapper" data-target="new-password"
+                                    style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); cursor: pointer; z-index: 100;">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="input-group">
+                            <label>Confirm Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="confirm-password" placeholder="••••••••">
+                                <span class="toggle-password-wrapper" data-target="confirm-password"
+                                    style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); cursor: pointer; z-index: 100;">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary" id="btn-update-password">Update Password</button>
+                            <a href="#" class="forgot-link">Forgot Password?</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Appearance Section -->
+            <div id="appearance" class="tab-content">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-paint-brush"
+                                style="margin-right: 10px; color: var(--primary);"></i>Appearance</h3>
+                        <p>Customize the look and feel of SkinScan AI.</p>
+                    </div>
+
+                    <!-- Dark Mode Section (Styled like an input group) -->
+                    <div class="input-group">
+                        <label>Theme Preference</label>
+                        <div class="setting-block">
+                            <div class="theme-switch-wrapper" style="margin-right: 20px;">
+                                <label class="theme-switch" for="theme-toggle-settings">
+                                    <input type="checkbox" id="theme-toggle-settings">
+                                    <div class="slider round">
+                                        <i class="fas fa-sun sun-icon"></i>
+                                        <i class="fas fa-moon moon-icon"></i>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="setting-info">
+                                <h4 style="margin: 0; font-size: 1rem; color: var(--text-main);">Dark Mode</h4>
+                                <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Switch between light
+                                    and dark themes.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Color Palette Section -->
+                    <div class="input-group">
+                        <label>Color Palette</label>
+                        <div class="setting-block vertical">
+                            <p class="mb-3"
+                                style="margin-top: 0; margin-bottom: 15px; color: var(--text-muted); font-size: 0.9rem;">
+                                Select your preferred accent color.</p>
+                            <div class="palette-grid" style="margin-top: 0;">
+                                <button class="palette-option" data-palette="default" title="Medical Blue"></button>
+                                <button class="palette-option" data-palette="lavender" title="Lavender Dreams"></button>
+                                <button class="palette-option" data-palette="matcha" title="Matcha Sage"></button>
+                                <button class="palette-option" data-palette="midnight" title="Midnight Ocean"></button>
+                                <button class="palette-option" data-palette="sunset" title="Sunset Glow"></button>
+                                <button class="palette-option" data-palette="monochrome" title="Monochrome"></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Models Section -->
+            <div id="ai-models" class="tab-content">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-brain" style="margin-right: 10px; color: var(--primary);"></i>AI Model
+                            Configuration</h3>
+                        <p>Select the AI model used for scanning and analysis.</p>
+                    </div>
+
+                    <!-- Model Selection -->
+                    <div class="input-group">
+                        <label>Active Model</label>
+                        <div class="model-grid">
+
+                            <!-- Gemini Option -->
+                            <label class="model-card">
+                                <input type="radio" name="ai-model" value="gemini" checked>
+                                <div class="model-header">
+                                    <div class="model-icon">
+                                        <!-- Google Gemini Logo (Sparkle) -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24"
+                                            height="24" fill="currentColor">
+                                            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5z" />
+                                        </svg>
+                                    </div>
+                                    <div class="check-circle"></div>
+                                </div>
+                                <h4>Google Gemini</h4>
+                                <p>Balanced performance & speed. Recommended for general use.</p>
+                            </label>
+
+                            <!-- Llama Option -->
+                            <label class="model-card">
+                                <input type="radio" name="ai-model" value="llama">
+                                <div class="model-header">
+                                    <div class="model-icon">
+                                        <!-- Meta AI Logo (Gradient Ring) -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24"
+                                            height="24" fill="none">
+                                            <defs>
+                                                <linearGradient id="meta-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" style="stop-color:#0088cc;stop-opacity:1" />
+                                                    <!-- Blue -->
+                                                    <stop offset="100%" style="stop-color:#a64dff;stop-opacity:1" />
+                                                    <!-- Purple -->
+                                                </linearGradient>
+                                            </defs>
+                                            <circle cx="12" cy="12" r="9" stroke="url(#meta-gradient)" stroke-width="3"
+                                                fill="none" />
+                                        </svg>
+                                    </div>
+                                    <div class="check-circle"></div>
+                                </div>
+                                <h4>Meta Llama 3</h4>
+                                <p>High precision local analysis. Requires more resources.</p>
+                            </label>
+
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+
+            <!-- Danger Zone Section -->
+            <div id="danger-zone" class="tab-content">
+                <div class="settings-card danger-border">
+                    <div class="card-header danger">
+                        <h3><i class="fas fa-exclamation-triangle"
+                                style="margin-right: 10px; color: #ef4444;"></i>Danger Zone</h3>
+                        <p>Irreversible actions for your account.</p>
+                    </div>
+
+                    <div class="input-group">
+                        <label style="color: #ef4444;">Critical Actions</label>
+                        <div class="setting-block danger" style="justify-content: space-between;">
+                            <div class="setting-info">
+                                <h4 style="margin: 0; font-size: 1rem; color: #b91c1c;">Delete Account</h4>
+                                <p style="margin: 0; font-size: 0.85rem; color: #b91c1c; opacity: 0.8;">Permanently
+                                    delete your account and all associated data.</p>
+                            </div>
+                            <button class="btn-danger" id="btn-delete-account"
+                                style="padding: 10px 20px; font-size: 0.9rem;">Delete Account</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header danger-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Delete Account</h2>
+                <span class="modal-close" id="close-delete-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete your account? This action is <strong>irreversible</strong>.</p>
+                <p>All your data, including scan history and medical profile, will be permanently removed.</p>
+                <div class="input-group" style="margin-top: 20px;">
+                    <label>Type <strong>DELETE</strong> to confirm:</label>
+                    <input type="text" id="delete-confirm-input" placeholder="DELETE"
+                        style="border: 2px solid #ff4081;">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancel-delete-btn">Cancel</button>
+                    <button class="btn-danger" id="confirm-delete-btn" disabled>Delete Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Re-using script.js -->
+
+    <script src="script.js?v=4"></script>
+</body>
+
+</html>
