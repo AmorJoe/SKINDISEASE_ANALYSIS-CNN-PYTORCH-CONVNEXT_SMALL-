@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinScan AI - Portal</title>
+    <!-- Use shared styles for fonts and variables -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="portal-container">
+        <!-- Background Elements -->
+        <div class="bg-shape shape-1"></div>
+        <div class="bg-shape shape-2"></div>
+
+        <header class="portal-header">
+            <div class="logo">
+                <i class="fas fa-dna"></i> SkinScan AI
+            </div>
+            <p class="portal-subtitle">Advanced Dermatological Diagnosis System</p>
+            <button id="portal-theme-toggle" class="theme-toggle-btn" title="Toggle Light/Dark Mode">
+                <i class="fas fa-adjust"></i>
+            </button>
+        </header>
+
+        <main class="modules-grid">
+            <!-- ADMIN MODULE -->
+            <a href="admin-login.html" class="module-card card-admin">
+                <div class="card-glass-glow"></div>
+                <div class="card-content">
+                    <div class="icon-box">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <h2>Admin Module</h2>
+                    <p>System management, user oversight, and analyisis logs.</p>
+                    <span class="access-btn">Access Portal <i class="fas fa-arrow-right"></i></span>
+                </div>
+            </a>
+
+            <!-- USER MODULE -->
+            <a href="index.html" class="module-card card-user">
+                <div class="card-glass-glow"></div>
+                <div class="card-content">
+                    <div class="icon-wrapper">
+                        <div class="icon-box">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                    <h2>User Portal</h2>
+                    <p>AI Skin analysis, body mapping, and personal reports.</p>
+                    <span class="access-btn">Enter Hub <i class="fas fa-arrow-right"></i></span>
+                </div>
+            </a>
+
+            <!-- DOCTOR MODULE -->
+            <a href="#" class="module-card card-doctor" onclick="alert('Doctor Portal is coming soon!')">
+                <div class="card-glass-glow"></div>
+                <div class="card-content">
+                    <div class="icon-box">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <h2>Doctor Portal</h2>
+                    <p>Specialist consultation and clinical review tools.</p>
+                    <span class="access-btn coming-soon">Coming Soon</span>
+                </div>
+            </a>
+        </main>
+
+        <footer class="portal-footer">
+            <p>&copy; 2026 SkinScan AI. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

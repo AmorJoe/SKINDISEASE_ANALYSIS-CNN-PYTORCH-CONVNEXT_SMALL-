@@ -1,0 +1,362 @@
+/* Dashboard specific styles */
+:root {
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    /* Use main theme variables with fallbacks */
+    --primary-glow: var(--primary, #0288d1);
+    --accent-glow: var(--accent, #25564129);
+    --text-color: var(--text-main, #333);
+    --text-light: #f5f5f5;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+    /* Use theme background but keep the portal aesthetic */
+    background: var(--bg-body, linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%));
+    color: var(--text-main, #333);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    /* Prevent scrolling if content fits */
+}
+
+/* Background Animated Shapes */
+.bg-shape {
+    position: absolute;
+    filter: blur(100px);
+    z-index: -1;
+    animation: float-bg 20s infinite alternate;
+}
+
+.shape-1 {
+    width: 600px;
+    height: 600px;
+    background: rgba(2, 136, 209, 0.2);
+    top: -200px;
+    left: -200px;
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+}
+
+.shape-2 {
+    width: 500px;
+    height: 500px;
+    background: rgba(255, 64, 129, 0.15);
+    bottom: -150px;
+    right: -100px;
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    animation-direction: alternate-reverse;
+}
+
+@keyframes float-bg {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(50px, 50px) rotate(10deg);
+    }
+}
+
+.portal-container {
+    width: 100%;
+    max-width: 1200px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1;
+}
+
+.portal-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    /* Reduced from 4rem to push box up */
+    margin-top: -2rem;
+    /* Pull header up slightly */
+}
+
+.portal-header .logo {
+    font-size: 3rem;
+    color: #0277bd;
+    text-shadow: 0 2px 10px rgba(2, 119, 189, 0.2);
+    margin-bottom: 0.5rem;
+}
+
+.portal-subtitle {
+    font-size: 1.2rem;
+    color: #546e7a;
+    letter-spacing: 1px;
+    font-weight: 300;
+}
+
+.theme-toggle-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--primary-glow);
+    font-size: 1.2rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.3s;
+    width: 44px;
+    /* Slightly larger for easier clicking */
+    height: 44px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    /* Ensure on top */
+}
+
+.theme-toggle-btn:hover {
+    background: white;
+    transform: rotate(180deg);
+}
+
+/* Grid Layout */
+.modules-grid {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+/* Module Cards */
+.module-card {
+    position: relative;
+    width: 320px;
+    height: 400px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    cursor: pointer;
+}
+
+/* Glass Glow Effect */
+.card-glass-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 24px;
+    background: radial-gradient(circle at 50% -20%,
+            rgba(255, 255, 255, 0.8) 0%,
+            transparent 60%);
+    opacity: 0.5;
+    transition: 0.4s;
+    pointer-events: none;
+}
+
+.module-card:hover {
+    transform: translateY(-15px) scale(1.02);
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.8),
+        0 0 20px var(--primary-glow);
+    /* Outer Glow */
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.module-card:hover .card-glass-glow {
+    opacity: 0.8;
+}
+
+/* Specific Glows per Card */
+.card-admin:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 0 30px rgba(2, 136, 209, 0.4);
+}
+
+.card-user:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 0 30px rgba(0, 230, 118, 0.4);
+}
+
+.card-doctor:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 0 30px rgba(255, 64, 129, 0.4);
+}
+
+.card-content {
+    z-index: 2;
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-color);
+}
+
+.icon-box {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    /* background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%); */
+    background: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    color: #0288d1;
+    box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.8), 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: 0.4s;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.module-card:hover .icon-box {
+    transform: scale(1.1) rotate(5deg);
+    background: white;
+    color: #01579b;
+    box-shadow: 0 8px 20px rgba(2, 136, 209, 0.2);
+}
+
+.module-card h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    margin-top: 0;
+    color: #37474f;
+}
+
+.module-card p {
+    font-size: 0.95rem;
+    color: #78909c;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.access-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #0288d1;
+    font-size: 1rem;
+    transition: 0.3s;
+}
+
+.access-btn i {
+    transition: 0.3s;
+}
+
+.module-card:hover .access-btn i {
+    transform: translateX(5px);
+}
+
+.coming-soon {
+    color: #90a4ae;
+    font-style: italic;
+}
+
+.portal-footer {
+    margin-top: 4rem;
+    color: #90a4ae;
+    font-size: 0.9rem;
+}
+
+/* Dark Mode Support uses the 'dark' class on body or generic media query if preferred */
+/* Dark Mode Support - Supports both System Preference AND Manual Toggle */
+@media (prefers-color-scheme: dark) {
+    body:not(.light-mode) {
+        background: linear-gradient(135deg, #121212 0%, #263238 100%);
+    }
+
+    body:not(.light-mode) .module-card {
+        background: rgba(30, 30, 30, 0.6);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    body:not(.light-mode) .module-card h2 {
+        color: #eceff1;
+    }
+
+    body:not(.light-mode) .module-card p {
+        color: #b0bec5;
+    }
+
+    body:not(.light-mode) .icon-box {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    body:not(.light-mode) .module-card:hover {
+        background: rgba(40, 40, 40, 0.8);
+    }
+}
+
+/* Manual Dark Mode Overrides */
+body.dark-mode {
+    background: linear-gradient(135deg, #121212 0%, #263238 100%);
+}
+
+body.dark-mode .module-card {
+    background: rgba(30, 30, 30, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .module-card h2 {
+    color: #eceff1;
+}
+
+body.dark-mode .module-card p {
+    color: #b0bec5;
+}
+
+body.dark-mode .icon-box {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .module-card:hover {
+    background: rgba(40, 40, 40, 0.8);
+}
+
+/* Responsiveness */
+@media (max-width: 1024px) {
+    .modules-grid {
+        gap: 1.5rem;
+    }
+
+    .module-card {
+        width: 280px;
+        height: 380px;
+    }
+}
+
+@media (max-width: 768px) {
+    .modules-grid {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .module-card {
+        width: 100%;
+        max-width: 350px;
+        height: auto;
+        padding-bottom: 2rem;
+    }
+
+    .portal-header .logo {
+        font-size: 2.5rem;
+    }
+
+    .bg-shape {
+        opacity: 0.5;
+        /* Tone down effects on mobile for performance */
+    }
+}

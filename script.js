@@ -563,8 +563,24 @@ function initNavigation() {
     // 3. Analysis Submenu Toggle
     initAnalysisSubmenu();
 
-    // 4. Load User Avatar
+    // 4. Load User Avatar & Admin Link
     const userData = getUserData();
+    if (userData && userData.is_admin) {
+        // Add Admin Dashboard link if not already present
+        if (!document.getElementById('nav-admin-link')) {
+            const adminLink = document.createElement('a');
+            adminLink.href = 'admin.html';
+            adminLink.id = 'nav-admin-link';
+            adminLink.innerHTML = '<i class="fas fa-user-shield"></i> Admin Panel';
+
+            // Insert before logout
+            const navLogout = document.getElementById('nav-logout');
+            if (navLogout) {
+                navLogout.parentNode.insertBefore(adminLink, navLogout);
+            }
+        }
+    }
+
     if (userData && userData.avatar && navAvatar) {
         // Assuming avatar is a full URL or base64. If it's a relative path, prepend base URL.
         const avatarSrc = userData.avatar.startsWith('http') || userData.avatar.startsWith('data:')

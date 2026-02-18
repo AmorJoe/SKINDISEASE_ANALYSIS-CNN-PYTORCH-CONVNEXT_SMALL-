@@ -1,0 +1,343 @@
+/* --- Admin Login Style (Matched to Project Login Style) --- */
+
+:root {
+    --bg-blue: #D6EAF8;
+    --primary-blue: #3B8FB3;
+    --dark-text: #2C3E50;
+    --text-gray: #6C8598;
+    --glass-bg: rgba(255, 255, 255, 0.15);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --white: #ffffff;
+    --error-red: #E74C3C;
+    --success-green: #27AE60;
+
+    /* Theme Semantics - Default Light */
+    --login-bg: var(--bg-blue);
+    --login-card-bg: #ffffff;
+    --login-text: var(--dark-text);
+    --login-input-bg: #F9FAFB;
+    --login-border: #E5E7EB;
+}
+
+/* Theme Sync with login.css - Forced Light Mode */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body.admin-login-body {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--login-bg);
+    padding: 40px 20px;
+}
+
+/* --- Main Card Container (Split Layout) --- */
+.login-container {
+    display: flex;
+    width: 900px;
+    max-width: 95%;
+    min-height: 550px;
+    background: var(--login-card-bg);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    margin: auto;
+}
+
+/* --- Left Side: Visual --- */
+.image-section {
+    flex: 1;
+    position: relative;
+    background-image: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0');
+    /* Technology/Terminal themed image */
+    background-size: cover;
+    background-position: center;
+}
+
+.image-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(59, 143, 179, 0.2), rgba(0, 0, 0, 0.5));
+}
+
+/* --- Floating Glass Cards --- */
+.glass-card {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    color: white;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: float 6s ease-in-out infinite;
+    z-index: 2;
+}
+
+.card-1 {
+    bottom: 40px;
+    left: 30px;
+    width: 220px;
+}
+
+.card-2 {
+    bottom: 130px;
+    left: 140px;
+    width: 190px;
+    animation-delay: 2s;
+}
+
+.icon-box {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1rem;
+}
+
+.card-info h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.card-info p {
+    font-size: 0.7rem;
+    opacity: 0.9;
+    margin-top: 1px;
+}
+
+.highlight-green {
+    color: #A0EACD;
+    font-weight: 700;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+/* --- Right Side: Form --- */
+.form-section {
+    flex: 1;
+    padding: 40px 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: var(--login-card-bg);
+}
+
+.brand-header {
+    margin-bottom: 2.5rem;
+    text-align: center;
+}
+
+.admin-main-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(59, 143, 179, 0.1);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 1.5rem auto;
+    color: var(--primary-blue);
+    font-size: 1.8rem;
+    border: 1px solid rgba(59, 143, 179, 0.2);
+}
+
+.brand-header h2 {
+    font-size: 1.8rem;
+    color: var(--login-text);
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.brand-header .subtitle {
+    color: var(--text-gray);
+    font-size: 0.95rem;
+}
+
+.form-container {
+    width: 100%;
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-gray);
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 14px 15px;
+    background: var(--login-input-bg);
+    border: 1px solid var(--login-border);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: var(--login-text);
+    outline: none;
+    transition: 0.3s;
+}
+
+.input-wrapper input:focus {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 4px rgba(59, 143, 179, 0.1);
+}
+
+.toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-gray);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: 0.3s;
+}
+
+.toggle-password:hover {
+    color: var(--primary-blue);
+}
+
+.error-text {
+    color: var(--error-red);
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+    min-height: 20px;
+    text-align: center;
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-submit:hover:not(:disabled) {
+    background: #2A7A9E;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(59, 143, 179, 0.3);
+}
+
+.btn-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.register-link {
+    text-align: center;
+    margin-top: 1.5rem;
+}
+
+.forgot-link {
+    color: var(--primary-blue);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
+/* Spinner */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, .3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Shake Animation */
+.shake {
+    animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shake {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .login-container {
+        flex-direction: column;
+        max-width: 450px;
+    }
+
+    .image-section {
+        display: none;
+    }
+
+    .form-section {
+        padding: 40px 30px;
+    }
+}

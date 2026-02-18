@@ -194,6 +194,16 @@ if (loginForm) {
             const data = await response.json();
 
             if (data.status === 'success') {
+                // EXCLUSIVITY CHECK: Admins must use the dedicated login page
+                if (data.data.user.is_admin) {
+                    passwordError.textContent = 'Admin access restricted. Please use the authorized Admin Login page.';
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Log In</span>';
+                    loginForm.classList.add('shake');
+                    setTimeout(() => loginForm.classList.remove('shake'), 300);
+                    return;
+                }
+
                 // Store JWT token in sessionStorage
                 sessionStorage.setItem('jwt_token', data.data.token);
                 sessionStorage.setItem('user_data', JSON.stringify(data.data.user));
@@ -202,7 +212,11 @@ if (loginForm) {
                 btn.innerHTML = '<i class="fas fa-check-circle"></i><span>Success!</span>';
 
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    if (data.data.user.is_admin) {
+                        window.location.href = 'admin.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
                 }, 500);
             } else {
                 // Show error from backend

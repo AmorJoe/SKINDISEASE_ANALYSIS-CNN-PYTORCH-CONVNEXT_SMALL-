@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal</title>
+    <link rel="stylesheet" href="admin-login.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="admin-login-body">
+    <div class="login-container">
+        <!-- Left Side: Professional Visual Section -->
+        <div class="image-section">
+            <div class="image-overlay"></div>
+
+            <!-- Glass Cards matching project style -->
+            <div class="glass-card card-1">
+                <div class="icon-box"><i class="fas fa-shield-alt"></i></div>
+                <div class="card-info">
+                    <h4>Security Status</h4>
+                    <p>Protection: <span class="highlight-green">Maximum</span></p>
+                </div>
+            </div>
+
+            <div class="glass-card card-2">
+                <div class="icon-box"><i class="fas fa-terminal"></i></div>
+                <div class="card-info">
+                    <h4>Admin Module</h4>
+                    <p>Status: <span class="highlight-green">Operational</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Form Section -->
+        <div class="form-section">
+            <div class="brand-header">
+                <div class="admin-main-icon">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h2>Admin Portal</h2>
+                <p class="subtitle">Secure Administrative Access</p>
+            </div>
+
+            <div class="form-container">
+                <div class="form-wrapper active">
+                    <form id="adminLoginForm">
+                        <div class="input-group">
+                            <label>Administrator Email</label>
+                            <div class="input-wrapper">
+                                <input type="email" id="admin-email" placeholder="admin@skinscan.ai" required>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Access Key</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="admin-password" placeholder="••••••••" required>
+                                <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+                            </div>
+                        </div>
+
+                        <div id="login-error" class="error-text"></div>
+
+                        <button type="submit" class="btn-submit" id="admin-login-btn">
+                            <span>Sign in</span>
+                        </button>
+
+                        <div class="register-link">
+                            <a href="#" class="forgot-link">Forgot Password?</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin-login.js"></script>
+</body>
+
+</html>
