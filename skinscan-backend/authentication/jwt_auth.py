@@ -60,6 +60,7 @@ def generate_jwt_token(user):
     payload = {
         'user_id': user.id,
         'email': user.email,
+        'is_admin': getattr(user, 'is_admin', False),
         'first_name': getattr(user, 'first_name', ''),
         'last_name': getattr(user, 'last_name', ''),
         'exp': datetime.utcnow() + settings.JWT_EXPIRATION_DELTA,

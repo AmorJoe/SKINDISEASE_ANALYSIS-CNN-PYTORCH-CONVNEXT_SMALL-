@@ -42,9 +42,10 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'first_name', 'last_name', 'email', 
             'phone', 'date_of_birth', 'age', 'gender', 'country', 'address',
             'avatar', 'skin_type', 'skin_tone',
+            'is_admin', 'assigned_model',
             'account_status', 'last_login', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at', 'last_login', 'email']
+        read_only_fields = ['id', 'created_at', 'last_login', 'email', 'is_admin']
 
     def get_age(self, obj):
         """Calculate age from date_of_birth"""

@@ -28,10 +28,12 @@ class User(models.Model):
     skin_tone = models.CharField(max_length=50, blank=True, null=True)  # Fitzpatrick Scale I-VI
     
     # Account Management
+    is_admin = models.BooleanField(default=False)
+    assigned_model = models.CharField(max_length=255, blank=True, null=True)
     account_status = models.CharField(
         max_length=20,
         default='ACTIVE',
-        choices=[('ACTIVE', 'Active'), ('LOCKED', 'Locked')]
+        choices=[('ACTIVE', 'Active'), ('LOCKED', 'Locked'), ('BANNED', 'Banned')]
     )
     last_login = models.DateTimeField(blank=True, null=True)
     

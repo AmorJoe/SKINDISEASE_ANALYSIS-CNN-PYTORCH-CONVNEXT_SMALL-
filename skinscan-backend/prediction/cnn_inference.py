@@ -112,9 +112,11 @@ class CNNPredictor:
         
         self._load_model()
 
-    def _load_model(self):
+    def _load_model(self, model_path=None):
         try:
-            model_path = getattr(settings, 'MODEL_PATH', None)
+            if not model_path:
+                model_path = getattr(settings, 'MODEL_PATH', None)
+            
             if not model_path or not os.path.exists(model_path):
                 logger.warning(f"Model file not found at {model_path}. Switching to Simulation Mode.")
                 self.simulation_mode = True
@@ -172,16 +174,28 @@ class CNNPredictor:
             
             self.model.to(self.device)
             self.model.eval()
-            logger.info("Model loaded successfully.")
+            self.active_model_path = model_path
+            logger.info(f"Model {os.path.basename(model_path)} loaded successfully.")
             
         except Exception as e:
             logger.error(f"Failed to load model: {e}. Defaulting to simulation.")
             self.simulation_mode = True
 
-    def predict(self, image_input: Union[bytes, Image.Image]) -> PredictionOutput:
+    def predict(self, image_input: Union[bytes, Image.Image], user_model_path: Optional[str] = None) -> PredictionOutput:
         start_time = time.time()
         
-        if self.simulation_mode:
+        # Switch model if user has a specific one assigned and it's not the current one
+        if user_model_path and user_model_path != getattr(self, 'active_model_path', ''):
+             full_path = os.path.join(settings.BASE_DIR, 'ml_models', user_model_path)
+             if os.path.exists(full_path):
+                 self._load_model(full_path)
+             else:
+                 logger.warning(f"User specific model {user_model_path} not found. Using current.")
+                 # Fallback to default if everything else fails
+                 if not self.model:
+                     self._load_model()
+
+        if self.simulation_mode or not self.model:
             return self._predict_mock()
 
         try:

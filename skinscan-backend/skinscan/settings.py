@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'authentication',
     'prediction',
     'chatbot',
+    'admin_module',
 ]
 
 # Silencing warnings for development

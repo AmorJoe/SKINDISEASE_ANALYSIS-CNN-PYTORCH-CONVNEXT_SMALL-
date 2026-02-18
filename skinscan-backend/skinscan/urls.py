@@ -34,6 +34,7 @@ urlpatterns = [
     path('api/auth/', include('authentication.urls')),
     path('api/predict/', include('prediction.urls')),
     path('api/chat/', include('chatbot.urls')),
+    path('api/admin/', include('admin_module.urls')),
     
     # Serve frontend files
     re_path(r'^(?P<filename>[\w\-\.]+\.html)$', serve_frontend),

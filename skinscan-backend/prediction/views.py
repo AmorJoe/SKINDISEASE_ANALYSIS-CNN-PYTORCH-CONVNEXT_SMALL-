@@ -204,10 +204,11 @@ def _process_prediction_job_in_memory(job_id: str, image_bytes_list: List[bytes]
             preprocessed_images.append(preprocessed)
         
         # Run prediction
+        user_model = getattr(job.get('user'), 'assigned_model', None)
         if len(preprocessed_images) == 1:
-            prediction_output = predictor.predict(preprocessed_images[0])
+            prediction_output = predictor.predict(preprocessed_images[0], user_model_path=user_model)
         else:
-            prediction_output = predictor.predict_multi(preprocessed_images)
+            prediction_output = predictor.predict_multi(preprocessed_images) # Multi not yet updated
         
         # Create result object (dict)
         result = {
@@ -273,8 +274,9 @@ class ImageUploadView(APIView):
                 preprocessed_images.append(preprocessed)
             
             # Run prediction
+            user_model = getattr(request.user, 'assigned_model', None)
             if len(preprocessed_images) == 1:
-                prediction_output = predictor.predict(preprocessed_images[0])
+                prediction_output = predictor.predict(preprocessed_images[0], user_model_path=user_model)
             else:
                 prediction_output = predictor.predict_multi(preprocessed_images)
             
