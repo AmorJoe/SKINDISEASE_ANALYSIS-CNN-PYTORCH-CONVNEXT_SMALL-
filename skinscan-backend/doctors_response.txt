@@ -1,0 +1,2 @@
+Status: 200
+Body: {"status":"success","data":{"pending":[{"id":6,"email":"doctorsmith@gmail.com","first_name":"doctor","last_name":"smith","created_at":"2026-02-19T14:25:32.451319Z","mrn":"MED-12-45","specialization":"General","is_verified":false}],"active":[]}}

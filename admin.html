@@ -40,6 +40,9 @@
                 <div class="nav-section">
                     <h3>MANAGEMENT</h3>
                     <ul>
+                        <li data-tab="doctors">
+                            <i class="fas fa-user-md"></i> <span>Doctors</span>
+                        </li>
                         <li data-tab="users">
                             <i class="fas fa-users"></i> <span>Users</span>
                         </li>
@@ -246,6 +249,65 @@
                 <div id="reports-grouped-container" class="reports-accordion-container">
                     <!-- JS populated user-grouped accordions -->
                     <div class="empty-state">Loading diagnostics data...</div>
+                </div>
+            </section>
+
+            <!-- DOCTORS TAB -->
+            <section class="tab-content" id="doctors-tab">
+                <!-- Doctors Tab Header (Actions only) -->
+                <div class="content-header" style="justify-content: flex-end; margin-bottom: 1rem;">
+                    <button class="icon-btn" onclick="loadDoctors()" title="Refresh List"><i
+                            class="fas fa-sync-alt"></i></button>
+                </div>
+
+                <!-- Pending Approvals -->
+                <div class="card full-width">
+                    <div class="card-header">
+                        <h3>Pending Approvals</h3>
+                        <span class="badge warning" id="pending-count">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Doctor</th>
+                                        <th>MRN</th>
+                                        <th>Applied On</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pending-doctors-list">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Doctors -->
+                <div class="card full-width" style="margin-top: 2rem;">
+                    <div class="card-header">
+                        <h3>Active Doctors</h3>
+                        <span class="badge success" id="active-count">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Doctor</th>
+                                        <th>MRN</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="active-doctors-list">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>

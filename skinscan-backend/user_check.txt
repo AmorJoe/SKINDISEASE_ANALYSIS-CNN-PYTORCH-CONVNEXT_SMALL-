@@ -1,0 +1,8 @@
+6 | doctorsmith@gmail.com | doc=True | adm=False
+3 | diag_test@example.com | doc=False | adm=False
+2 | amorjoe0414@gmail.com | doc=False | adm=False
+1 | admin@skinscan.com | doc=False | adm=True
+
+Doctor Profiles:
+user_id=2 | verified=False | mrn=MRN12345
+user_id=6 | verified=False | mrn=MED-12-45

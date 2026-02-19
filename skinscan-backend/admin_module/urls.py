@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserListView, UserDetailView, ModelModeratorView, ModelUploadView, AdminReportView, DiseaseInfoView
+from .views import UserListView, UserDetailView, ModelModeratorView, ModelUploadView, AdminReportView, DiseaseInfoView, DoctorManagementView
 
 urlpatterns = [
     path('users/', UserListView.as_view(), name='admin-user-list'),
@@ -11,4 +11,8 @@ urlpatterns = [
     path('reports/<int:pk>/', AdminReportView.as_view(), name='admin-report-detail'),
     path('content/', DiseaseInfoView.as_view(), name='admin-content-list'),
     path('content/<int:pk>/', DiseaseInfoView.as_view(), name='admin-content-detail'),
+    
+    # Doctor Management
+    path('doctors/', DoctorManagementView.as_view(), name='admin-doctor-list'),
+    path('doctors/<int:pk>/<str:action>/', DoctorManagementView.as_view(), name='admin-doctor-action'),
 ]

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Portal - SkinScan AI</title>
+    <link rel="stylesheet" href="doctor-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="doctor-body">
+    <div class="doctor-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-wrapper">
+                    <i class="fas fa-user-md logo-icon"></i>
+                    <span class="logo-text">Dr. Portal</span>
+                </div>
+                <button id="sidebar-toggle" class="sidebar-toggle-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3>MAIN</h3>
+                    <ul>
+                        <li class="active" data-tab="dashboard">
+                            <i class="fas fa-chart-line"></i> <span>Overview</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3>PRACTICE</h3>
+                    <ul>
+                        <li data-tab="appointments">
+                            <i class="fas fa-calendar-check"></i> <span>Appointments</span>
+                        </li>
+                        <li data-tab="patients">
+                            <i class="fas fa-users-medical"></i> <span>Patients</span>
+                        </li>
+                        <li data-tab="reports">
+                            <i class="fas fa-file-medical-alt"></i> <span>Reports</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3>FINANCE</h3>
+                    <ul>
+                        <li data-tab="billing">
+                            <i class="fas fa-file-invoice-dollar"></i> <span>Billing</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3>SYSTEM</h3>
+                    <ul>
+                        <li id="doctor-logout-btn">
+                            <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-profile">
+                    <div class="avatar-circle">
+                        <img src="https://ui-avatars.com/api/?name=Dr+Smith&background=0288d1&color=fff" alt="Dr Icon">
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">Dr. Smith</span>
+                        <span class="user-role">Dermatologist</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="header-controls">
+                    <div class="date-display">
+                        <i class="far fa-calendar-alt"></i>
+                        <span id="current-date">--</span>
+                    </div>
+                    <button class="notif-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">3</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- DASHBOARD TAB -->
+            <section class="tab-content active" id="dashboard-tab">
+                <!-- Stats Row -->
+                <div class="stats-grid">
+                    <div class="stat-card blue-gradient" onclick="switchTab('appointments')">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="stat-info">
+                            <p>Today's Appointments</p>
+                            <h2 id="dash-today-count">8</h2>
+                        </div>
+                    </div>
+
+                    <div class="stat-card purple-gradient" onclick="switchTab('appointments')">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <p>Pending Requests</p>
+                            <h2 id="dash-request-count">5</h2>
+                        </div>
+                    </div>
+
+                    <div class="stat-card green-gradient" onclick="switchTab('patients')">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <p>Total Patients</p>
+                            <h2 id="dash-patient-count">142</h2>
+                        </div>
+                    </div>
+
+                    <div class="stat-card orange-gradient" onclick="switchTab('billing')">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <p>Revenue (Today)</p>
+                            <h2 id="dash-revenue">$450</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity / Quick Actions -->
+                <div class="dashboard-grid-2">
+                    <div class="card glass-panel section-half">
+                        <div class="card-header">
+                            <h3><i class="fas fa-hourglass-half"></i> Urgent Requests</h3>
+                            <button class="btn-text" onclick="switchTab('appointments')">View All</button>
+                        </div>
+                        <div class="list-container" id="dash-urgent-list">
+                            <!-- Populated by JS -->
+                            <div class="empty-state-mini">Loading requests...</div>
+                        </div>
+                    </div>
+
+                    <div class="card glass-panel section-half">
+                        <div class="card-header">
+                            <h3><i class="fas fa-calendar-week"></i> Schedule Overview</h3>
+                        </div>
+                        <div class="chart-wrapper-mini">
+                            <canvas id="appointmentsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- APPOINTMENTS TAB -->
+            <section class="tab-content" id="appointments-tab">
+                <div class="sub-nav-tabs">
+                    <button class="sub-tab active" onclick="filterAppointments('requests')">Requests <span
+                            class="badge-pill">5</span></button>
+                    <button class="sub-tab" onclick="filterAppointments('today')">Today</button>
+                    <button class="sub-tab" onclick="filterAppointments('upcoming')">Upcoming</button>
+                </div>
+
+                <div class="card glass-panel">
+                    <div id="appt-list-container">
+                        <!-- Dynamic Content Table -->
+                        <table class="styled-table" id="appointments-table">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Date & Time</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="appointments-tbody">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- REPORTS TAB -->
+            <section class="tab-content" id="reports-tab">
+                <div class="content-header">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="report-search" placeholder="Search patient reports...">
+                    </div>
+                </div>
+
+                <div class="card glass-panel">
+                    <table class="styled-table" id="reports-table">
+                        <thead>
+                            <tr>
+                                <th>Report ID</th>
+                                <th>Patient Name</th>
+                                <th>Date Generated</th>
+                                <th>Diagnosis</th>
+                                <th>Confidence</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-tbody">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- BILLING TAB -->
+            <section class="tab-content" id="billing-tab">
+                <div class="billing-actions">
+                    <button class="btn-primary" onclick="openInvoiceModal()"><i class="fas fa-plus"></i> Create
+                        Invoice</button>
+                </div>
+
+                <div class="card glass-panel">
+                    <div class="card-header">
+                        <h3>Recent Invoices</h3>
+                    </div>
+                    <table class="styled-table" id="billing-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Patient</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="billing-tbody">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PATIENTS TAB (Placeholder) -->
+            <section class="tab-content" id="patients-tab">
+                <div class="content-header">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="patient-search" placeholder="Search patients...">
+                    </div>
+                </div>
+                <div class="card glass-panel">
+                    <table class="styled-table" id="patients-table">
+                        <thead>
+                            <tr>
+                                <th>Patient Name</th>
+                                <th>Age/Gender</th>
+                                <th>Last Visit</th>
+                                <th>Condition</th>
+                                <th>Contact</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patients-tbody">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Invoice Modal -->
+    <div class="modal" id="invoice-modal">
+        <div class="modal-content glass-morphism">
+            <span class="close-modal" onclick="closeModal('invoice-modal')">&times;</span>
+            <h2>Create New Invoice</h2>
+            <form id="create-invoice-form">
+                <div class="input-group">
+                    <label>Patient Name</label>
+                    <input type="text" placeholder="Search patient..." required>
+                </div>
+                <div class="input-group">
+                    <label>Service Rendered</label>
+                    <select>
+                        <option>Consultation (First)</option>
+                        <option>Consultation (Follow-up)</option>
+                        <option>Biopsy Review</option>
+                        <option>Detailed Report Analysis</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Amount ($)</label>
+                    <input type="number" value="150" min="0">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Generate & Send</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="doctor-dashboard.js"></script>
+</body>
+
+</html>

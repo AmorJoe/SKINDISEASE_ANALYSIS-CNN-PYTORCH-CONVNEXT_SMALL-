@@ -16,7 +16,8 @@ class UserListView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        users = User.objects.all().order_by('-created_at')
+        # Exclude doctors from the general user list
+        users = User.objects.filter(is_doctor=False).order_by('-created_at')
         serializer = UserSerializer(users, many=True)
         return Response({
             'status': 'success',
@@ -291,3 +292,87 @@ class DiseaseInfoView(APIView):
             return Response({'status': 'success', 'message': 'Deleted successfully'})
         except DiseaseInfo.DoesNotExist:
             return Response({'status': 'error', 'message': 'Not found'}, status=404)
+
+class DoctorManagementView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        """List pending and active doctors"""
+        # Fetch doctors (users with is_doctor=True)
+        doctors = User.objects.filter(is_doctor=True).select_related('doctor_profile').order_by('-created_at')
+        
+        pending = []
+        active = []
+        
+        for doc in doctors:
+            profile = getattr(doc, 'doctor_profile', None)
+            doc_data = {
+                'id': doc.id,
+                'email': doc.email,
+                'first_name': doc.first_name,
+                'last_name': doc.last_name,
+                'created_at': doc.created_at,
+                'mrn': profile.medical_license_number if profile else 'N/A',
+                'specialization': profile.specialization if profile else 'N/A',
+                'is_verified': profile.is_verified if profile else False
+            }
+            
+            if profile and profile.is_verified:
+                active.append(doc_data)
+            else:
+                pending.append(doc_data)
+                
+        return Response({
+            'status': 'success',
+            'data': {
+                'pending': pending,
+                'active': active
+            }
+        })
+
+    def post(self, request, pk, action=None):
+        """Approve or Reject/Remove doctors"""
+        try:
+            user = User.objects.get(pk=pk, is_doctor=True)
+            profile = user.doctor_profile
+            
+            if action == 'approve':
+                profile.is_verified = True
+                profile.verification_date = datetime.now()
+                profile.save()
+                
+                # Activate user account if it was locked/inactive
+                user.account_status = 'ACTIVE'
+                user.save()
+                
+                # Fire notification for the doctor
+                try:
+                    from authentication.models import Notification
+                    Notification.objects.create(
+                        user=user,
+                        title='Account Verified',
+                        message='Your doctor account has been verified by the administrator. You can now access all professional features.',
+                        type='DOCTOR_VERIFIED'
+                    )
+                except Exception as ne:
+                    logger.error(f"Failed to create notification: {ne}")
+
+                return Response({'status': 'success', 'message': 'Doctor approved successfully'})
+                
+            elif action == 'reject':
+                # For rejection, we might want to delete the user or just ban them
+                # Deleting for now as per "reject" usually implying removing the application
+                user.delete()
+                return Response({'status': 'success', 'message': 'Doctor application rejected and removed'})
+                
+            elif action == 'remove':
+                # Remove an existing doctor
+                user.delete()
+                return Response({'status': 'success', 'message': 'Doctor removed successfully'})
+            
+            return Response({'status': 'error', 'message': 'Invalid action'}, status=400)
+            
+        except User.DoesNotExist:
+            return Response({'status': 'error', 'message': 'Doctor not found'}, status=404)
+        except Exception as e:
+            return Response({'status': 'error', 'message': str(e)}, status=500)

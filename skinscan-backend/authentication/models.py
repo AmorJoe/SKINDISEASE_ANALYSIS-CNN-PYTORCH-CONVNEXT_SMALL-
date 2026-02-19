@@ -110,3 +110,78 @@ class UserProfile(models.Model):
         
     def __str__(self):
         return f"Profile for {self.user.email}"
+
+
+class DoctorProfile(models.Model):
+    """
+    3NF Separation: Stores doctor-specific professional details
+    Linked 1-to-1 with the core User auth model
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='doctor_profile')
+    
+    # Professional Credentials
+    medical_license_number = models.CharField(max_length=50, unique=True, help_text="Medical Registration Number (MRN)")
+    specialization = models.CharField(max_length=100)
+    years_of_experience = models.PositiveIntegerField(default=0)
+    hospital_affiliation = models.CharField(max_length=200, blank=True, null=True)
+    
+    # Verification & Status
+    is_verified = models.BooleanField(default=False)
+    verification_date = models.DateTimeField(blank=True, null=True)
+    
+    # Availability & Fees
+    consultation_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    available_days = models.JSONField(default=list, help_text="List of available days e.g. ['Mon', 'Tue']")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'doctor_profiles'
+        
+    def __str__(self):
+        return f"Dr. {self.user.last_name or self.user.email} ({self.specialization})"
+class Notification(models.Model):
+    """
+    In-app notification system for users and doctors.
+    """
+    NOTIFICATION_TYPES = [
+        ('APPOINTMENT_REQUEST', 'New Appointment Request'),
+        ('SCAN_COMPLETED', 'AI Scan Completed'),
+        ('DOCTOR_VERIFIED', 'Doctor Account Verified'),
+        ('SYSTEM', 'System Alert')
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'notifications'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.type} for {self.user.email} - Read: {self.is_read}"
+
+
+class DoctorDocument(models.Model):
+    """
+    Files shared by Doctor with Patient (Prescriptions, Lab Results, etc.)
+    """
+    doctor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_documents')
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_documents')
+    document = models.FileField(upload_to='doctor_documents/')
+    name = models.CharField(max_length=255)
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'doctor_documents'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Doc: {self.name} from {self.doctor.email} to {self.patient.email}"

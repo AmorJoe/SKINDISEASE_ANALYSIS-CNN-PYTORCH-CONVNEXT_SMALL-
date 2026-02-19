@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (requireAuth()) {
             initDashboardPage();
             initNavigation(); // Initialize Nav & Menu
+            startNotificationPolling(); // Start notifications
         }
     }
 
@@ -704,7 +705,28 @@ function saveNotifications(notifs) {
     localStorage.setItem('skinscan_notifications', JSON.stringify(notifs));
 }
 
+async function fetchNotifications() {
+    if (!isAuthenticated()) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/notifications`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            saveNotifications(data.data);
+            renderNotifications();
+        }
+    } catch (e) { console.error("Poll Error:", e); }
+}
+
+function startNotificationPolling() {
+    fetchNotifications();
+    setInterval(fetchNotifications, 30000); // Poll every 30s
+}
+
 function addNotification(title, message, type = 'info') {
+    // For local immediate feedback, we still push to localStorage, 
+    // but the real source of truth is the backend polling.
     const notifs = getNotifications();
     notifs.unshift({
         id: Date.now(),
@@ -717,8 +739,6 @@ function addNotification(title, message, type = 'info') {
     if (notifs.length > 20) notifs.length = 20;
     saveNotifications(notifs);
     renderNotifications();
-
-    // Auto-popup toast for 2 seconds
     showNotificationToast(title, message, type);
 }
 

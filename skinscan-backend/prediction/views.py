@@ -313,6 +313,18 @@ class ImageUploadView(APIView):
                 result['lifestyle_tip'] = ''
                 result['ai_model_used'] = 'fallback'
 
+            # Fire scan-complete notification for the user
+            try:
+                from authentication.models import Notification
+                Notification.objects.create(
+                    user=request.user,
+                    title='Skin Analysis Complete',
+                    message=f'Analysis finished for your scan: {prediction_output.disease_name} ({prediction_output.confidence}% confidence)',
+                    type='SCAN_COMPLETED'
+                )
+            except Exception as ne:
+                logger.error(f"Failed to create notification: {ne}")
+
             # Return DIRECTLY to frontend (matches script.js expectation)
             return Response({
                 'status': 'success',

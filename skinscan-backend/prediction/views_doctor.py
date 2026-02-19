@@ -3,24 +3,102 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.db.models import Q
-from authentication.models import User
+from authentication.models import User, DoctorProfile, DoctorDocument
 from authentication.serializers import UserSerializer
 from .models import Appointment, SharedReport, PredictionResult
 from .serializers import PredictionResultSerializer
 import datetime
+import uuid
 
-class DoctorListView(APIView):
+
+
+class DoctorDocumentListView(APIView):
     """
-    List all available doctors.
+    List files shared by doctors with the current patient.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        doctors = User.objects.filter(is_doctor=True, account_status='ACTIVE')
-        serializer = UserSerializer(doctors, many=True)
+        documents = DoctorDocument.objects.filter(patient=request.user).select_related('doctor')
+        data = []
+        for doc in documents:
+            data.append({
+                'id': doc.id,
+                'doctor_name': f"Dr. {doc.doctor.first_name or ''} {doc.doctor.last_name or ''}".strip() or "Dr. Unknown",
+                'name': doc.name,
+                'note': doc.note,
+                'file_url': doc.document.url if doc.document else None,
+                'created_at': doc.created_at.strftime('%d %b %Y'),
+                'doctor_specialty': getattr(getattr(doc.doctor, 'doctor_profile', None), 'specialization', 'General'),
+            })
+        
+        return Response({'status': 'success', 'data': data})
+
+
+class DoctorStatusView(APIView):
+    """
+    Returns the current user's doctor verification status.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if not user.is_doctor:
+            return Response({
+                'status': 'success',
+                'data': {'is_doctor': False}
+            })
+
+        try:
+            profile = user.doctor_profile
+            return Response({
+                'status': 'success',
+                'data': {
+                    'is_doctor': True,
+                    'is_verified': profile.is_verified,
+                    'specialization': profile.specialization,
+                    'mrn': profile.medical_license_number,
+                    'name': f"Dr. {user.first_name} {user.last_name}".strip(),
+                    'email': user.email,
+                    'applied_on': profile.created_at.strftime('%d %b %Y'),
+                    'verified_on': profile.verification_date.strftime('%d %b %Y') if profile.verification_date else None,
+                }
+            })
+        except DoctorProfile.DoesNotExist:
+            return Response({
+                'status': 'success',
+                'data': {'is_doctor': True, 'is_verified': False, 'error': 'Profile not found'}
+            })
+
+class DoctorListView(APIView):
+    """
+    List all verified, active doctors for patient-facing dropdowns.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Only return doctors who are verified by admin and have active accounts
+        doctors = User.objects.filter(
+            is_doctor=True,
+            account_status='ACTIVE',
+            doctor_profile__is_verified=True
+        ).select_related('doctor_profile')
+
+        data = []
+        for doc in doctors:
+            profile = getattr(doc, 'doctor_profile', None)
+            data.append({
+                'id': doc.id,
+                'first_name': doc.first_name or '',
+                'last_name': doc.last_name or '',
+                'email': doc.email,
+                'specialization': profile.specialization if profile else 'Dermatology',
+                'mrn': profile.medical_license_number if profile else '',
+            })
+
         return Response({
             'status': 'success',
-            'data': serializer.data
+            'data': data
         })
 
 class BookAppointmentView(APIView):
@@ -88,10 +166,10 @@ class UserAppointmentsView(APIView):
         for appt in appointments:
             data.append({
                 'id': appt.id,
-                'patient_name': appt.patient.full_name,
+                'patient_name': f"{appt.patient.first_name or ''} {appt.patient.last_name or ''}".strip() or appt.patient.email,
                 'patient_avatar': appt.patient.avatar.url if appt.patient.avatar else None,
-                'doctor_name': appt.doctor.full_name,
-                'doctor_specialty': getattr(appt.doctor, 'specialty', 'General'),
+                'doctor_name': f"Dr. {appt.doctor.first_name or ''} {appt.doctor.last_name or ''}".strip(),
+                'doctor_specialty': getattr(getattr(appt.doctor, 'doctor_profile', None), 'specialization', 'Dermatology'),
                 'doctor_avatar': appt.doctor.avatar.url if appt.doctor.avatar else None,
                 'date': appt.date,
                 'time_slot': appt.time_slot,
@@ -118,6 +196,9 @@ class DoctorAppointmentManageView(APIView):
             
             if action == 'confirm':
                 appt.status = 'CONFIRMED'
+                # Auto-generate a unique Jitsi Meet video link
+                room_id = str(uuid.uuid4())[:12].replace('-', '')
+                appt.video_link = f"https://meet.jit.si/SkinScan-{room_id}"
             elif action == 'reject':
                 appt.status = 'REJECTED'
             elif action == 'complete':

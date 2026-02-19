@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Login - SkinScan AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="doctor-login.css">
+</head>
+
+<body>
+
+    <div class="login-container">
+        <div class="image-section">
+            <div class="image-overlay"></div>
+
+            <div class="glass-card card-1">
+                <div class="icon-box"><i class="fas fa-user-md"></i></div>
+                <div class="card-info">
+                    <h4>Expert Review</h4>
+                    <p>Connect: <span class="highlight-green">Instant</span></p>
+                </div>
+            </div>
+
+            <div class="glass-card card-2">
+                <div class="icon-box"><i class="fas fa-notes-medical"></i></div>
+                <div class="card-info">
+                    <h4>Patient Care</h4>
+                    <p>Priority: <span class="highlight-green">High</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="brand-header">
+                <a href="index.html" class="logo-link">
+                    <h2>Doctor Portal</h2>
+                </a>
+            </div>
+
+            <div class="toggle-container">
+                <div class="toggle-btn active" data-form="login">LOG IN</div>
+                <div class="toggle-btn" data-form="signup">JOIN NETWORK</div>
+            </div>
+
+            <div class="form-container">
+
+                <div class="form-wrapper active" id="login-form-wrapper">
+                    <form id="loginForm">
+                        <div class="input-group">
+                            <label>Email Address</label>
+                            <div class="input-wrapper">
+                                <input type="email" name="username" id="login-username"
+                                    placeholder="dr.smith@hospital.com" required>
+                                <i class="fas fa-check-circle check-icon"></i>
+                            </div>
+                            <div class="error-text" id="login-username-error"></div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" name="password" id="login-password" placeholder="••••••••"
+                                    required>
+                                <i class="fas fa-eye toggle-password" data-target="login-password"></i>
+                            </div>
+                            <div class="error-text" id="login-password-error"></div>
+                        </div>
+
+                        <div class="options">
+                            <div class="remember-me">
+                                <input type="checkbox" id="remember">
+                                <label for="remember">Remember me</label>
+                            </div>
+                            <a href="#" class="forgot-password">Forgot Password?</a>
+                        </div>
+
+                        <button type="submit" class="btn-submit" id="login-btn">
+                            <span>Access Portal</span>
+                        </button>
+
+                        <div class="register-link">
+                            New Doctor? <a href="#" class="toggle-to-signup">Apply to Join</a>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="form-wrapper" id="signup-form-wrapper">
+                    <form id="signupForm">
+
+                        <div class="row-group">
+                            <div class="input-group">
+                                <label>First Name</label>
+                                <div class="input-wrapper">
+                                    <input type="text" id="signup-firstname" placeholder="John" required>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label>Last Name</label>
+                                <div class="input-wrapper">
+                                    <input type="text" id="signup-lastname" placeholder="Smith" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Medical Registration Number (MRN)</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="signup-mrn" placeholder="e.g. MED-12345-X" required>
+                                <i class="fas fa-id-card-alt check-icon" style="opacity: 0.5;"></i>
+                            </div>
+                            <div class="error-text" id="signup-mrn-error"></div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Professional Email</label>
+                            <div class="input-wrapper">
+                                <input type="email" name="email" id="signup-email" placeholder="dr.smith@example.com"
+                                    required>
+                                <i class="fas fa-check-circle check-icon"></i>
+                            </div>
+                            <div class="error-text" id="signup-email-error"></div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" name="password" id="signup-password" placeholder="••••••••"
+                                    required>
+                                <i class="fas fa-eye toggle-password" data-target="signup-password"></i>
+                            </div>
+                            <div class="password-strength">
+                                <div class="strength-bar">
+                                    <div class="strength-fill" id="strength-fill"></div>
+                                </div>
+                                <div class="strength-text" id="strength-text"></div>
+                            </div>
+                            <div class="error-text" id="signup-password-error"></div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Confirm Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" name="confirm_password" id="signup-confirm-password"
+                                    placeholder="••••••••" required>
+                                <i class="fas fa-eye toggle-password" data-target="signup-confirm-password"></i>
+                            </div>
+                            <div class="error-text" id="signup-confirm-password-error"></div>
+                        </div>
+
+                        <button type="submit" class="btn-submit btn-register" id="signup-btn">
+                            <span>Submit Application</span>
+                        </button>
+
+                        <div class="register-link">
+                            Already verified? <a href="#" class="toggle-to-login">Login</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="doctor-login.js"></script>
+</body>
+
+</html>

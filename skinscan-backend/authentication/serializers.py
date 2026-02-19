@@ -14,11 +14,27 @@ class UserRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(min_length=8, write_only=True, required=True)
     
+    # Optional Profile Fields
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    
+    # Doctor Specific Fields
+    is_doctor = serializers.BooleanField(required=False, default=False)
+    medical_license_number = serializers.CharField(required=False, allow_blank=True)
+    specialization = serializers.CharField(required=False, allow_blank=True)
+    
     def validate_email(self, value):
         """Check if email already exists"""
         if User.objects.filter(email=value.lower()).exists():
             raise serializers.ValidationError("Email already registered")
         return value.lower()
+    
+    def validate(self, data):
+        """Cross-field validation"""
+        if data.get('is_doctor'):
+            if not data.get('medical_license_number'):
+                raise serializers.ValidationError({"medical_license_number": "Required for doctor registration"})
+        return data
     
     def validate_password(self, value):
         """Enforce password strength"""

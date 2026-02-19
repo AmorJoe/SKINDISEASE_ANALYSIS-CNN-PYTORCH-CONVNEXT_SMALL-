@@ -11,8 +11,9 @@ from .views import (
     ValidateTokenView,
     ProfileView,
     ChangePasswordView,
-    check_profile_completion
+    check_profile_completion,
 )
+from .notification_views import NotificationView
 from .admin_views import (
     AdminUserListView,
     AdminUserStateView,
@@ -30,8 +31,12 @@ urlpatterns = [
     path('validate-token', ValidateTokenView.as_view(), name='validate_token'),
     path('profile/check-completion', check_profile_completion, name='check_profile_completion'),
     
+    # Notifications
+    path('notifications', NotificationView.as_view(), name='notifications'),
+    path('notifications/<int:pk>', NotificationView.as_view(), name='notification_detail'),
+    
     # Admin Routes
-    path('admin/users', AdminUserListView.as_view(), name='admin_user_list'),
-    path('admin/users/<int:user_id>/<str:action>', AdminUserStateView.as_view(), name='admin_user_state'),
-    path('admin/users/<int:user_id>', AdminUserDetailView.as_view(), name='admin_user_detail'),
+    path('admin/users/', AdminUserListView.as_view(), name='admin_user_list'),
+    path('admin/users/<int:user_id>/<str:action>/', AdminUserStateView.as_view(), name='admin_user_state'),
+    path('admin/users/<int:user_id>/', AdminUserDetailView.as_view(), name='admin_user_detail'),
 ]

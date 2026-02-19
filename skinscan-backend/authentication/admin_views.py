@@ -18,7 +18,8 @@ class AdminUserListView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        users = User.objects.all().order_by('-created_at')
+        # Exclude doctors from the general user list
+        users = User.objects.filter(is_doctor=False).order_by('-created_at')
         serializer = UserSerializer(users, many=True)
         return Response({'status': 'success', 'data': serializer.data})
 
@@ -46,6 +47,26 @@ class AdminUserStateView(APIView):
 
 class AdminUserDetailView(APIView):
     permission_classes = [IsAdminUser]
+
+    def get(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        serializer = UserSerializer(user)
+        return Response({'status': 'success', 'data': serializer.data})
+
+    def patch(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        data = request.data
+
+        if 'account_status' in data:
+            user.account_status = data['account_status']
+        if 'is_admin' in data:
+            user.is_admin = data['is_admin']
+        if 'assigned_model' in data:
+            user.assigned_model = data['assigned_model']
+
+        user.save()
+        serializer = UserSerializer(user)
+        return Response({'status': 'success', 'data': serializer.data})
 
     def delete(self, request, user_id):
         user = get_object_or_404(User, id=user_id)

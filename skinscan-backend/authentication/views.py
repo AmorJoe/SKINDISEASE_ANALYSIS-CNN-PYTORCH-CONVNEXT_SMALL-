@@ -46,16 +46,27 @@ class RegisterView(APIView):
         # Create user in database
         user = User.objects.create(
             email=serializer.validated_data['email'],
+            first_name=serializer.validated_data.get('first_name', ''),
+            last_name=serializer.validated_data.get('last_name', ''),
+            is_doctor=serializer.validated_data.get('is_doctor', False),
             account_status='ACTIVE'
         )
         user.set_password(serializer.validated_data['password'])
         user.save()
         
         # Create empty profile
-        from .models import UserProfile
+        from .models import UserProfile, DoctorProfile
         UserProfile.objects.create(user=user)
         
-        logger.info(f"New user registered: {user.email} (ID: {user.id})")
+        # Create Doctor Profile if applicable
+        if serializer.validated_data.get('is_doctor', False):
+            DoctorProfile.objects.create(
+                user=user,
+                medical_license_number=serializer.validated_data.get('medical_license_number'),
+                specialization=serializer.validated_data.get('specialization', 'General')
+            )
+        
+        logger.info(f"New user registered: {user.email} (ID: {user.id}) IsDoctor: {user.is_doctor}")
 
         token = generate_jwt_token(user)
         
@@ -101,6 +112,18 @@ class LoginView(APIView):
                 'status': 'error',
                 'message': 'Invalid email or password'
             }, status=status.HTTP_401_UNAUTHORIZED)
+            
+        # Check Doctor Verification
+        if user.is_doctor:
+            try:
+                if not user.doctor_profile.is_verified:
+                    return Response({
+                        'status': 'error',
+                        'message': 'Account pending approval. Please wait for admin verification.'
+                    }, status=status.HTTP_403_FORBIDDEN)
+            except:
+                # Fallback if profile missing
+                pass
         
         # Check account status
         if user.account_status != 'ACTIVE':

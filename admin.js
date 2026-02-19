@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUsers();
     loadModels();
     loadReports();
+    loadDoctors();
     initModelActions();
 
     // Logout
@@ -407,7 +408,7 @@ async function loadModels() {
 }
 
 function deleteModel(modelName) {
-    if (!confirm(`Are you sure you want to delete "${modelName}"? This action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to delete "${modelName}" ? This action cannot be undone.`)) {
         return;
     }
 
@@ -596,7 +597,7 @@ async function loadReports() {
                             </table>
                         </div>
                     </div>
-                `;
+        `;
             }).join('');
         }
     } catch (error) {
@@ -604,6 +605,128 @@ async function loadReports() {
         document.getElementById('reports-grouped-container').innerHTML = '<div class="empty-state error">Failed to load reports. Please try again later.</div>';
     }
 }
+
+// Doctor Management
+async function loadDoctors() {
+    try {
+        console.log('loadDoctors: Fetching from', `${API_BASE_URL}/admin/doctors/`);
+        const response = await fetch(`${API_BASE_URL}/admin/doctors/`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        console.log('loadDoctors: Response status', response.status);
+        const data = await response.json();
+        console.log('loadDoctors: Data received', data);
+
+        if (data.status === 'success') {
+            const pending = data.data.pending || [];
+            const active = data.data.active || [];
+
+            document.getElementById('pending-count').textContent = pending.length;
+            document.getElementById('active-count').textContent = active.length;
+
+            renderPendingDoctors(pending);
+            renderActiveDoctors(active);
+        } else {
+            console.error('loadDoctors: API returned error', data);
+            document.getElementById('pending-doctors-list').innerHTML =
+                `<tr><td colspan="5" class="text-center">Error loading doctors: ${data.message || 'Unknown error'}</td></tr>`;
+        }
+    } catch (error) {
+        console.error('loadDoctors: Fetch failed', error);
+        document.getElementById('pending-doctors-list').innerHTML =
+            `<tr><td colspan="5" class="text-center">Failed to load doctors. Check console for details.</td></tr>`;
+    }
+}
+
+function renderPendingDoctors(doctors) {
+    const list = document.getElementById('pending-doctors-list');
+    if (doctors.length === 0) {
+        list.innerHTML = '<tr><td colspan="4" class="text-center">No pending approvals</td></tr>';
+        return;
+    }
+
+    list.innerHTML = doctors.map(doc => `
+            <tr>
+                <td>
+                    <div class="user-info-cell">
+                        <div class="avatar-small" style="background:var(--accent-orange)">${doc.first_name[0] || 'D'}</div>
+                        <div>
+                            <strong>Dr. ${doc.last_name}</strong>
+                            <span class="sub-text">${doc.email}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>${doc.mrn}</td>
+                <td>${new Date(doc.created_at).toLocaleDateString()}</td>
+                <td>
+                    <button class="action-btn success-btn" onclick="handleDoctorAction(${doc.id}, 'approve')" title="Approve">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="action-btn delete" onclick="handleDoctorAction(${doc.id}, 'reject')" title="Reject">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+    `).join('');
+}
+
+function renderActiveDoctors(doctors) {
+    const list = document.getElementById('active-doctors-list');
+    if (doctors.length === 0) {
+        list.innerHTML = '<tr><td colspan="4" class="text-center">No active doctors</td></tr>';
+        return;
+    }
+
+    list.innerHTML = doctors.map(doc => `
+            <tr>
+                <td>
+                    <div class="user-info-cell">
+                        <div class="avatar-small" style="background:var(--accent-blue)">Dr</div>
+                        <div>
+                            <strong>Dr. ${doc.first_name} ${doc.last_name}</strong>
+                            <span class="sub-text">${doc.email}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>${doc.mrn}</td>
+                <td><span class="status-badge active-badge">Verified</span></td>
+                <td>
+                    <button class="action-btn delete" onclick="handleDoctorAction(${doc.id}, 'remove')" title="Remove Doctor">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            </tr>
+    `).join('');
+}
+
+window.handleDoctorAction = async (id, action) => {
+    let confirmMsg = "";
+    if (action === 'approve') confirmMsg = "Approve this doctor account?";
+    if (action === 'reject') confirmMsg = "Reject this application? This will delete the account.";
+    if (action === 'remove') confirmMsg = "Remove this doctor? This action is irreversible.";
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/doctors/${id}/${action}/`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            alert(data.message);
+            loadDoctors();
+            loadDashboardStats(); // Update totals
+        } else {
+            alert(data.message || 'Action failed');
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Network error');
+    }
+};
 
 // Actions
 window.deleteReport = async (id) => {
@@ -714,4 +837,5 @@ function initSidebarToggle() {
         localStorage.setItem('sidebar_collapsed', collapsed);
     });
 }
+
 

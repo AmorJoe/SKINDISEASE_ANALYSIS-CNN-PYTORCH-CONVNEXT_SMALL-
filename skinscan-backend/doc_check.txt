@@ -1,0 +1,6 @@
+Doctors count: 1
+6 doctorsmith@gmail.com is_doc=True
+
+Profiles count: 2
+uid=2 verified=False mrn=MRN12345
+uid=6 verified=False mrn=MED-12-45
