@@ -5,6 +5,12 @@
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
+// Auto-redirect if already logged in
+if (sessionStorage.getItem('jwt_token')) {
+    window.location.href = 'index.html';
+}
+
+
 // Toggle between Login and Signup
 const toggleBtns = document.querySelectorAll('.toggle-btn');
 const loginWrapper = document.getElementById('login-form-wrapper');

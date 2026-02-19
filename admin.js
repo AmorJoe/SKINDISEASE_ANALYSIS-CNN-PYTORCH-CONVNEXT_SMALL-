@@ -41,34 +41,46 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('admin-logout-btn').addEventListener('click', () => {
         sessionStorage.removeItem('jwt_token');
         sessionStorage.removeItem('user_data');
-        window.location.href = 'login.html';
+        window.location.href = 'dashboard.html';
     });
 });
 
 function initTheme() {
     const themeSwitch = document.getElementById('theme-switch');
     const body = document.body;
+    const html = document.documentElement;
 
-    // Check saved - Default to LIGHT
-    const currentTheme = localStorage.getItem('admin_theme') || 'light';
+    // Check saved - Default to LIGHT (Unified Key)
+    const currentMode = localStorage.getItem('skinscan_mode') || 'light';
 
-    if (currentTheme === 'dark') {
-        body.classList.add('dark-mode');
-        themeSwitch.checked = true;
-    } else {
-        body.classList.remove('dark-mode');
-        themeSwitch.checked = false;
-    }
+    // Helper to apply mode
+    const applyMode = (mode) => {
+        localStorage.setItem('skinscan_mode', mode);
+        html.setAttribute('data-mode', mode);
 
-    themeSwitch.addEventListener('change', () => {
-        if (themeSwitch.checked) {
+        if (mode === 'dark') {
             body.classList.add('dark-mode');
-            localStorage.setItem('admin_theme', 'dark');
+            body.classList.remove('light-mode');
+            if (themeSwitch) themeSwitch.checked = true;
         } else {
             body.classList.remove('dark-mode');
-            localStorage.setItem('admin_theme', 'light');
+            body.classList.add('light-mode');
+            if (themeSwitch) themeSwitch.checked = false;
         }
-    });
+    };
+
+    // Apply Initial
+    applyMode(currentMode);
+
+    if (themeSwitch) {
+        themeSwitch.addEventListener('change', () => {
+            if (themeSwitch.checked) {
+                applyMode('dark');
+            } else {
+                applyMode('light');
+            }
+        });
+    }
 }
 
 // Tab Navigation

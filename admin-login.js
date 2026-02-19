@@ -5,6 +5,19 @@
 const API_BASE_URL = 'http://localhost:8000/api';
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Auto-redirect if already logged in as admin
+    const userDataStr = sessionStorage.getItem('user_data');
+    if (sessionStorage.getItem('jwt_token') && userDataStr) {
+        try {
+            const userData = JSON.parse(userDataStr);
+            if (userData.is_admin) {
+                window.location.href = 'admin.html';
+            }
+        } catch (e) {
+            console.error('Error parsing user data', e);
+        }
+    }
+
     const loginForm = document.getElementById('adminLoginForm');
     const loginBtn = document.getElementById('admin-login-btn');
     const errorMsg = document.getElementById('login-error');

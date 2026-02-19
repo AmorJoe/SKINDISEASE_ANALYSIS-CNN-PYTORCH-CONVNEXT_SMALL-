@@ -31,6 +31,9 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
 
+# Cookie Security
+COOKIE_SECURE = not DEBUG
+
 # INSTALLED APPS
 INSTALLED_APPS = [
     'django.contrib.admin',

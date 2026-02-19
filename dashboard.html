@@ -14,43 +14,44 @@
 
 <body>
 
+    <!-- Background Elements (Page Level) -->
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+
+    <button id="portal-theme-toggle" class="theme-toggle-btn" aria-label="Toggle Dark Mode"
+        title="Toggle Light/Dark Mode">
+        <i class="fas fa-adjust"></i>
+    </button>
+
     <div class="portal-container">
-        <!-- Background Elements -->
-        <div class="bg-shape shape-1"></div>
-        <div class="bg-shape shape-2"></div>
 
         <header class="portal-header">
             <div class="logo">
                 <i class="fas fa-dna"></i> SkinScan AI
             </div>
             <p class="portal-subtitle">Advanced Dermatological Diagnosis System</p>
-            <button id="portal-theme-toggle" class="theme-toggle-btn" title="Toggle Light/Dark Mode">
-                <i class="fas fa-adjust"></i>
-            </button>
         </header>
 
         <main class="modules-grid">
             <!-- ADMIN MODULE -->
-            <a href="admin-login.html" class="module-card card-admin">
+            <a href="admin.html" class="module-card card-admin">
                 <div class="card-glass-glow"></div>
                 <div class="card-content">
                     <div class="icon-box">
                         <i class="fas fa-user-shield"></i>
                     </div>
                     <h2>Admin Module</h2>
-                    <p>System management, user oversight, and analyisis logs.</p>
+                    <p>System management, user oversight, and analysis logs.</p>
                     <span class="access-btn">Access Portal <i class="fas fa-arrow-right"></i></span>
                 </div>
             </a>
 
             <!-- USER MODULE -->
-            <a href="index.html" class="module-card card-user">
+            <a href="login.html" class="module-card card-user">
                 <div class="card-glass-glow"></div>
                 <div class="card-content">
-                    <div class="icon-wrapper">
-                        <div class="icon-box">
-                            <i class="fas fa-user"></i>
-                        </div>
+                    <div class="icon-box">
+                        <i class="fas fa-user"></i>
                     </div>
                     <h2>User Portal</h2>
                     <p>AI Skin analysis, body mapping, and personal reports.</p>
@@ -59,7 +60,7 @@
             </a>
 
             <!-- DOCTOR MODULE -->
-            <a href="#" class="module-card card-doctor" onclick="alert('Doctor Portal is coming soon!')">
+            <div class="module-card card-doctor disabled" aria-disabled="true" title="Coming Soon">
                 <div class="card-glass-glow"></div>
                 <div class="card-content">
                     <div class="icon-box">
@@ -69,7 +70,7 @@
                     <p>Specialist consultation and clinical review tools.</p>
                     <span class="access-btn coming-soon">Coming Soon</span>
                 </div>
-            </a>
+            </div>
         </main>
 
         <footer class="portal-footer">

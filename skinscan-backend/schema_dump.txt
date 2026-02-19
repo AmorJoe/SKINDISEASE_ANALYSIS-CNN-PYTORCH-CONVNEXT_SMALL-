@@ -1,0 +1,11 @@
+Columns for table 'prediction_results':
+- disease_id (bigint)
+- confidence_score (double precision)
+- user_id (bigint)
+- notes_updated_at (timestamp with time zone)
+- id (bigint)
+- created_at (timestamp with time zone)
+- image_id (bigint)
+- recommendation (text)
+- doctor_notes (text)
+- report (character varying)

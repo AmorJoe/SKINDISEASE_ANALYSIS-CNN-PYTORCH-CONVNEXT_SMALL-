@@ -24,7 +24,7 @@ function isAuthenticated() {
 // Redirect to login if not authenticated
 function requireAuth() {
     if (!isAuthenticated()) {
-        window.location.href = 'login.html';
+        window.location.href = 'dashboard.html';
         return false;
     }
     return true;
@@ -34,7 +34,7 @@ function requireAuth() {
 function logout() {
     sessionStorage.removeItem('jwt_token');
     sessionStorage.removeItem('user_data');
-    window.location.href = 'login.html';
+    window.location.href = 'dashboard.html';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -600,51 +600,66 @@ function initNavigation() {
 }
 
 function initTheme() {
-    const toggleBtn = document.getElementById('theme-toggle');
-    const html = document.documentElement;
-
-    // 1. Load Saved Settings
+    // 1. Load Saved Settings (Unified Key)
     const savedMode = localStorage.getItem('skinscan_mode') || 'light';
     const savedPalette = localStorage.getItem('skinscan_palette') || 'default';
 
-    // 2. Apply Settings
-    html.setAttribute('data-mode', savedMode);
+    const html = document.documentElement;
+    const body = document.body;
+
+    // Helper to apply mode
+    const applyMode = (mode) => {
+        html.setAttribute('data-mode', mode);
+        localStorage.setItem('skinscan_mode', mode);
+
+        // Legacy & Body Class Support
+        if (mode === 'dark') {
+            html.setAttribute('data-theme', 'dark');
+            body.classList.add('dark-mode');
+            body.classList.remove('light-mode');
+        } else {
+            html.removeAttribute('data-theme');
+            body.classList.remove('dark-mode');
+            body.classList.add('light-mode');
+        }
+
+        // Sync Toggles
+        const toggleBtn = document.getElementById('theme-toggle');
+        if (toggleBtn) toggleBtn.checked = (mode === 'dark');
+
+        const settingsToggle = document.getElementById('settings-theme-toggle');
+        if (settingsToggle) settingsToggle.checked = (mode === 'dark');
+    };
+
+    // 2. Apply Initial Settings
     html.setAttribute('data-palette', savedPalette);
+    applyMode(savedMode);
 
-    // Legacy support for css that uses data-theme="dark"
-    if (savedMode === 'dark') {
-        html.setAttribute('data-theme', 'dark');
-    } else {
-        html.removeAttribute('data-theme');
-    }
-
-    // 3. Sync Settings Toggle (if exists)
-    const settingsToggle = document.getElementById('settings-theme-toggle');
-    if (settingsToggle) {
-        settingsToggle.checked = (savedMode === 'dark');
-
-        settingsToggle.addEventListener('change', (e) => {
+    // 3. toggle Listener (Header Toggle)
+    const toggleBtn = document.getElementById('theme-toggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('change', (e) => {
             const newMode = e.target.checked ? 'dark' : 'light';
-            html.setAttribute('data-mode', newMode);
-            localStorage.setItem('skinscan_mode', newMode);
-
-            // Legacy support
-            if (newMode === 'dark') {
-                html.setAttribute('data-theme', 'dark');
-            } else {
-                html.removeAttribute('data-theme');
-            }
+            applyMode(newMode);
         });
     }
 
-    // 4. Notification Logic
+    // 4. Settings Page Toggle
+    const settingsToggle = document.getElementById('settings-theme-toggle');
+    if (settingsToggle) {
+        settingsToggle.addEventListener('change', (e) => {
+            const newMode = e.target.checked ? 'dark' : 'light';
+            applyMode(newMode);
+        });
+    }
+
+    // 5. Notification Logic (Kept here as it was in original function)
     const notifBtn = document.getElementById('notification-btn');
     if (notifBtn) {
         notifBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             toggleNotificationDropdown();
         });
-        // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             const dropdown = document.getElementById('notification-dropdown');
             if (dropdown && !dropdown.contains(e.target) && e.target !== notifBtn) {
@@ -652,7 +667,6 @@ function initTheme() {
             }
         });
     }
-    // Load any existing notifications on page load
     renderNotifications();
 }
 
@@ -904,6 +918,15 @@ function initModals() {
     const passwordForm = document.getElementById('password-form');
     if (passwordForm) {
         passwordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await changePassword();
+        });
+    }
+
+    // Settings Page Password Form Submission
+    const settingsPasswordForm = document.getElementById('settings-password-form');
+    if (settingsPasswordForm) {
+        settingsPasswordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             await changePassword();
         });
@@ -1214,7 +1237,8 @@ async function changePassword() {
         if (data.status === 'success') {
             alert('Password changed successfully!');
             document.getElementById('password-form').reset();
-            document.getElementById('password-modal').classList.remove('show');
+            const modal = document.getElementById('password-modal');
+            if (modal) modal.classList.remove('show');
         } else {
             alert('Error: ' + (data.message || 'Failed to change password'));
         }

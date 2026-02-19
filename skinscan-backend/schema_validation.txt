@@ -1,0 +1,11 @@
+Columns for table 'scan_history':
+- user_id (bigint)
+- image_id (bigint)
+- result_id (bigint)
+- id (bigint)
+- is_bookmarked (boolean)
+- body_location_id (bigint)
+- created_at (timestamp with time zone)
+- title (character varying)
+- notes (text)
+- severity_tag (character varying)
