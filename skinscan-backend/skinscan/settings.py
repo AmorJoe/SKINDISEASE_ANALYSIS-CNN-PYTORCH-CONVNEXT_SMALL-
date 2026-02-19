@@ -7,6 +7,8 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config
 
+# Trigger reload
+
 # Validate environment variables on startup
 # TEMPORARILY DISABLED - was preventing server from starting
 # from .env_validator import validate_environment

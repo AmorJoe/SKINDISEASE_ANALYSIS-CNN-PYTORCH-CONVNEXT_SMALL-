@@ -4,6 +4,9 @@ Authentication Serializers - Data validation
 from rest_framework import serializers
 from .models import User
 from .validators import validate_password_strength
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UserRegistrationSerializer(serializers.Serializer):
@@ -35,6 +38,18 @@ class UserLoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     """User data representation"""
     age = serializers.SerializerMethodField()
+    
+    # Map fields to UserProfile
+    first_name = serializers.CharField(source='profile.first_name', required=False, allow_null=True)
+    last_name = serializers.CharField(source='profile.last_name', required=False, allow_null=True)
+    phone = serializers.CharField(source='profile.phone', required=False, allow_null=True)
+    date_of_birth = serializers.DateField(source='profile.date_of_birth', required=False, allow_null=True)
+    gender = serializers.CharField(source='profile.gender', required=False, allow_null=True)
+    country = serializers.CharField(source='profile.country', required=False, allow_null=True)
+    address = serializers.CharField(source='profile.address', required=False, allow_null=True)
+    avatar = serializers.ImageField(source='profile.avatar', required=False, allow_null=True)
+    skin_type = serializers.CharField(source='profile.skin_type', required=False, allow_null=True)
+    skin_tone = serializers.CharField(source='profile.skin_tone', required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -49,12 +64,40 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_age(self, obj):
         """Calculate age from date_of_birth"""
-        if not obj.date_of_birth:
+        dob = None
+        # Prioritize profile, fallback to legacy if needed (though migration should fill profile)
+        if hasattr(obj, 'profile') and obj.profile.date_of_birth:
+             dob = obj.profile.date_of_birth
+        elif hasattr(obj, 'date_of_birth'):
+             dob = obj.date_of_birth
+             
+        if not dob:
             return None
+            
         from datetime import date
         today = date.today()
-        return today.year - obj.date_of_birth.year - ((today.month, today.day) < (obj.date_of_birth.month, obj.date_of_birth.day))
+        # Handle potential date vs datetime issues if legacy was datetime
+        if hasattr(dob, 'date'):
+            dob = dob.date()
+            
+        return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
 
+    def update(self, instance, validated_data):
+        """Handle updates to nested profile data"""
+        logger.info(f"DEBUG: UserSerializer.update validated_data: {validated_data}")
+        profile_data = validated_data.pop('profile', {})
+        
+        # Update User fields (if any remaining in validated_data)
+        super().update(instance, validated_data)
+        
+        # Update Profile fields
+        if hasattr(instance, 'profile'):
+            profile = instance.profile
+            for attr, value in profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
+            
+        return instance
 
 class ChangePasswordSerializer(serializers.Serializer):
     """Validate password change request"""

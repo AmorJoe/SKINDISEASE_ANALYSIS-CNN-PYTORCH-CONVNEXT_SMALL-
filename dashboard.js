@@ -604,7 +604,14 @@ function initNavigation() {
     initAnalysisSubmenu();
 
     // 4. Load user avatar and conditionally show Admin link
-    const userData = getUserData();
+    let userData = getUserData();
+    // Check localStorage fallback
+    try {
+        const localProfile = JSON.parse(localStorage.getItem('skinscan_user_profile'));
+        if (localProfile && localProfile.avatar) {
+            userData = { ...userData, ...localProfile };
+        }
+    } catch (e) { console.error(e); }
 
     if (userData && userData.is_admin) {
         // Inject Admin Panel link if not already in the DOM
@@ -624,9 +631,16 @@ function initNavigation() {
     if (navAvatar) {
         if (userData && userData.avatar) {
             // Support full URLs, data URIs, and relative server paths
-            navAvatar.src = (userData.avatar.startsWith('http') || userData.avatar.startsWith('data:'))
+            const avatarSrc = (userData.avatar.startsWith('http') || userData.avatar.startsWith('data:'))
                 ? userData.avatar
                 : `${API_BASE_URL.replace('/api', '')}${userData.avatar}`;
+
+            navAvatar.src = avatarSrc;
+
+            // Also attempt to update other avatars if function exists (it should now)
+            if (typeof updateAllAvatars === 'function') {
+                updateAllAvatars(avatarSrc);
+            }
         } else {
             // Default generated avatar using user's first name
             const name = userData ? userData.first_name : 'User';
@@ -636,6 +650,27 @@ function initNavigation() {
 
     // 5. Modal handlers (profile & password modals)
     initModals();
+}
+
+/**
+ * Updates all avatar images on the page with a specific source URL.
+ * Scans for #nav-avatar, #profile-avatar-large, and classes .user-avatar, .profile-avatar.
+ * @param {string} src - The new avatar image source URL.
+ */
+function updateAllAvatars(src) {
+    if (!src) return;
+
+    // 1. Navigation Avatar
+    const navAvatar = document.getElementById('nav-avatar');
+    if (navAvatar) navAvatar.src = src;
+
+    // 2. Profile Modal Large Avatar
+    const profileAvatarLarge = document.getElementById('profile-avatar-large');
+    if (profileAvatarLarge) profileAvatarLarge.src = src;
+
+    // 3. Any other avatars (e.g., in reports or chat)
+    const otherAvatars = document.querySelectorAll('.user-avatar, .profile-avatar');
+    otherAvatars.forEach(img => img.src = src);
 }
 
 // ─────────────────────────────────────────────

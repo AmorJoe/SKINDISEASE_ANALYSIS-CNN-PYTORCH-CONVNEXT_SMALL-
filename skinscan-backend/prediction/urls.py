@@ -22,8 +22,22 @@ from .views import (
     GenerateTreatmentView,
     ImageUploadAndPredictView,  # Legacy compatibility
 )
+from .views_doctor import (
+    DoctorDashboardStatsView,
+    PatientListView,
+    DoctorPatientScansView,
+    DoctorScanDetailView,
+    UpdateScanReviewView
+)
 
 urlpatterns = [
+    # Doctor Module Endpoints
+    path('doctor/stats', DoctorDashboardStatsView.as_view(), name='doctor_stats'),
+    path('doctor/patients', PatientListView.as_view(), name='doctor_patients'),
+    path('doctor/patient-scans/<int:user_id>', DoctorPatientScansView.as_view(), name='doctor_patient_scans'),
+    path('doctor/scan-detail/<int:prediction_id>', DoctorScanDetailView.as_view(), name='doctor_scan_detail'),
+    path('doctor/update-review/<int:prediction_id>', UpdateScanReviewView.as_view(), name='doctor_update_review'),
+
     # Diseases Info
 
     

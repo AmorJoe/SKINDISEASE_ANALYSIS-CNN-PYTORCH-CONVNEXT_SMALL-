@@ -564,7 +564,19 @@ function initNavigation() {
     initAnalysisSubmenu();
 
     // 4. Load User Avatar & Admin Link
-    const userData = getUserData();
+    // 4. Load User Avatar & Admin Link
+    let userData = getUserData();
+    // Check localStorage for more recent profile data (especially avatar)
+    try {
+        const localProfile = JSON.parse(localStorage.getItem('skinscan_user_profile'));
+        if (localProfile && localProfile.avatar) {
+            // Merge or prefer local profile avatar
+            userData = { ...userData, ...localProfile };
+        }
+    } catch (e) {
+        console.error("Error reading local profile:", e);
+    }
+
     if (userData && userData.is_admin) {
         // Add Admin Dashboard link if not already present
         if (!document.getElementById('nav-admin-link')) {
@@ -581,6 +593,7 @@ function initNavigation() {
         }
     }
 
+    // navAvatar is already defined at top of function
     if (userData && userData.avatar && navAvatar) {
         // Assuming avatar is a full URL or base64. If it's a relative path, prepend base URL.
         const avatarSrc = userData.avatar.startsWith('http') || userData.avatar.startsWith('data:')
@@ -1023,6 +1036,29 @@ async function loadUserProfile() {
     populateProfileForm(displayData);
 }
 
+function updateAllAvatars(src) {
+    if (!src) return;
+
+    // 1. Navigation Avatar
+    const navAvatar = document.getElementById('nav-avatar');
+    if (navAvatar) navAvatar.src = src;
+
+    // 2. Profile Modal Large Avatar
+    const profileAvatarLarge = document.getElementById('profile-avatar-large');
+    if (profileAvatarLarge) profileAvatarLarge.src = src;
+
+    // 3. Any other avatars (e.g., in reports or chat)
+    const otherAvatars = document.querySelectorAll('.user-avatar, .profile-avatar');
+    otherAvatars.forEach(img => img.src = src);
+}
+
+function safeSetValue(elementId, value) {
+    const el = document.getElementById(elementId);
+    if (el) {
+        el.value = value || '';
+    }
+}
+
 function populateProfileForm(user) {
     document.getElementById('display-name').textContent = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'User';
     document.getElementById('display-email').textContent = user.email || 'user@example.com';
@@ -1065,8 +1101,10 @@ function populateProfileForm(user) {
         const avatarSrc = user.avatar.startsWith('http') || user.avatar.startsWith('data:')
             ? user.avatar
             : `${API_BASE_URL.replace('/api', '')}${user.avatar}`;
-        profileAvatarLarge.src = avatarSrc;
-        // Report Page Elements
+
+        updateAllAvatars(avatarSrc);
+
+        // Report Page Elemente
         const reportName = document.getElementById('userName');
         const reportEmail = document.getElementById('userEmail');
         const reportAvatar = document.getElementById('userAvatar');
@@ -1144,10 +1182,12 @@ async function saveUserProfile() {
         // Update UI
         populateProfileForm(mergedData);
 
-        // Update nav avatar
-        const navAvatar = document.getElementById('nav-avatar');
-        if (navAvatar && mergedData.avatar) {
-            navAvatar.src = mergedData.avatar;
+        if (mergedData.avatar) {
+            updateAllAvatars(mergedData.avatar);
+
+            // Also update the nav avatar explicitly for immediate feedback
+            const navAvatar = document.getElementById('nav-avatar');
+            if (navAvatar) navAvatar.src = mergedData.avatar;
         }
 
         // If authenticated, sync with backend
@@ -1160,26 +1200,45 @@ async function saveUserProfile() {
                 formData.append('avatar', avatarInput.files[0]);
             }
 
-            const response = await fetch(`${API_BASE_URL}/auth/profile`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`
-                },
-                body: formData
-            });
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: formData
+                });
 
-            const data = await response.json();
-            if (data.status === 'success') {
-                alert('Profile updated successfully!');
-
-                // Check if profile is now complete and enable upload if so
-                const isComplete = await checkProfileCompletion();
-                if (isComplete) {
-                    // Profile is complete, user can now upload
-                    console.log('Profile completed! Upload feature enabled.');
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server Error:', response.status, errorText);
+                    alert(`Server Error (${response.status}): ${errorText.substring(0, 200)}...`);
+                    throw new Error(`Server responded with ${response.status}`);
                 }
-            } else {
-                alert('Profile saved locally (Server update failed).');
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    // Sync storage with server data
+                    if (data.data) {
+                        sessionStorage.setItem('user_data', JSON.stringify(data.data));
+                        localStorage.setItem('skinscan_user_profile', JSON.stringify(data.data));
+                        populateProfileForm(data.data);
+                    }
+                    alert('Profile updated successfully!');
+
+                    // Check if profile is now complete and enable upload if so
+                    const isComplete = await checkProfileCompletion();
+                    if (isComplete) {
+                        // Profile is complete, user can now upload
+                        console.log('Profile completed! Upload feature enabled.');
+                    }
+                } else {
+                    alert(`Profile saved locally, but server rejected: ${data.message || 'Unknown error'}`);
+                }
+
+            } catch (netError) {
+                console.error('Network/Parsing Error:', netError);
+                throw netError; // Re-throw to hit the outer catch block
             }
         } else {
             alert('Profile updated successfully!');
@@ -1189,7 +1248,7 @@ async function saveUserProfile() {
 
     } catch (error) {
         console.error('Error saving profile:', error);
-        alert('An error occurred while saving.');
+        alert(`An error occurred while saving: ${error.message}`);
     } finally {
         btnSave.innerText = originalText;
         btnSave.disabled = false;

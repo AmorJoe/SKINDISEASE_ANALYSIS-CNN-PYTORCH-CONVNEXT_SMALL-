@@ -32,7 +32,7 @@ class PredictionResult(models.Model):
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='predictions')
     image = models.ForeignKey(SkinImage, on_delete=models.CASCADE, related_name='results')
-    disease_name = models.CharField(max_length=100)
+    disease_name = models.CharField(max_length=100, blank=True, null=True, default='Unknown')
     confidence_score = models.FloatField()  # 0-100%
     recommendation = models.TextField()
     report = models.FileField(upload_to='reports/', blank=True, null=True)  # New Report Column

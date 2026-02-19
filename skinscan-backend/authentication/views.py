@@ -5,6 +5,10 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+import logging
+
+logger = logging.getLogger(__name__)
+logger.info("SERVER RELOADING - VIEWS MODULE IMPORTED")
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
@@ -46,6 +50,10 @@ class RegisterView(APIView):
         )
         user.set_password(serializer.validated_data['password'])
         user.save()
+        
+        # Create empty profile
+        from .models import UserProfile
+        UserProfile.objects.create(user=user)
         
         logger.info(f"New user registered: {user.email} (ID: {user.id})")
 
@@ -214,6 +222,7 @@ class ProfileView(APIView):
             return Response({'status': 'error', 'message': 'User not found'}, status=404)
 
     def put(self, request):
+        logger.info(f"DEBUG: ProfileView.put called with data: {request.data}")
         try:
             user = User.objects.get(id=request.user.id)
             
@@ -293,8 +302,13 @@ def check_profile_completion(request):
         required_fields = ['first_name', 'last_name', 'phone', 'date_of_birth', 'gender']
         missing_fields = []
         
+        if hasattr(user, 'profile'):
+            target = user.profile
+        else:
+            target = user
+            
         for field in required_fields:
-            value = getattr(user, field, None)
+            value = getattr(target, field, None)
             if not value or (isinstance(value, str) and not value.strip()):
                 missing_fields.append(field)
         

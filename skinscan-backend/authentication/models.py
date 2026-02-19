@@ -72,4 +72,39 @@ class User(models.Model):
 
     @property
     def full_name(self):
+        # Fallback to legacy fields if profile doesn't exist yet
+        if hasattr(self, 'profile'):
+            return f"{self.profile.first_name or ''} {self.profile.last_name or ''}".strip() or "User"
         return f"{self.first_name or ''} {self.last_name or ''}".strip() or "User"
+
+
+class UserProfile(models.Model):
+    """
+    3NF Separation: Stores personal & medical metadata
+    Linked 1-to-1 with the core User auth model
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', null=True)
+    
+    # Personal Info
+    first_name = models.CharField(max_length=50, blank=True, null=True)
+    last_name = models.CharField(max_length=50, blank=True, null=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    gender = models.CharField(max_length=10, blank=True, null=True)
+    country = models.CharField(max_length=100, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    
+    # Medical Context
+    skin_type = models.CharField(max_length=50, blank=True, null=True)
+    skin_tone = models.CharField(max_length=50, blank=True, null=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'user_profiles'
+        
+    def __str__(self):
+        return f"Profile for {self.user.email}"
