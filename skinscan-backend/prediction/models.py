@@ -93,3 +93,61 @@ class ScanHistory(models.Model):
         return f"{self.title or 'Scan'} - {self.user.email}"
 
 
+class Appointment(models.Model):
+    """
+    Doctor Appointment Booking
+    """
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='appointments_as_patient')
+    doctor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='appointments_as_doctor')
+    
+    date = models.DateField()
+    time_slot = models.CharField(max_length=50) # e.g. "10:00 AM - 10:30 AM"
+    
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('PENDING', 'Pending'),
+            ('CONFIRMED', 'Confirmed'),
+            ('REJECTED', 'Rejected'),
+            ('COMPLETED', 'Completed'),
+            ('CANCELLED', 'Cancelled')
+        ],
+        default='PENDING'
+    )
+    
+    video_link = models.URLField(default="https://meet.google.com/xyz-abc-def", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'appointments'
+        ordering = ['date', 'time_slot']
+        
+    def __str__(self):
+        return f"Appointment: {self.patient.email} with {self.doctor.email} on {self.date}"
+
+
+class SharedReport(models.Model):
+    """
+    Securely share a PredictionResult with a Doctor
+    """
+    report = models.ForeignKey(PredictionResult, on_delete=models.CASCADE, related_name='shares')
+    doctor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shared_reports')
+    
+    shared_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[('SENT', 'Sent'), ('REVIEWED', 'Reviewed')],
+        default='SENT'
+    )
+    
+    doctor_notes = models.TextField(blank=True, null=True)
+    
+    class Meta:
+        db_table = 'shared_reports'
+        ordering = ['-shared_at']
+        unique_together = ('report', 'doctor') # Avoid duplicate shares
+        
+    def __str__(self):
+        return f"Report {self.report.id} shared with {self.doctor.email}"
+
+

@@ -29,6 +29,8 @@ class User(models.Model):
     
     # Account Management
     is_admin = models.BooleanField(default=False)
+    is_doctor = models.BooleanField(default=False)
+    specialty = models.CharField(max_length=100, blank=True, help_text="Doctor's specialization (e.g., Dermatologist)")
     assigned_model = models.CharField(max_length=255, blank=True, null=True)
     account_status = models.CharField(
         max_length=20,

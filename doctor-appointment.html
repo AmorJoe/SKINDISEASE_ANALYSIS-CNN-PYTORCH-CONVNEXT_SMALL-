@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Consultation - SkinScan AI</title>
+    <!-- Use shared styles with cache busting -->
+    <link rel="stylesheet" href="style.css?v=16">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* =========================================
+           LUXURY MINIMAL OVERRIDES
+           ========================================= */
+        :root {
+            --primary-soft: rgba(43, 125, 163, 0.1);
+            --primary-color: #2b7da3;
+            --text-dark: #1a1a1a;
+            --text-light: #6b7280;
+            --bg-soft: #f9fafb;
+            --white: #ffffff;
+            --shadow-soft: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 20px 50px -10px rgba(0, 0, 0, 0.12);
+            --radius-xl: 20px;
+            --radius-pill: 100px;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            /* Neutral soft background */
+        }
+
+        .settings-page-wrapper {
+            max-width: 900px;
+            /* Slightly tighter focus */
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        /* --- Header Hierarchy --- */
+        .settings-header-block {
+            text-align: center;
+            margin-bottom: 50px;
+            /* Override shared style.css flex-row behavior */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .header-content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+
+        .header-content p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+            line-height: 1.6;
+        }
+
+        /* --- Pill Navigation --- */
+        .settings-tabs {
+            display: inline-flex;
+            background: #eef2f6;
+            padding: 6px;
+            border-radius: var(--radius-pill);
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.03);
+            gap: 4px;
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 28px;
+            border-radius: var(--radius-pill);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-light);
+            background: transparent;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn i {
+            font-size: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-color);
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .tab-btn.active {
+            background: var(--white);
+            color: var(--primary-color);
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            transform: translateY(0);
+            /* Override potential shared styles */
+        }
+
+        .tab-btn.active i {
+            transform: scale(1.1);
+        }
+
+        /* --- Card Design --- */
+        .settings-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-soft);
+            padding: 40px 50px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .settings-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Subtle decorative top border */
+        .settings-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary-color), #64b5f6);
+            opacity: 0.8;
+        }
+
+        .card-header {
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+        }
+
+        .card-header h3 {
+            font-size: 1.5rem;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .card-header p {
+            font-size: 0.95rem;
+            color: var(--text-light);
+        }
+
+        /* --- Form Inputs --- */
+        .input-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        select,
+        input[type="date"],
+        input[type="text"] {
+            width: 100%;
+            min-height: 52px;
+            /* Improved touch target */
+            padding: 0 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #f9fafb;
+            color: var(--text-dark);
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            appearance: none;
+            /* Remove default styling */
+        }
+
+        /* Custom Dropdown Arrow */
+        .input-wrapper {
+            position: relative;
+        }
+
+        /* Only apply custom arrow to selects */
+        .input-wrapper:has(select)::after {
+            content: '\f078';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+        select:focus,
+        input:focus {
+            background: var(--white);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px var(--primary-soft);
+            outline: none;
+        }
+
+        /* --- Buttons --- */
+        .form-actions {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: var(--text-dark);
+            /* Modern luxury often uses black/dark grey for primary */
+            color: white;
+            padding: 14px 40px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            background: #000;
+        }
+
+        .btn-success {
+            background: #10b981;
+            /* Emerald green */
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        /* --- Upcoming Appointments Empty State --- */
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            font-size: 3.5rem;
+            color: #d1d5db;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .empty-text {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+        }
+
+        /* --- Responsive Tweaks --- */
+        @media (max-width: 600px) {
+            .input-row {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .header-content h1 {
+                font-size: 1.8rem;
+            }
+
+            .tab-btn {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+            }
+
+            .settings-card {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- GLOBAL NAVIGATION -->
+    <nav class="auth-protected">
+        <div class="logo">
+            <a href="index.html" style="text-decoration: none; color: inherit;">
+                <i class="fas fa-dna"></i> SkinScan AI
+            </a>
+        </div>
+        <ul>
+            <li><a href="index.html#home">Home</a></li>
+            <li><a href="index.html#upload">Analyze</a></li>
+            <li><a href="index.html#about">Technology</a></li>
+
+            <!-- Notification Bell -->
+            <li style="position: relative;">
+                <button id="notification-btn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span id="notification-badge" class="notif-count-badge"></span>
+                </button>
+                <div class="notification-dropdown" id="notification-dropdown">
+                    <div class="notif-header">
+                        <span>Notifications</span>
+                        <button class="notif-clear-btn" onclick="clearAllNotifications()">Clear All</button>
+                    </div>
+                    <div class="notif-list" id="notif-list">
+                        <div class="notif-empty">No notifications</div>
+                    </div>
+                </div>
+            </li>
+
+            <!-- Avatar Dropdown -->
+            <li class="user-menu">
+                <img src="https://ui-avatars.com/api/?name=User&background=0288d1&color=fff" alt="Profile"
+                    class="avatar" id="nav-avatar">
+                <div class="dropdown-content" id="nav-dropdown">
+                    <a href="#" id="nav-profile-link"><i class="fas fa-user-circle"></i> Profile</a>
+                    <a href="#" id="nav-analysis-toggle" class="has-submenu active">
+                        <i class="fas fa-chart-line"></i> Analysis
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
+                    </a>
+                    <div class="submenu" id="analysis-submenu">
+                        <a href="report.html" class="submenu-item"><i class="fas fa-file-medical-alt"></i> Scan
+                            Report</a>
+                        <a href="body-map.html" class="submenu-item"><i class="fas fa-user-injured"></i> Body Map</a>
+                        <a href="disease-info.html" class="submenu-item"><i class="fas fa-book-medical"></i> Disease
+                            Info</a>
+                        <a href="doctor-appointment.html" class="submenu-item active"><i class="fas fa-user-md"></i>
+                            Doctor Appointment</a>
+                    </div>
+                    <a href="settings.html"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="settings-page-wrapper">
+
+        <!-- HEADER BLOCK -->
+        <div class="settings-header-block">
+            <div class="header-content">
+                <h1>Doctor Consultation</h1>
+                <p>Connect with specialists for expert review and diagnosis</p>
+            </div>
+
+            <!-- PILL NAVIGATION -->
+            <div class="settings-tabs">
+                <button class="tab-btn active" data-tab="book">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>Book</span>
+                </button>
+                <button class="tab-btn" data-tab="share">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Send Report</span>
+                </button>
+                <button class="tab-btn" data-tab="upcoming">
+                    <i class="fas fa-clock"></i>
+                    <span>Upcoming</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="settings-content-container">
+
+            <!-- BOOK APPOINTMENT SECTION -->
+            <div id="tab-book" class="tab-content active">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-user-md" style="color: var(--primary-color);"></i> Book an Appointment</h3>
+                        <p>Schedule a video consultation with a dermatology specialist.</p>
+                    </div>
+
+                    <form id="booking-form">
+                        <div class="input-group">
+                            <label for="doctor-select">Select Doctor</label>
+                            <div class="input-wrapper">
+                                <select id="doctor-select" required>
+                                    <option value="" disabled selected>Loading available doctors...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Date/Time Row -->
+                        <div class="input-row" style="display: flex; gap: 24px; margin-top: 20px;">
+                            <div class="input-group" style="flex: 1;">
+                                <label for="appt-date">Choose Date</label>
+                                <div class="input-wrapper">
+                                    <input type="date" id="appt-date" required>
+                                </div>
+                            </div>
+                            <div class="input-group" style="flex: 1;">
+                                <label for="time-slot">Select Time Slot</label>
+                                <div class="input-wrapper">
+                                    <select id="time-slot" required>
+                                        <option value="" disabled selected>Select Time</option>
+                                        <option value="09:00 AM - 09:30 AM">09:00 AM - 09:30 AM</option>
+                                        <option value="10:00 AM - 10:30 AM">10:00 AM - 10:30 AM</option>
+                                        <option value="11:00 AM - 11:30 AM">11:00 AM - 11:30 AM</option>
+                                        <option value="02:00 PM - 02:30 PM">02:00 PM - 02:30 PM</option>
+                                        <option value="03:00 PM - 03:30 PM">03:00 PM - 03:30 PM</option>
+                                        <option value="04:00 PM - 04:30 PM">04:00 PM - 04:30 PM</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                Confirm Booking <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- SEND REPORT SECTION -->
+            <div id="tab-share" class="tab-content">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-file-medical" style="color: var(--primary-color);"></i> Send Report</h3>
+                        <p>Share your AI analysis results with a doctor for a second opinion.</p>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="doctor-select-share">Select Doctor</label>
+                        <div class="input-wrapper">
+                            <select id="doctor-select-share">
+                                <option value="" disabled selected>Loading doctors...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="margin-top: 20px;">
+                        <label for="report-select">Select Report to Share</label>
+                        <div class="input-wrapper">
+                            <select id="report-select">
+                                <option value="" disabled selected>Loading recent reports...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="report-preview"
+                        style="display:none; margin-top: 25px; padding: 25px; background: #f9fafb; border-radius: 12px; border: 1px dashed #e5e7eb;">
+                        <h4
+                            style="margin-top:0; color: var(--text-dark); font-size: 1rem; margin-bottom: 15px; font-weight: 600;">
+                            Report Preview</h4>
+                        <div style="display: flex; gap: 20px; align-items: center;">
+                            <div style="flex: 1;">
+                                <p style="margin-bottom: 8px; font-size: 0.95rem; color: #4b5563;">
+                                    <strong>Diagnosis:</strong> <span id="preview-disease"
+                                        style="color: var(--primary-color); font-weight: 700;"></span>
+                                </p>
+                                <p style="margin-bottom: 0; font-size: 0.95rem; color: #4b5563;">
+                                    <strong>Confidence:</strong> <span id="preview-confidence"></span>%
+                                </p>
+                            </div>
+                            <div style="font-size: 2rem; color: #d1d5db;">
+                                <i class="fas fa-file-medical-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-primary btn-success" id="btn-share-report">
+                            <i class="fas fa-paper-plane" style="margin-right: 10px;"></i> Send to Doctor
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UPCOMING APPOINTMENTS SECTION -->
+            <div id="tab-upcoming" class="tab-content">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar-check" style="color: var(--primary-color);"></i> Upcoming
+                            Appointments</h3>
+                        <p>Track your scheduled consultations.</p>
+                    </div>
+
+                    <div id="upcoming-appointments-container">
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times empty-icon"></i>
+                            <p class="empty-text">No upcoming appointments scheduled.</p>
+                            <button class="btn-primary" onclick="document.querySelector('[data-tab=\'book\']').click()"
+                                style="background: #e5e7eb; color: var(--text-dark); box-shadow: none;">
+                                Book Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Scripts with Cache Busting v=16 -->
+    <script src="script.js?v=16"></script>
+    <script src="doctor-appointment.js?v=16"></script>
+</body>
+
+</html>
