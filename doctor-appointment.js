@@ -19,6 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     startAppointmentPolling(); // Start auto-refresh
 
+    // Auto-switch to Send Report tab if coming from analysis page
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab') === 'share') {
+        // Programmatically click the Share tab button
+        const shareTabBtn = document.querySelector('.tab-btn[data-tab="share"]');
+        if (shareTabBtn) shareTabBtn.click();
+    }
+
     // Event Listeners
     const bookingForm = document.getElementById('booking-form');
     if (bookingForm) {
@@ -264,6 +272,14 @@ async function loadReports() {
                 option.textContent = `${report.disease_name} - ${dateStr} (${report.confidence_score}%)`;
                 select.appendChild(option);
             });
+
+            // Auto-select specific report if report_id is in URL (from sendToDoctor)
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetReportId = urlParams.get('report_id');
+            if (targetReportId) {
+                select.value = targetReportId;
+                updateReportPreview();
+            }
         } else {
             select.innerHTML = '<option value="" disabled>No reports found in history</option>';
         }

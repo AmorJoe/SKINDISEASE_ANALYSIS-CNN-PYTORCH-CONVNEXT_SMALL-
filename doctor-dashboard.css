@@ -781,3 +781,564 @@ body.doctor-body {
     color: var(--text-light);
     font-size: 0.9rem;
 }
+
+/* ============================================ */
+/* DOCTOR PROFILE MODAL                         */
+/* ============================================ */
+.dr-profile-modal-content {
+    width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 0;
+    border-radius: 24px;
+}
+
+.dr-profile-header {
+    background: linear-gradient(135deg, #0288d1, #01579b);
+    padding: 32px 30px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-radius: 24px 24px 0 0;
+}
+
+.dr-profile-avatar img {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    object-fit: cover;
+}
+
+.dr-profile-headline h2 {
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.dr-profile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #e8f5e9;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+}
+
+.dr-profile-badge.unverified {
+    background: rgba(255, 152, 0, 0.25);
+    color: #fff3e0;
+}
+
+.dr-profile-sections {
+    padding: 24px 30px 8px;
+}
+
+.dr-profile-section {
+    margin-bottom: 20px;
+}
+
+.dr-profile-section h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dr-profile-section h4 i {
+    font-size: 0.9rem;
+}
+
+.dr-profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 24px;
+}
+
+.dr-profile-field label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-weight: 500;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.dr-profile-field p {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-main);
+    margin: 0;
+    word-break: break-word;
+}
+
+.dr-availability-days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.day-chip {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.day-chip.inactive {
+    background: #f1f5f9;
+    color: #94a3b8;
+}
+
+.dr-profile-footer {
+    padding: 16px 30px 24px;
+    text-align: right;
+}
+
+.dr-profile-footer .btn-primary {
+    width: auto;
+    padding: 10px 32px;
+}
+
+/* Profile modal show state */
+#doctor-profile-modal {
+    align-items: center;
+    justify-content: center;
+}
+
+#doctor-profile-modal .close-modal {
+    color: rgba(255, 255, 255, 0.8);
+    top: 18px;
+    right: 18px;
+    font-size: 1.5rem;
+    z-index: 10;
+}
+
+#doctor-profile-modal .close-modal:hover {
+    color: #fff;
+}
+
+/* Sidebar profile hover hint */
+#sidebar-profile-btn {
+    transition: background 0.2s;
+    padding: 8px 12px;
+    border-radius: 12px;
+    margin: -8px -12px;
+}
+
+#sidebar-profile-btn:hover {
+    background: var(--primary-light);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================ */
+/* EDIT MODE STYLES                             */
+/* ============================================ */
+/* Default state: View Mode */
+.edit-mode-input,
+.edit-mode-btn {
+    display: none;
+}
+
+/* Edit Mode Active */
+.dr-profile-modal-content.editing .view-mode,
+.dr-profile-modal-content.editing .view-mode-btn,
+.dr-profile-modal-content.editing .icon-btn-edit {
+    display: none;
+}
+
+.dr-profile-modal-content.editing .edit-mode-input {
+    display: block;
+    width: 100%;
+}
+
+.dr-profile-modal-content.editing .edit-mode-btn {
+    display: inline-block;
+}
+
+/* Input Styling */
+.edit-mode-input {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    background: #f8fafc;
+    transition: all 0.2s;
+    margin-top: 4px;
+}
+
+.edit-mode-input:focus {
+    background: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.1);
+    outline: none;
+}
+
+/* Availability Selector */
+.availability-selector {
+    display: none;
+    /* Hidden by default via edit-mode-input class, but override display type */
+}
+
+.dr-profile-modal-content.editing .availability-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.availability-selector label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    cursor: pointer;
+    background: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 20px;
+    transition: 0.2s;
+    text-transform: none;
+    font-weight: 500;
+}
+
+.availability-selector label:has(input:checked) {
+    background: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.availability-selector input {
+    display: none;
+}
+
+/* Header Edit Button */
+.icon-btn-edit {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    backdrop-filter: blur(4px);
+}
+
+.icon-btn-edit:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
+}
+
+.dr-profile-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #475569;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+
+/* ============================================ */
+/* PROFESSIONAL THEME REDESIGN (Clean White)    */
+/* ============================================ */
+
+.dr-profile-modal-content.professional-theme {
+    background: #ffffff;
+    border-radius: 20px;
+    /* Matched to User Settings */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    padding: 0;
+    max-width: 1200px;
+    /* Matched to User Settings */
+    width: 95%;
+    height: 90vh;
+    /* Increased height */
+    color: #0f172a;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* Prevent outer scroll */
+}
+
+/* Header */
+.dr-profile-header-simple {
+    display: flex;
+    align-items: center;
+    padding: 24px 32px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+    flex-shrink: 0;
+    /* Don't shrink */
+}
+
+.dr-profile-avatar-large img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.dr-profile-title {
+    margin-left: 20px;
+    flex: 1;
+}
+
+.dr-profile-title h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.icon-btn-edit-simple {
+    background: #f1f5f9;
+    border: none;
+    color: #64748b;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn-edit-simple:hover {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+/* Form Container to support scroll */
+#dr-profile-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Body Grid */
+.dr-profile-body-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    /* Slightly wider sidebar */
+    gap: 0;
+    flex: 1;
+    overflow-y: auto;
+    /* Scrollable area */
+    min-height: 0;
+    /* Firefox fix for flex scroll */
+}
+
+/* Sidebar */
+.dr-profile-sidebar {
+    background: #f8fafc;
+    padding: 32px;
+    border-right: 1px solid #e2e8f0;
+    overflow-y: auto;
+    /* Independent scroll if needed */
+}
+
+/* Main Content */
+.dr-profile-main {
+    padding: 32px 40px;
+    /* More breathing room */
+    overflow-y: auto;
+    /* Main scroll */
+}
+
+/* Section Titles */
+.section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: block;
+}
+
+/* Info Groups */
+.dr-info-group {
+    margin-bottom: 24px;
+}
+
+.dr-info-group label {
+    display: block;
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.dr-info-group p {
+    margin: 0;
+    font-size: 1rem;
+    color: #334155;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.dr-info-group .mono-text {
+    font-family: 'Courier New', Courier, monospace;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+/* Bio Section */
+.dr-section-bio {
+    margin-bottom: 32px;
+}
+
+.bio-text {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #475569;
+}
+
+.bio-input {
+    width: 100%;
+    resize: vertical;
+    min-height: 120px;
+    font-family: inherit;
+    line-height: 1.6;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.bio-input:focus {
+    outline: none;
+    border-color: #0288d1;
+    box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.1);
+}
+
+.dr-divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 32px 0;
+}
+
+/* Professional Grid */
+.dr-professional-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+/* Footer */
+.dr-profile-footer-simple {
+    padding: 20px 32px;
+    border-top: 1px solid #e2e8f0;
+    text-align: right;
+    background: #fff;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-shrink: 0;
+    /* Keep footer fixed */
+}
+
+.btn-cancel {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    color: #64748b;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-cancel:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.btn-save {
+    background: #0f172a;
+    color: #fff;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-save:hover {
+    background: #334155;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Edit Mode Logic for New Elements */
+.dr-profile-modal-content.professional-theme.editing .icon-btn-edit-simple {
+    display: none;
+}
+
+.dr-profile-modal-content.professional-theme .view-mode-btn {
+    display: inline-block;
+}
+
+.dr-profile-modal-content.professional-theme.editing .view-mode-btn {
+    display: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dr-profile-body-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dr-profile-sidebar {
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .dr-professional-grid {
+        grid-template-columns: 1fr;
+    }
+}

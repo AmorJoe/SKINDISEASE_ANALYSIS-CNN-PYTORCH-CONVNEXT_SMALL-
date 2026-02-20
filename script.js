@@ -2534,3 +2534,81 @@ function initThemeOptions() {
         });
     }
 }
+
+// ============================================
+// SEND TO DOCTOR — Auto-save scan and navigate
+// ============================================
+async function sendToDoctor() {
+    const btn = document.getElementById('send-to-doctor-btn');
+    const originalHTML = btn ? btn.innerHTML : '';
+
+    try {
+        // Show spinner
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+        }
+
+        const token = getAuthToken();
+        if (!token) {
+            alert('Please log in first.');
+            return;
+        }
+
+        // Get scan data from localStorage
+        const storedResult = localStorage.getItem('latest_scan_result');
+        const storedImage = localStorage.getItem('latest_scan_image');
+
+        if (!storedResult || !storedImage) {
+            alert('No scan data available. Please scan an image first.');
+            return;
+        }
+
+        const result = JSON.parse(storedResult);
+
+        // Convert image to Blob
+        const fetchResp = await fetch(storedImage);
+        const blob = await fetchResp.blob();
+
+        // Build FormData for save-report API
+        const formData = new FormData();
+        formData.append('image', blob, 'scan_image.png');
+        formData.append('disease_name', result.disease_name || 'Unknown Condition');
+
+        let confidence = parseFloat(result.confidence);
+        if (isNaN(confidence)) confidence = 0;
+        formData.append('confidence', confidence);
+
+        formData.append('body_location', localStorage.getItem('latest_scan_location') || 'Unspecified');
+        formData.append('severity', result.severity || 'Moderate');
+        formData.append('title', `Scan on ${new Date().toLocaleDateString()} - Doctor Referral`);
+        formData.append('recommendation', result.recommendation || '');
+
+        // Save to DB
+        const response = await fetch(`${API_BASE_URL}/predict/save-report`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.status === 'success') {
+            const predictionId = data.data.prediction_id;
+            // Mark as saved to prevent duplicate auto-saves
+            sessionStorage.setItem('scan_already_saved', storedResult.substring(0, 100));
+            // Navigate with exact report ID
+            window.location.href = `doctor-appointment.html?tab=share&report_id=${predictionId}`;
+        } else {
+            alert('Failed to save report: ' + (data.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('sendToDoctor error:', error);
+        alert('Error saving scan. Please try again.');
+    } finally {
+        if (btn) {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+    }
+}

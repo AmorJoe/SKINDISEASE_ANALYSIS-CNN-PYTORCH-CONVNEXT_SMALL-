@@ -44,7 +44,7 @@
                             <i class="fas fa-calendar-check"></i> <span>Appointments</span>
                         </li>
                         <li data-tab="patients">
-                            <i class="fas fa-users-medical"></i> <span>Patients</span>
+                            <i class="fas fa-user-injured"></i> <span>Patients</span>
                         </li>
                         <li data-tab="reports">
                             <i class="fas fa-file-medical-alt"></i> <span>Reports</span>
@@ -72,17 +72,156 @@
             </nav>
 
             <div class="sidebar-footer">
-                <div class="user-mini-profile">
+                <div class="user-mini-profile" id="sidebar-profile-btn" style="cursor:pointer;" title="View Profile">
                     <div class="avatar-circle">
-                        <img src="https://ui-avatars.com/api/?name=Dr+Smith&background=0288d1&color=fff" alt="Dr Icon">
+                        <img id="sidebar-avatar"
+                            src="https://ui-avatars.com/api/?name=Doctor&background=0288d1&color=fff" alt="Dr Icon">
                     </div>
                     <div class="user-info">
-                        <span class="user-name">Dr. Smith</span>
-                        <span class="user-role">Dermatologist</span>
+                        <span class="user-name" id="sidebar-name">Doctor</span>
+                        <span class="user-role" id="sidebar-specialty">Loading...</span>
                     </div>
+                    <i class="fas fa-chevron-right"
+                        style="margin-left:auto;color:var(--text-light);font-size:0.8rem;"></i>
                 </div>
             </div>
         </aside>
+
+        <!-- Doctor Profile Modal -->
+        <div class="modal" id="doctor-profile-modal">
+            <div class="modal-content dr-profile-modal-content professional-theme">
+                <span class="close-modal" onclick="closeDrProfileModal()">&times;</span>
+
+                <!-- Profile Header (Simplified) -->
+                <div class="dr-profile-header-simple">
+                    <div class="dr-profile-avatar-large">
+                        <img id="dr-modal-avatar"
+                            src="https://ui-avatars.com/api/?name=Doctor&background=0288d1&color=fff"
+                            alt="Doctor Avatar">
+                    </div>
+                    <div class="dr-profile-title">
+                        <h2 id="dr-modal-name">Doctor Name</h2>
+                        <span class="dr-profile-badge" id="dr-modal-badge">
+                            <i class="fas fa-check-circle"></i> Verified
+                        </span>
+                    </div>
+                    <button class="icon-btn-edit-simple" id="btn-edit-profile" onclick="toggleEditMode()"
+                        title="Edit Profile">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                </div>
+
+                <!-- Profile Body Grid -->
+                <form id="dr-profile-form" onsubmit="event.preventDefault(); saveDrProfile();">
+                    <div class="dr-profile-body-grid">
+
+                        <!-- Left Sidebar: Contact & Personal -->
+                        <div class="dr-profile-sidebar">
+                            <h4 class="section-title">Contact & Personal</h4>
+
+                            <div class="dr-info-group">
+                                <label>Email</label>
+                                <p id="dr-modal-email">—</p>
+                            </div>
+
+                            <div class="dr-info-group">
+                                <label>Phone</label>
+                                <p class="view-mode" id="dr-modal-phone">—</p>
+                                <input type="tel" class="edit-mode-input" id="edit-phone" placeholder="Phone Number">
+                            </div>
+
+                            <div class="dr-info-group">
+                                <label>Gender</label>
+                                <p class="view-mode" id="dr-modal-gender">—</p>
+                                <select class="edit-mode-input" id="edit-gender">
+                                    <option value="">Select</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="dr-info-group">
+                                <label>Member Since</label>
+                                <p id="dr-modal-joined">—</p>
+                            </div>
+                        </div>
+
+                        <!-- Right Main: Bio & Professional -->
+                        <div class="dr-profile-main">
+
+                            <!-- Bio Section (New) -->
+                            <div class="dr-section-bio">
+                                <h4 class="section-title">About Me</h4>
+                                <p class="view-mode bio-text" id="dr-modal-bio">No biography added yet.</p>
+                                <textarea class="edit-mode-input bio-input" id="edit-bio" rows="4"
+                                    placeholder="Write a short professional biography..."></textarea>
+                            </div>
+
+                            <div class="dr-divider"></div>
+
+                            <h4 class="section-title">Professional Details</h4>
+                            <div class="dr-professional-grid">
+                                <div class="dr-info-group">
+                                    <label>Specialization</label>
+                                    <p id="dr-modal-spec">—</p>
+                                </div>
+                                <div class="dr-info-group">
+                                    <label>Medical Reg. No.</label>
+                                    <p id="dr-modal-mrn" class="mono-text">—</p>
+                                </div>
+                                <div class="dr-info-group">
+                                    <label>Experience</label>
+                                    <p class="view-mode" id="dr-modal-exp">—</p>
+                                    <input type="number" class="edit-mode-input" id="edit-exp" min="0"
+                                        placeholder="Years">
+                                </div>
+                                <div class="dr-info-group">
+                                    <label>Hospital Affiliation</label>
+                                    <p class="view-mode" id="dr-modal-hospital">—</p>
+                                    <input type="text" class="edit-mode-input" id="edit-hospital"
+                                        placeholder="Hospital/Clinic">
+                                </div>
+                                <div class="dr-info-group">
+                                    <label>Consultation Fee</label>
+                                    <p class="view-mode" id="dr-modal-fee">—</p>
+                                    <input type="number" class="edit-mode-input" id="edit-fee" min="0" step="0.01"
+                                        placeholder="Fee ($)">
+                                </div>
+                                <div class="dr-info-group">
+                                    <label>Verified On</label>
+                                    <p id="dr-modal-verified-on">—</p>
+                                </div>
+                            </div>
+
+                            <div class="dr-section-availability">
+                                <h4 class="section-title">Availability</h4>
+                                <div class="view-mode dr-availability-days" id="dr-modal-days">
+                                    <span class="day-chip">Not set</span>
+                                </div>
+                                <div class="edit-mode-input availability-selector">
+                                    <label><input type="checkbox" value="Mon"> Mon</label>
+                                    <label><input type="checkbox" value="Tue"> Tue</label>
+                                    <label><input type="checkbox" value="Wed"> Wed</label>
+                                    <label><input type="checkbox" value="Thu"> Thu</label>
+                                    <label><input type="checkbox" value="Fri"> Fri</label>
+                                    <label><input type="checkbox" value="Sat"> Sat</label>
+                                    <label><input type="checkbox" value="Sun"> Sun</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dr-profile-footer-simple">
+                        <button type="button" class="btn-cancel view-mode-btn"
+                            onclick="closeDrProfileModal()">Close</button>
+                        <button type="button" class="btn-cancel edit-mode-btn"
+                            onclick="toggleEditMode()">Cancel</button>
+                        <button type="submit" class="btn-save edit-mode-btn">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -95,7 +234,7 @@
                     </div>
                     <button class="notif-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="badge">3</span>
+                        <span class="badge" style="display:none;"></span>
                     </button>
                 </div>
             </header>
@@ -110,7 +249,7 @@
                         </div>
                         <div class="stat-info">
                             <p>Today's Appointments</p>
-                            <h2 id="dash-today-count">8</h2>
+                            <h2 id="dash-today-count">--</h2>
                         </div>
                     </div>
 
@@ -120,7 +259,7 @@
                         </div>
                         <div class="stat-info">
                             <p>Pending Requests</p>
-                            <h2 id="dash-request-count">5</h2>
+                            <h2 id="dash-request-count">--</h2>
                         </div>
                     </div>
 
@@ -130,7 +269,7 @@
                         </div>
                         <div class="stat-info">
                             <p>Total Patients</p>
-                            <h2 id="dash-patient-count">142</h2>
+                            <h2 id="dash-patient-count">--</h2>
                         </div>
                     </div>
 
@@ -140,7 +279,7 @@
                         </div>
                         <div class="stat-info">
                             <p>Revenue (Today)</p>
-                            <h2 id="dash-revenue">$450</h2>
+                            <h2 id="dash-revenue">--</h2>
                         </div>
                     </div>
                 </div>
@@ -173,7 +312,7 @@
             <section class="tab-content" id="appointments-tab">
                 <div class="sub-nav-tabs">
                     <button class="sub-tab active" onclick="filterAppointments('requests')">Requests <span
-                            class="badge-pill">5</span></button>
+                            class="badge-pill" id="requests-badge">0</span></button>
                     <button class="sub-tab" onclick="filterAppointments('today')">Today</button>
                     <button class="sub-tab" onclick="filterAppointments('upcoming')">Upcoming</button>
                 </div>
@@ -269,7 +408,7 @@
                         <thead>
                             <tr>
                                 <th>Patient Name</th>
-                                <th>Age/Gender</th>
+                                <th>Gender</th>
                                 <th>Last Visit</th>
                                 <th>Condition</th>
                                 <th>Contact</th>
