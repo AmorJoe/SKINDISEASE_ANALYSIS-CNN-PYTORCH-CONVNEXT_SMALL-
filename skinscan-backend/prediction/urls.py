@@ -27,23 +27,15 @@ from .views_doctor import (
     DoctorListView,
     BookAppointmentView,
     UserAppointmentsView,
-    # DoctorAppointmentManageView,
+    DoctorAppointmentManageView,
     ShareReportView,
     DoctorSharedReportsView,
-    DoctorDocumentListView
+    DoctorDocumentListView,
+    DoctorDashboardStatsView,
+    DoctorPatientsView,
 )
 
 urlpatterns = [
-    # Doctor Module Endpoints (Commented out until module is created)
-    # path('doctor/stats', DoctorDashboardStatsView.as_view(), name='doctor_stats'),
-    # path('doctor/patients', PatientListView.as_view(), name='doctor_patients'),
-    # path('doctor/patient-scans/<int:user_id>', DoctorPatientScansView.as_view(), name='doctor_patient_scans'),
-    # path('doctor/scan-detail/<int:prediction_id>', DoctorScanDetailView.as_view(), name='doctor_scan_detail'),
-    # path('doctor/update-review/<int:prediction_id>', UpdateScanReviewView.as_view(), name='doctor_update_review'),
-
-    # Diseases Info
-
-    
     # Phase 2 async endpoints
     path('upload', ImageUploadView.as_view(), name='upload_images'),
     path('status/<str:job_id>', JobStatusView.as_view(), name='job_status'),
@@ -62,12 +54,15 @@ urlpatterns = [
     
     # Doctor Module Endpoints
     path('doctor-status', DoctorStatusView.as_view(), name='doctor_status'),
+    path('doctor/stats', DoctorDashboardStatsView.as_view(), name='doctor_stats'),
+    path('doctor/patients', DoctorPatientsView.as_view(), name='doctor_patients'),
     path('doctors', DoctorListView.as_view(), name='doctor_list'),
     path('appointments/book', BookAppointmentView.as_view(), name='book_appointment'),
     path('appointments/my', UserAppointmentsView.as_view(), name='my_appointments'),
-    # path('appointments/manage/<int:appointment_id>', DoctorAppointmentManageView.as_view(), name='manage_appointment'),
+    path('appointments/manage/<int:appointment_id>', DoctorAppointmentManageView.as_view(), name='manage_appointment'),
     path('reports/share', ShareReportView.as_view(), name='share_report'),
     path('reports/shared', DoctorSharedReportsView.as_view(), name='doctor_shared_reports'),
     path('documents', DoctorDocumentListView.as_view(), name='doctor_documents'),
 ]
+
 

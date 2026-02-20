@@ -4,7 +4,7 @@ CNN Inference - ConvNeXt Small (PyTorch)
 import os
 import logging
 import time
-import random
+
 import io
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
@@ -97,7 +97,7 @@ class CNNPredictor:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = None
-        self.simulation_mode = False
+        self.model_load_error = None
         
         # Hardcoded for now, should match training
         self.disease_classes = settings.DISEASE_CLASSES
@@ -113,29 +113,66 @@ class CNNPredictor:
         self._load_model()
 
     def _load_model(self, model_path=None):
+        import traceback as tb
+        
+        # Numpy compatibility shim: checkpoints saved with numpy 2.x reference
+        # numpy._core, but numpy 1.x uses numpy.core. Redirect for compatibility.
+        import numpy as np
+        if not hasattr(np, '_core'):
+            import sys as _sys
+            import numpy.core
+            import numpy.core.multiarray
+            _sys.modules['numpy._core'] = numpy.core
+            _sys.modules['numpy._core.multiarray'] = numpy.core.multiarray
+        
         try:
             if not model_path:
                 model_path = getattr(settings, 'MODEL_PATH', None)
             
-            if not model_path or not os.path.exists(model_path):
-                logger.warning(f"Model file not found at {model_path}. Switching to Simulation Mode.")
-                self.simulation_mode = True
+            if not model_path or not os.path.exists(str(model_path)):
+                err_msg = f"Model file not found at {model_path}"
+                logger.error(f"[MODEL LOAD] {err_msg}")
+                print(f"[CNN] ERROR: {err_msg}")
+                self.model_load_error = err_msg
                 return
 
-            # Inject Config class if needed (user notebook has one)
+            # Inject Config class into __main__ so torch.load can unpickle it.
+            # The training notebook saved Config as __main__.Config in the checkpoint.
             import sys
-            if not hasattr(sys.modules['__main__'], 'Config'):
-                class Config: pass
-                setattr(sys.modules['__main__'], 'Config', Config)
+            import types
+            
+            main_module = sys.modules.get('__main__')
+            
+            # Create a dummy Config class that accepts any attributes
+            class Config:
+                def __init__(self, **kwargs):
+                    for k, v in kwargs.items():
+                        setattr(self, k, v)
+            
+            # If __main__ is a built-in or doesn't support setattr, replace it
+            try:
+                if main_module is None or not hasattr(main_module, '__dict__'):
+                    main_module = types.ModuleType('__main__')
+                    sys.modules['__main__'] = main_module
+                main_module.Config = Config
+            except (TypeError, AttributeError):
+                # __main__ might be a frozen/built-in module, create a new one
+                main_module = types.ModuleType('__main__')
+                main_module.Config = Config
+                sys.modules['__main__'] = main_module
 
-            logger.info(f"Loading model from {model_path}...")
+            logger.info(f"[MODEL LOAD] Loading model from {model_path}...")
+            print(f"[CNN] Loading model from {model_path}...")
             
             # Load Checkpoint
             # weights_only=False is required for pickle-serialized objects like Config
             try:
-                checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
+                checkpoint = torch.load(str(model_path), map_location=self.device, weights_only=False)
             except TypeError:
-                checkpoint = torch.load(model_path, map_location=self.device)
+                checkpoint = torch.load(str(model_path), map_location=self.device)
+            
+            logger.info(f"[MODEL LOAD] Checkpoint loaded, type={type(checkpoint).__name__}")
+            print(f"[CNN] Checkpoint loaded OK")
             
             # Initialize Model Architecture
             self.model = ImageClassifier(
@@ -147,12 +184,15 @@ class CNNPredictor:
             # Load State Dict
             state_dict = None
             if isinstance(checkpoint, dict):
+                logger.info(f"[MODEL LOAD] Checkpoint keys: {list(checkpoint.keys())}")
                 if 'model_state_dict' in checkpoint:
                      state_dict = checkpoint['model_state_dict']
                 elif 'ema_shadow' in checkpoint:
                      # Prefer EMA weights if available (usually better)
                      state_dict = checkpoint['ema_shadow']
-                     logger.info("Using EMA weights from checkpoint.")
+                     logger.info("[MODEL LOAD] Using EMA weights from checkpoint.")
+                elif 'state_dict' in checkpoint:
+                     state_dict = checkpoint['state_dict']
                 else:
                      state_dict = checkpoint
             else:
@@ -165,21 +205,32 @@ class CNNPredictor:
                     name = k.replace('module.', '')
                     clean_state_dict[name] = v
                 
+                logger.info(f"[MODEL LOAD] State dict has {len(clean_state_dict)} keys")
+                
                 # Careful load
                 missing, unexpected = self.model.load_state_dict(clean_state_dict, strict=False)
                 if missing:
-                    logger.warning(f"Missing keys: {missing[:5]}...")
+                    logger.warning(f"[MODEL LOAD] Missing keys ({len(missing)}): {missing[:5]}...")
                 if unexpected:
-                    logger.warning(f"Unexpected keys: {unexpected[:5]}...")
+                    logger.warning(f"[MODEL LOAD] Unexpected keys ({len(unexpected)}): {unexpected[:5]}...")
+                
+                # If too many keys are missing, something is very wrong
+                if len(missing) > 10:
+                    logger.error(f"[MODEL LOAD] Too many missing keys ({len(missing)}), model may not work correctly!")
             
             self.model.to(self.device)
             self.model.eval()
-            self.active_model_path = model_path
-            logger.info(f"Model {os.path.basename(model_path)} loaded successfully.")
+            self.model_load_error = None
+            self.active_model_path = str(model_path)
+            logger.info(f"[MODEL LOAD] ✓ Model {os.path.basename(str(model_path))} loaded successfully on {self.device}")
+            print(f"[CNN] ✓ Model loaded successfully on {self.device}")
             
         except Exception as e:
-            logger.error(f"Failed to load model: {e}. Defaulting to simulation.")
-            self.simulation_mode = True
+            logger.error(f"[MODEL LOAD] FAILED to load model: {e}")
+            logger.error(f"[MODEL LOAD] Traceback:\n{tb.format_exc()}")
+            print(f"[CNN] FAILED to load model: {e}")
+            print(tb.format_exc())
+            self.model_load_error = str(e)
 
     def predict(self, image_input: Union[bytes, Image.Image], user_model_path: Optional[str] = None) -> PredictionOutput:
         start_time = time.time()
@@ -195,8 +246,10 @@ class CNNPredictor:
                  if not self.model:
                      self._load_model()
 
-        if self.simulation_mode or not self.model:
-            return self._predict_mock()
+        if not self.model:
+            raise ModelUnavailableError(
+                message=f"CNN model is not loaded: {self.model_load_error or 'Unknown error'}"
+            )
 
         try:
             # Preprocess
@@ -232,7 +285,7 @@ class CNNPredictor:
 
         except Exception as e:
             logger.error(f"Prediction Error: {e}")
-            return self._predict_mock()
+            raise ModelUnavailableError(message=f"Prediction failed: {str(e)}")
 
     def predict_multi(self, images: List[any]) -> PredictionOutput:
         return self.predict(images[0])
@@ -250,17 +303,7 @@ class CNNPredictor:
              return "Results inconclusive. Please consult a doctor."
         return base_rec
 
-    def _predict_mock(self) -> PredictionOutput:
-        disease = random.choice(self.disease_classes)
-        confidence = random.uniform(70.0, 95.0)
-        return PredictionOutput(
-            disease_name=disease + " (Simulated)",
-            confidence=round(confidence, 2),
-            all_probabilities={},
-            recommendation="Simulation Mode: Model not loaded.",
-            processing_time=0.1,
-            is_inconclusive=False
-        )
+
 
 # Singleton
 _predictor: Optional[CNNPredictor] = None

@@ -43,27 +43,64 @@ class DoctorStatusView(APIView):
 
     def get(self, request):
         user = request.user
-        if not user.is_doctor:
-            return Response({
-                'status': 'success',
-                'data': {'is_doctor': False}
-            })
-
+        
+        # Check if a profile exists (Pending or Verified)
         try:
-            profile = user.doctor_profile
+            profile = DoctorProfile.objects.get(user=user)
             return Response({
                 'status': 'success',
                 'data': {
-                    'is_doctor': True,
+                    'is_doctor': True, # Conceptually true for the UI to show status
                     'is_verified': profile.is_verified,
                     'specialization': profile.specialization,
                     'mrn': profile.medical_license_number,
                     'name': f"Dr. {user.first_name} {user.last_name}".strip(),
                     'email': user.email,
+                    'phone': user.phone or '',
+                    'gender': user.gender or '',
+                    'years_of_experience': profile.years_of_experience,
+                    'hospital_affiliation': profile.hospital_affiliation or '',
+                    'consultation_fee': str(profile.consultation_fee),
+                    'bio': profile.bio or '',
+                    'available_days': profile.available_days or [],
                     'applied_on': profile.created_at.strftime('%d %b %Y'),
                     'verified_on': profile.verification_date.strftime('%d %b %Y') if profile.verification_date else None,
                 }
             })
+        except DoctorProfile.DoesNotExist:
+            # Really not a doctor
+            return Response({
+                'status': 'success',
+                'data': {'is_doctor': False}
+            })
+
+    def post(self, request):
+        """Update doctor profile details"""
+        user = request.user
+        if not user.is_doctor:
+            return Response({'status': 'error', 'message': 'Unauthorized'}, status=403)
+
+        data = request.data
+        try:
+            profile = user.doctor_profile
+            
+            # Update User fields
+            if 'phone' in data: user.phone = data['phone']
+            if 'gender' in data: user.gender = data['gender']
+            user.save()
+
+            # Update DoctorProfile fields
+            if 'hospital_affiliation' in data: profile.hospital_affiliation = data['hospital_affiliation']
+            if 'years_of_experience' in data: profile.years_of_experience = data['years_of_experience']
+            if 'consultation_fee' in data: profile.consultation_fee = data['consultation_fee']
+            if 'bio' in data: profile.bio = data['bio']
+            if 'available_days' in data: profile.available_days = data['available_days'] # Expecting list
+            
+            profile.save()
+
+            return Response({'status': 'success', 'message': 'Profile updated successfully'})
+        except Exception as e:
+            return Response({'status': 'error', 'message': str(e)}, status=500)
         except DoctorProfile.DoesNotExist:
             return Response({
                 'status': 'success',
@@ -262,4 +299,86 @@ class DoctorSharedReportsView(APIView):
                 'image_url': item.report.image.image_url if item.report.image else None
             })
             
+        return Response({'status': 'success', 'data': data})
+
+
+class DoctorDashboardStatsView(APIView):
+    """
+    Returns aggregated dashboard stats for the logged-in doctor.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_doctor:
+            return Response({'status': 'error', 'message': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        today = datetime.date.today()
+        
+        all_appointments = Appointment.objects.filter(doctor=request.user)
+        today_count = all_appointments.filter(date=today).exclude(status__in=['REJECTED', 'CANCELLED']).count()
+        pending_count = all_appointments.filter(status='PENDING').count()
+        
+        # Unique patients who have ever booked with this doctor
+        total_patients = all_appointments.values('patient').distinct().count()
+        
+        # Weekly appointment data for chart (last 7 days)
+        week_data = []
+        day_labels = []
+        for i in range(6, -1, -1):
+            d = today - datetime.timedelta(days=i)
+            count = all_appointments.filter(date=d).exclude(status__in=['REJECTED', 'CANCELLED']).count()
+            week_data.append(count)
+            day_labels.append(d.strftime('%a'))
+        
+        return Response({
+            'status': 'success',
+            'data': {
+                'today_appointments': today_count,
+                'pending_requests': pending_count,
+                'total_patients': total_patients,
+                'revenue': 0,  # Billing not implemented yet
+                'chart_labels': day_labels,
+                'chart_data': week_data,
+            }
+        })
+
+
+class DoctorPatientsView(APIView):
+    """
+    List all unique patients who have appointments with this doctor.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_doctor:
+            return Response({'status': 'error', 'message': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Get unique patient IDs from appointments
+        patient_ids = Appointment.objects.filter(
+            doctor=request.user
+        ).values_list('patient', flat=True).distinct()
+
+        patients = User.objects.filter(id__in=patient_ids)
+        
+        data = []
+        for patient in patients:
+            # Get last appointment with this doctor
+            last_appt = Appointment.objects.filter(
+                doctor=request.user, patient=patient
+            ).order_by('-date').first()
+            
+            # Get latest shared report diagnosis
+            latest_shared = SharedReport.objects.filter(
+                doctor=request.user, report__user=patient
+            ).select_related('report').order_by('-shared_at').first()
+            
+            data.append({
+                'id': patient.id,
+                'name': f"{patient.first_name or ''} {patient.last_name or ''}".strip() or patient.email,
+                'email': patient.email,
+                'gender': patient.gender or 'N/A',
+                'last_visit': last_appt.date.strftime('%b %d, %Y') if last_appt else 'N/A',
+                'condition': latest_shared.report.disease_name if latest_shared else 'N/A',
+            })
+
         return Response({'status': 'success', 'data': data})

@@ -366,16 +366,29 @@ class JobStatusView(APIView):
 
 
 class PredictionHistoryView(APIView):
-    """Get history (Empty for now)."""
+    """Get prediction history for the logged-in user."""
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
         try:
-            predictions = PredictionResult.objects.filter(user=request.user)
-            serializer = PredictionResultSerializer(predictions, many=True)
+            predictions = PredictionResult.objects.filter(
+                user=request.user
+            ).select_related('image').order_by('-created_at')
+            
+            history = []
+            for p in predictions:
+                history.append({
+                    'id': p.id,
+                    'disease_name': p.disease_name or 'Unknown',
+                    'confidence_score': round(p.confidence_score, 2) if p.confidence_score else 0,
+                    'recommendation': p.recommendation or '',
+                    'created_at': p.created_at.isoformat() if p.created_at else None,
+                    'image_url': p.image.image_url if p.image else None,
+                })
+            
             return Response({
                 'status': 'success',
-                'data': {'history': serializer.data}
+                'data': {'history': history}
             }, status=200)
         except Exception as e:
             logger.error(f"Error fetching prediction history: {str(e)}")

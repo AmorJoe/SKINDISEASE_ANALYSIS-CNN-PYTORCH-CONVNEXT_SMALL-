@@ -124,6 +124,7 @@ class DoctorProfile(models.Model):
     specialization = models.CharField(max_length=100)
     years_of_experience = models.PositiveIntegerField(default=0)
     hospital_affiliation = models.CharField(max_length=200, blank=True, null=True)
+    bio = models.TextField(blank=True, null=True, help_text="Short professional biography")
     
     # Verification & Status
     is_verified = models.BooleanField(default=False)
