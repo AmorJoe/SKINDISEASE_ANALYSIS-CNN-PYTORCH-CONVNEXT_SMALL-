@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinScan AI - Doctor Review</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="report.css">
+
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* ============================================
+           PROFESSIONAL PRINTABLE REPORT STYLES
+           ============================================ */
+
+        body {
+            font-family: 'Poppins', 'Helvetica Neue', Arial, sans-serif !important;
+        }
+
+        .doctor-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .btn-send {
+            background-color: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-send:hover {
+            background-color: #059669;
+        }
+
+        .header-title-doctor {
+            background: rgba(43, 125, 163, 0.1);
+            color: #2b7da3;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        .scan-thumbnail {
+            width: 150px;
+            height: 150px;
+            object-fit: contain;
+            border-radius: 50%;
+            background-color: #f8f9fa;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-top: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .abcd-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .abcd-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border: 1px solid #e5e7eb;
+        }
+
+        .abcd-letter {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-blue, #2b7da3);
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: rgba(43, 125, 163, 0.1);
+        }
+
+        .abcd-desc {
+            font-weight: 600;
+            color: #333;
+            flex-grow: 1;
+        }
+
+        .abcd-status {
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 5px;
+        }
+
+        .status-good {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ---- PDF-Ready Doctor Notes Rendered View ---- */
+        .pdf-doctor-notes {
+            font-family: 'Poppins', sans-serif;
+            padding: 20px 0;
+        }
+
+        .pdf-doctor-notes h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 16px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pdf-doctor-notes h3 i {
+            color: #2b7da3;
+        }
+
+        .pdf-notes-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .pdf-notes-list li {
+            position: relative;
+            padding: 8px 0 8px 24px;
+            font-size: 0.95rem;
+            color: #374151;
+            line-height: 1.7;
+            font-weight: 400;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .pdf-notes-list li:last-child {
+            border-bottom: none;
+        }
+
+        .pdf-notes-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 15px;
+            width: 8px;
+            height: 8px;
+            background: #2b7da3;
+            border-radius: 50%;
+        }
+
+        /* Signature area styling for PDF */
+        .signature-area {
+            margin-top: 40px;
+            page-break-inside: avoid;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Skeleton -->
+    <div id="loading-skeleton" class="loading-skeleton">
+        <div class="skeleton-header">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-text-group">
+                <div class="skeleton-text skeleton-title"></div>
+                <div class="skeleton-text skeleton-subtitle"></div>
+            </div>
+        </div>
+        <div class="skeleton-grid">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="error-state" style="display: none;">
+        <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <h2>Unable to Load Report</h2>
+        <p id="error-message">We encountered an error loading the shared report data.</p>
+        <button class="btn-retry" onclick="location.reload()">
+            <i class="fas fa-redo"></i> Retry
+        </button>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+    <div class="report-container" id="report-content" style="display: none;">
+
+        <!-- Header Section -->
+        <header class="report-header" id="pdf-header">
+            <div class="profile-section">
+                <div class="avatar-wrapper">
+                    <img src="https://ui-avatars.com/api/?name=Patient&background=random" alt="Profile" class="avatar"
+                        id="patientAvatar">
+                </div>
+                <div class="user-details">
+                    <h1 id="patientName">Loading...</h1>
+                    <p id="patientEmail" class="user-email">loading@example.com</p>
+                    <div class="header-title-doctor">AI Assisted Scan Review</div>
+                </div>
+            </div>
+
+            <div class="header-title">
+                <h2>Clinical <span class="accent-text">Report</span></h2>
+                <div style="font-size: 0.85rem; color: #666; margin-top: 5px;">Ref: <span id="reportRefId">--</span>
+                </div>
+            </div>
+
+            <div class="action-section no-print" id="action-buttons-container">
+                <button class="btn-download" onclick="window.location.href='doctor-dashboard.html'"
+                    style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db;">
+                    <i class="fas fa-arrow-left"></i> Return Dashboard
+                </button>
+                <button class="btn-send" onclick="sendToPatient()" id="btnSendPatient">
+                    <i class="fas fa-paper-plane"></i> Sign & Send to Patient
+                </button>
+            </div>
+        </header>
+
+        <!-- Vitals Row -->
+        <div class="vitals-grid">
+            <div class="vital-card">
+                <div class="card-header">DOB</div>
+                <div class="card-value" id="patientDOB">--</div>
+            </div>
+            <div class="vital-card">
+                <div class="card-header">Gender</div>
+                <div class="card-value" id="patientGender">--</div>
+            </div>
+            <div class="vital-card">
+                <div class="card-header">Skin Type</div>
+                <div class="card-value" id="patientSkinType">--</div>
+            </div>
+            <div class="vital-card">
+                <div class="card-header">Skin Tone</div>
+                <div class="card-value" id="patientSkinTone">--</div>
+            </div>
+            <div class="vital-card">
+                <div class="card-header">Date Scanned</div>
+                <div class="card-value" id="scanDate">--</div>
+            </div>
+        </div>
+
+        <!-- Main Content Split -->
+        <div class="main-grid">
+
+            <!-- Left: Diagnostic Result -->
+            <div class="card analysis-card">
+                <h2>Initial AI Analysis <span class="scan-date" id="scanDate">--</span></h2>
+
+                <div class="diagnosis-summary">
+                    <div class="scan-thumbnail-wrapper">
+                        <img src="" alt="Analyzed Area" class="scan-thumbnail" id="scanImage"
+                            style="background: #f0f0f0; min-height: 150px;">
+                        <div class="scan-badge" id="bodyLocation">Skin</div>
+                    </div>
+
+                    <div class="diagnosis-details">
+                        <span class="diagnosis-label">Detected Condition</span>
+                        <h3 class="diagnosis-title" id="conditionName">Analyzing...</h3>
+
+                        <div class="severity-container" style="margin-top: 10px;">
+                            <span class="badgel-label">Severity Risk:</span>
+                            <span class="severity-badge badge-high" id="severityBadge">High</span>
+                        </div>
+
+                        <div class="confidence-container" style="margin-top: 20px;">
+                            <div class="label-row">
+                                <span>AI Confidence</span>
+                                <span class="status-text" id="confidenceText">--%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="fill" id="confidenceBar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="abcd-grid" style="margin-top: 25px;">
+                    <div class="abcd-item">
+                        <span class="abcd-letter">A</span>
+                        <span class="abcd-desc">Asymmetry</span>
+                        <span class="abcd-status status-good">Low</span>
+                    </div>
+                    <div class="abcd-item">
+                        <span class="abcd-letter">B</span>
+                        <span class="abcd-desc">Border</span>
+                        <span class="abcd-status status-warning">Irregular</span>
+                    </div>
+                    <div class="abcd-item">
+                        <span class="abcd-letter">C</span>
+                        <span class="abcd-desc">Color</span>
+                        <span class="abcd-status status-good">Uniform</span>
+                    </div>
+                    <div class="abcd-item">
+                        <span class="abcd-letter">D</span>
+                        <span class="abcd-desc">Diameter</span>
+                        <span class="abcd-status status-good">&lt;6mm</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right: AI Recommendation -->
+            <div class="card recommendation-card">
+                <h3 style="font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 8px;">AI Observations</h3>
+                <div class="treatment-steps" id="treatmentSteps" style="margin-top: 15px;">
+                    <!-- Dynamic Content -->
+                </div>
+
+                <p id="aiRecommendations" style="font-size: 0.95rem; color: #555; line-height: 1.6; margin-top: 15px;">
+                    Loading AI observations...
+                </p>
+            </div>
+
+        </div>
+
+        <!-- Doctor's Note (Separate Card) -->
+        <div class="card doctor-note-card" style="margin-top: 25px; display: flex; flex-direction: column;">
+            <h2></h2>
+            <div style="flex-grow: 1; display: flex; flex-direction: column; margin-top: 15px;">
+                <textarea id="doctorNotesInput" class="doctor-notes-input"
+                    style="flex-grow: 1; min-height: 250px; font-family: 'Poppins', sans-serif; font-size: 0.95rem; line-height: 1.6; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; resize: vertical;"
+                    placeholder="Enter clinical assessment, confirmed diagnosis, treatment plan, and prescription details here..."></textarea>
+
+                <div class="medical-disclaimer" style="margin-top: 15px; font-size: 0.8rem; color: #888;">
+                    * This validated report will be digitally shared with the patient and added to their medical
+                    records.
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Signature Area (Visible mostly during print/PDF) -->
+        <div class="signature-area"
+            style="margin-top: 50px; display: flex; justify-content: space-between; border-top: 1px solid #ddd; padding-top: 20px;">
+            <div>
+                <p style="font-weight: 600; color: #333;" id="doctorNameFooter">Dr. Signature</p>
+                <p style="font-size: 0.85rem; color: #666;">Electronically Verified</p>
+            </div>
+            <div style="text-align: right;">
+                <p style="font-weight: 600; color: #333;">Date: <span id="currentDateFooter">--</span></p>
+                <p style="font-size: 0.85rem; color: #666;">SkinScan AI Platform</p>
+            </div>
+        </div>
+    </div>
+    <!-- Core Scripts -->
+    <script src="script.js"></script>
+    <script src="doctor-printable-report.js"></script>
+</body>
+
+</html>

@@ -15,6 +15,7 @@ import uuid
 class DoctorDocumentListView(APIView):
     """
     List files shared by doctors with the current patient.
+    Also supports DELETE to remove a document.
     """
     permission_classes = [IsAuthenticated]
 
@@ -33,6 +34,21 @@ class DoctorDocumentListView(APIView):
             })
         
         return Response({'status': 'success', 'data': data})
+
+    def delete(self, request):
+        doc_id = request.query_params.get('id')
+        if not doc_id:
+            return Response({'status': 'error', 'message': 'Document ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            document = DoctorDocument.objects.get(id=doc_id, patient=request.user)
+            # Delete the physical file from storage
+            if document.document:
+                document.document.delete(save=False)
+            document.delete()
+            return Response({'status': 'success', 'message': 'Document deleted successfully'})
+        except DoctorDocument.DoesNotExist:
+            return Response({'status': 'error', 'message': 'Document not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class DoctorStatusView(APIView):
@@ -372,13 +388,126 @@ class DoctorPatientsView(APIView):
                 doctor=request.user, report__user=patient
             ).select_related('report').order_by('-shared_at').first()
             
+            # Get profile data (gender is stored on UserProfile, not User)
+            profile = getattr(patient, 'profile', None)
+            first_name = getattr(profile, 'first_name', '') or patient.first_name or ''
+            last_name = getattr(profile, 'last_name', '') or patient.last_name or ''
+            gender = getattr(profile, 'gender', None) or 'N/A'
+            
             data.append({
                 'id': patient.id,
-                'name': f"{patient.first_name or ''} {patient.last_name or ''}".strip() or patient.email,
+                'name': f"{first_name} {last_name}".strip() or patient.email,
                 'email': patient.email,
-                'gender': patient.gender or 'N/A',
+                'gender': gender,
                 'last_visit': last_appt.date.strftime('%b %d, %Y') if last_appt else 'N/A',
                 'condition': latest_shared.report.disease_name if latest_shared else 'N/A',
             })
 
         return Response({'status': 'success', 'data': data})
+
+
+class DoctorSharedReportDetailView(APIView):
+    """
+    Get full details for a specific shared report.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, shared_report_id):
+        if not request.user.is_doctor:
+            return Response({'status': 'error', 'message': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+            
+        try:
+            shared_report = SharedReport.objects.select_related('report', 'report__user', 'report__image').get(
+                id=shared_report_id, doctor=request.user
+            )
+        except SharedReport.DoesNotExist:
+            return Response({'status': 'error', 'message': 'Shared report not found or access denied'}, status=status.HTTP_404_NOT_FOUND)
+            
+        report = shared_report.report
+        patient = report.user
+        
+        # Determine URL prefix (if it's not absolute already)
+        image_url = report.image.image_url if report.image else None
+        
+        # Get severity and body_location from ScanHistory if it exists
+        severity = "Moderate" # Default
+        body_location = "Skin"
+        from .models import ScanHistory
+        scan_history = ScanHistory.objects.filter(result=report).first()
+        if scan_history:
+            if scan_history.severity_tag:
+                severity = scan_history.severity_tag
+            if scan_history.body_location:
+                body_location = scan_history.body_location
+        
+        data = {
+            'id': shared_report.id,
+            'report_id': report.id,
+            'patient': {
+                'id': patient.id,
+                'name': getattr(patient.profile, 'first_name', '') + ' ' + getattr(patient.profile, 'last_name', '') if hasattr(patient, 'profile') and (getattr(patient.profile, 'first_name', '') or getattr(patient.profile, 'last_name', '')) else patient.full_name,
+                'email': patient.email,
+                'phone': getattr(patient.profile, 'phone', None) or patient.phone or 'N/A',
+                'dob': getattr(patient.profile, 'date_of_birth', None).strftime('%Y-%m-%d') if hasattr(patient, 'profile') and getattr(patient.profile, 'date_of_birth', None) else (patient.date_of_birth.strftime('%Y-%m-%d') if patient.date_of_birth else 'N/A'),
+                'gender': getattr(patient.profile, 'gender', None) or patient.gender or 'N/A',
+                'blood_group': 'Available in full profile', # Add blood group field later if needed
+                'skin_type': getattr(patient.profile, 'skin_type', None) or patient.skin_type or 'N/A',
+                'skin_tone': getattr(patient.profile, 'skin_tone', None) or patient.skin_tone or 'N/A',
+                'country': getattr(patient.profile, 'country', None) or 'N/A',
+                'address': getattr(patient.profile, 'address', None) or 'N/A'
+            },
+            'disease': report.disease_name,
+            'confidence': report.confidence_score,
+            'recommendation': report.recommendation, # AI Notes
+            'image_url': image_url,
+            'shared_at': shared_report.shared_at,
+            'status': shared_report.status,
+            'doctor_notes': shared_report.doctor_notes or '',
+            'severity': severity,
+            'body_location': body_location,
+            'abcd': { 'a': 'Low', 'b': 'Irregular', 'c': 'Uniform', 'd': '<6mm' }
+        }
+        
+        return Response({'status': 'success', 'data': data})
+
+
+class DoctorResendReportView(APIView):
+    """
+    Doctor saves their notes and a signed PDF, creating a DoctorDocument for the patient.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, shared_report_id):
+        if not request.user.is_doctor:
+            return Response({'status': 'error', 'message': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+            
+        try:
+            shared_report = SharedReport.objects.select_related('report', 'report__user').get(
+                id=shared_report_id, doctor=request.user
+            )
+        except SharedReport.DoesNotExist:
+            return Response({'status': 'error', 'message': 'Shared report not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        notes = request.data.get('notes', '')
+        pdf_file = request.FILES.get('file')
+
+        if not notes and not pdf_file:
+            return Response({'status': 'error', 'message': 'Notes or PDF file are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Update the SharedReport status
+        shared_report.doctor_notes = notes
+        shared_report.status = 'REVIEWED'
+        shared_report.save()
+        
+        # 2. Add to Patient's generic `DoctorDocument` list if PDF was provided
+        if pdf_file:
+            disease_name = shared_report.report.disease_name or 'Diagnosis'
+            DoctorDocument.objects.create(
+                doctor=request.user,
+                patient=shared_report.report.user,
+                document=pdf_file,
+                name=f"Reviewed Report: {disease_name}",
+                note=notes
+            )
+        
+        return Response({'status': 'success', 'message': 'Report successfully sent back to patient.'})

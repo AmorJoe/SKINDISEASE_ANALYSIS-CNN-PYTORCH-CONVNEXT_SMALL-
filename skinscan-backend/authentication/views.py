@@ -245,23 +245,50 @@ class ProfileView(APIView):
             return Response({'status': 'error', 'message': 'User not found'}, status=404)
 
     def put(self, request):
-        logger.info(f"DEBUG: ProfileView.put called with data: {request.data}")
+        logger.info(f"DEBUG: ProfileView.put called")
         try:
             user = User.objects.get(id=request.user.id)
             
-            # Prevent email updates
-            data = request.data.copy()
-            if 'email' in data:
-                del data['email']
+            # CRITICAL FIX: Do NOT call request.data.copy() — it triggers
+            # deepcopy() on the entire QueryDict, which pickles the
+            # TemporaryUploadedFile's BufferedRandom handle and crashes on Windows.
+            # Instead, build a plain dict of text-only fields manually.
+            avatar_file = request.FILES.get('avatar', None)
+            
+            text_fields = [
+                'first_name', 'last_name', 'phone', 'date_of_birth',
+                'gender', 'country', 'address', 'skin_type', 'skin_tone',
+                'is_doctor', 'specialty', 'assigned_model', 'account_status'
+            ]
+            data = {}
+            for field in text_fields:
+                if field in request.data:
+                    data[field] = request.data[field]
             
             serializer = UserSerializer(user, data=data, partial=True)
             if serializer.is_valid():
                 serializer.save()
+                
+                # Handle avatar file separately, outside of DRF pipeline
+                if avatar_file:
+                    from .models import UserProfile
+                    profile, _ = UserProfile.objects.get_or_create(user=user)
+                    file_name = getattr(avatar_file, 'name', 'avatar.jpg')
+                    profile.avatar.save(file_name, avatar_file, save=True)
+                    logger.info(f"DEBUG: Avatar saved as {file_name}")
+                
+                # Re-fetch from DB for clean serialization
+                user.refresh_from_db()
+                if hasattr(user, 'profile'):
+                    user.profile.refresh_from_db()
+                fresh_serializer = UserSerializer(user)
+                
                 return Response({
                     'status': 'success',
                     'message': 'Profile updated successfully',
-                    'data': serializer.data
+                    'data': fresh_serializer.data
                 })
+            logger.error(f"DEBUG: Serializer errors: {serializer.errors}")
             return Response({
                 'status': 'error',
                 'message': 'Validation failed',
@@ -269,6 +296,14 @@ class ProfileView(APIView):
             }, status=400)
         except User.DoesNotExist:
             return Response({'status': 'error', 'message': 'User not found'}, status=404)
+        except Exception as e:
+            import traceback
+            logger.error(f"DEBUG: ProfileView.put EXCEPTION: {e}")
+            logger.error(traceback.format_exc())
+            return Response({
+                'status': 'error',
+                'message': f'Server error: {str(e)}'
+            }, status=500)
 
 
 class ChangePasswordView(APIView):

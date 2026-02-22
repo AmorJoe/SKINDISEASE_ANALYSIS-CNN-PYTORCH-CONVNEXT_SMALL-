@@ -33,6 +33,8 @@ from .views_doctor import (
     DoctorDocumentListView,
     DoctorDashboardStatsView,
     DoctorPatientsView,
+    DoctorSharedReportDetailView,
+    DoctorResendReportView,
 )
 
 urlpatterns = [
@@ -62,6 +64,8 @@ urlpatterns = [
     path('appointments/manage/<int:appointment_id>', DoctorAppointmentManageView.as_view(), name='manage_appointment'),
     path('reports/share', ShareReportView.as_view(), name='share_report'),
     path('reports/shared', DoctorSharedReportsView.as_view(), name='doctor_shared_reports'),
+    path('reports/shared/<int:shared_report_id>', DoctorSharedReportDetailView.as_view(), name='doctor_shared_report_detail'),
+    path('reports/resend/<int:shared_report_id>', DoctorResendReportView.as_view(), name='doctor_resend_report'),
     path('documents', DoctorDocumentListView.as_view(), name='doctor_documents'),
 ]
 

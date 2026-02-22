@@ -89,6 +89,17 @@ async function sendToDoctor() {
         }
 
         const result = JSON.parse(storedResult);
+        const storedResultSummary = storedResult.substring(0, 100);
+
+        // [FIX] Check if this exact scan was already saved to avoid "Doctor Referral" duplicates
+        const alreadySavedId = sessionStorage.getItem('last_saved_prediction_id');
+        const alreadySavedResult = sessionStorage.getItem('last_saved_result_summary');
+
+        if (alreadySavedId && alreadySavedResult === storedResultSummary) {
+            console.log('Using existing scan ID:', alreadySavedId);
+            window.location.href = `doctor-appointment.html?tab=share&report_id=${alreadySavedId}`;
+            return;
+        }
 
         // Convert image to Blob
         const fetchResp = await fetch(storedImage);
@@ -105,7 +116,12 @@ async function sendToDoctor() {
         formData.append('body_location', localStorage.getItem('latest_scan_location') || 'Unspecified');
         formData.append('severity', result.severity || 'Moderate');
         formData.append('title', `Scan on ${new Date().toLocaleDateString()} - Doctor Referral`);
-        formData.append('recommendation', result.recommendation || '');
+
+        let savedRecommendation = result.recommendation || '';
+        if (result.treatment && Array.isArray(result.treatment) && result.treatment.length > 0) {
+            savedRecommendation = 'JSON_TREATMENT:' + JSON.stringify(result.treatment);
+        }
+        formData.append('recommendation', savedRecommendation);
 
         const response = await fetch(`${API_BASE_URL}/predict/save-report`, {
             method: 'POST',
@@ -119,7 +135,9 @@ async function sendToDoctor() {
             const predictionId = data.data.prediction_id;
 
             // Mark as saved to avoid "Save" button triggering again if user comes back
-            sessionStorage.setItem('scan_already_saved', storedResult.substring(0, 100));
+            sessionStorage.setItem('scan_already_saved', storedResultSummary);
+            sessionStorage.setItem('last_saved_prediction_id', predictionId);
+            sessionStorage.setItem('last_saved_result_summary', storedResultSummary);
 
             // Navigate to Doctor Appointment with ID
             window.location.href = `doctor-appointment.html?tab=share&report_id=${predictionId}`;
@@ -238,6 +256,15 @@ function loadDiagnosticData() {
         try {
             const result = JSON.parse(storedResult);
             console.log('Parsed result:', result);
+            let parsedTreatment = result.treatment;
+            if (!parsedTreatment && result.recommendation && result.recommendation.startsWith('JSON_TREATMENT:')) {
+                try {
+                    parsedTreatment = JSON.parse(result.recommendation.substring('JSON_TREATMENT:'.length));
+                } catch (e) {
+                    console.error('Failed to parse JSON treatment array from recommendation', e);
+                }
+            }
+
             reportData = {
                 scanDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                 diagnosis: {
@@ -246,11 +273,12 @@ function loadDiagnosticData() {
                     confidence: result.confidence || 0,
                     abcd: result.abcd || { a: "Low", b: "Regular", c: "Uniform", d: "<6mm" }
                 },
-                treatmentSteps: result.treatment || parseTreatment(result.recommendation),
+                treatmentSteps: parsedTreatment || parseTreatment(result.recommendation),
                 lifestyleTip: result.lifestyle_tip || 'Consult a healthcare professional for personalized advice.',
                 aiModelUsed: result.ai_model_used || 'gemini',
                 image: storedImage
             };
+
         } catch (e) {
             console.error("Error parsing stored result", e);
         }
@@ -483,25 +511,82 @@ function dataURItoBlob(dataURI) {
 
 // [Removed outdated saveReportToHistory function]
 
-function downloadPDF() {
-    // Check if doctor's notes are empty and hide if so
-    const doctorNotesCard = document.querySelector('.doctor-note-card');
-    const doctorNotesTextarea = document.getElementById('doctorNotes');
-    const notesAreEmpty = !doctorNotesTextarea || !doctorNotesTextarea.value.trim();
-
-    if (notesAreEmpty && doctorNotesCard) {
-        doctorNotesCard.classList.add('hide-for-print');
+async function downloadPDF() {
+    const btnDownload = document.querySelector('.btn-download');
+    if (btnDownload) {
+        btnDownload.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+        btnDownload.disabled = true;
     }
 
-    // Trigger browser print dialog for PDF saving
-    window.print();
+    try {
+        const element = document.getElementById('report-content');
 
-    // Restore visibility after print dialog
-    setTimeout(() => {
-        if (notesAreEmpty && doctorNotesCard) {
-            doctorNotesCard.classList.remove('hide-for-print');
+        // 1. Convert doctor's notes textarea into styled HTML for clean PDF Output
+        const doctorNotesCard = document.querySelector('.doctor-note-card');
+        const doctorNotesTextarea = document.getElementById('doctorNotes');
+        const notesContent = doctorNotesTextarea ? doctorNotesTextarea.value.trim() : '';
+
+        // Hide action buttons during print
+        const actionSection = document.querySelector('.action-section');
+        if (actionSection) actionSection.style.display = 'none';
+
+        let notesRenderedDiv = null;
+
+        if (notesContent && doctorNotesCard) {
+            // Parse lines into list items
+            const lines = notesContent.split('\n').filter(line => line.trim() !== '' && line.trim() !== '•');
+
+            // Create professional rendered notes
+            const renderedHTML = `
+                <div class="pdf-doctor-notes" id="pdf-notes-rendered" style="font-family: 'Poppins', sans-serif; padding: 20px 0; max-width: 100%; box-sizing: border-box;">
+                    <h3 style="font-size: 1.1rem; color: #1a1a1a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px;"><i class="fas fa-clipboard-list" style="color: #2b7da3; margin-right: 8px;"></i> Doctor's Notes & Observations</h3>
+                    <ul class="pdf-notes-list" style="list-style: none; padding-left: 0; margin: 0;">
+                        ${lines.map(line => {
+                const cleanLine = line.replace(/^[\s]*[•\-\*]\s*/, '').trim();
+                return cleanLine ? `<li style="position: relative; padding: 8px 0 8px 24px; font-size: 0.95rem; color: #334155; border-bottom: 1px solid #f1f5f9; page-break-inside: avoid;">
+                                        <span style="position: absolute; left: 0; top: 15px; width: 6px; height: 6px; background-color: #2b7da3; border-radius: 50%;"></span>
+                                        ${cleanLine}
+                                    </li>` : '';
+            }).filter(Boolean).join('')}
+                    </ul>
+                    <p style="margin-top: 15px; font-size: 0.75rem; color: #9ca3af; font-style: italic;">
+                        * AI analysis is not a substitute for professional medical advice.
+                    </p>
+                </div>
+            `;
+
+            // Hide textarea, show HTML
+            doctorNotesTextarea.style.display = 'none';
+            notesRenderedDiv = document.createElement('div');
+            notesRenderedDiv.id = 'pdf-notes-temp';
+            notesRenderedDiv.innerHTML = renderedHTML;
+            doctorNotesCard.appendChild(notesRenderedDiv);
+        } else if (!notesContent && doctorNotesCard) {
+            // No notes: hide the entire card
+            doctorNotesCard.style.display = 'none';
         }
-    }, 100);
+
+        // Wait a tiny bit for DOM
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 2. Trigger standard browser print! This fixes all blank canvas issues natively.
+        window.print();
+
+        // 3. Restore UI
+        if (actionSection) actionSection.style.display = '';
+        if (notesRenderedDiv) notesRenderedDiv.remove();
+        if (doctorNotesTextarea) doctorNotesTextarea.style.display = '';
+        if (!notesContent && doctorNotesCard) doctorNotesCard.style.display = '';
+
+    } catch (error) {
+        console.error('PDF generation error:', error);
+        alert('Failed to generate PDF. Please try again.');
+    } finally {
+        if (btnDownload) {
+            btnDownload.innerHTML = '<i class="fas fa-file-pdf"></i> Download PDF';
+            btnDownload.disabled = false;
+        }
+    }
 }
 
 // PNG Export functionality
@@ -854,7 +939,12 @@ async function saveScanToBackend(isManual = false, forceLocation = null) {
         // Generate a default title
         const finalTitle = `Scan on ${new Date().toLocaleDateString()} - ${bodyLocation}`;
         formData.append('title', finalTitle);
-        formData.append('recommendation', result.recommendation || '');
+
+        let savedRecommendation = result.recommendation || '';
+        if (result.treatment && Array.isArray(result.treatment) && result.treatment.length > 0) {
+            savedRecommendation = 'JSON_TREATMENT:' + JSON.stringify(result.treatment);
+        }
+        formData.append('recommendation', savedRecommendation);
 
         // Call the dedicated save function
         await performSave(token, formData, btnSave, originalContent, isManual);
@@ -886,6 +976,17 @@ async function performSave(token, formData, btnSave, originalContent, isManual) 
         const data = await response.json();
 
         if (response.ok && data.status === 'success') {
+            const predictionId = data.data.prediction_id;
+
+            // [FIX] Update session storage so sendToDoctor knows this scan is already saved
+            const storedResult = localStorage.getItem('latest_scan_result');
+            if (storedResult) {
+                const summary = storedResult.substring(0, 100);
+                sessionStorage.setItem('scan_already_saved', summary);
+                sessionStorage.setItem('last_saved_prediction_id', predictionId);
+                sessionStorage.setItem('last_saved_result_summary', summary);
+            }
+
             if (isManual) {
                 if (confirm('Scan saved successfully! View in Body Map?')) {
                     // Add timestamp to force refresh

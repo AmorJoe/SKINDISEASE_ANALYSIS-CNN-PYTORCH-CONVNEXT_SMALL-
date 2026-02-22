@@ -100,19 +100,39 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Handle updates to nested profile data"""
-        logger.info(f"DEBUG: UserSerializer.update validated_data: {validated_data}")
+        logger.info(f"DEBUG: UserSerializer.update validated_data keys: {list(validated_data.keys())}")
         profile_data = validated_data.pop('profile', {})
-        
-        # Update User fields (if any remaining in validated_data)
-        super().update(instance, validated_data)
-        
-        # Update Profile fields
-        if hasattr(instance, 'profile'):
-            profile = instance.profile
+
+        # Update only the fields that belong directly to the User model
+        user_fields = ['is_doctor', 'specialty', 'assigned_model', 'account_status']
+        user_changed = False
+        for attr in user_fields:
+            if attr in validated_data:
+                setattr(instance, attr, validated_data[attr])
+                user_changed = True
+        if user_changed:
+            instance.save()
+
+        # Update or create UserProfile
+        if profile_data:
+            from .models import UserProfile
+            profile, created = UserProfile.objects.get_or_create(user=instance)
+            
+            # Extract avatar file separately — it cannot go through setattr/save
+            # because TemporaryUploadedFile contains a BufferedRandom handle
+            # that cannot be pickled on Windows.
+            avatar_file = profile_data.pop('avatar', None)
+            
+            # Set all non-file fields
             for attr, value in profile_data.items():
                 setattr(profile, attr, value)
             profile.save()
             
+            # Handle avatar file upload separately using FieldFile.save()
+            if avatar_file:
+                file_name = getattr(avatar_file, 'name', 'avatar.jpg')
+                profile.avatar.save(file_name, avatar_file, save=True)
+
         return instance
 
 class ChangePasswordSerializer(serializers.Serializer):

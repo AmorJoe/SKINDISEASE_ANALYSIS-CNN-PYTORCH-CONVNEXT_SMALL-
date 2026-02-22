@@ -14,8 +14,8 @@
 
 body {
     background: var(--bg-color);
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    /* Standard Professional Font */
+    font-family: 'Poppins', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    /* Professional Modern Font */
     color: var(--text-primary);
     margin: 0;
     min-height: 100vh;
@@ -174,7 +174,7 @@ body {
 /* Vitals - Clean Grid */
 .vitals-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 30px;
     margin-bottom: 50px;
 }
@@ -562,157 +562,285 @@ body {
     /* Hide for true minimalism */
 }
 
-/* Print Styles */
-/* Print Styles */
-@media print {
-    @page {
-        margin: 0;
-        /* Removing margin hides browser headers/footers */
-        size: auto;
-    }
+/* ============================================
+   PDF EXPORT MODE (Professional A4 Layout)
+   ============================================ */
+.pdf-export-mode {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
 
+body.pdf-export-mode {
+    display: block !important;
+    justify-content: unset !important;
+    align-items: unset !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.pdf-export-mode .report-container {
+    width: 800px !important;
+    /* Force width on the container, not body */
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 40px !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+.pdf-export-mode .action-section,
+.pdf-export-mode .btn-download,
+.pdf-export-mode .btn-icon {
+    display: none !important;
+}
+
+/* Header */
+.pdf-export-mode .report-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #1e293b;
+    align-items: center;
+}
+
+.pdf-export-mode .avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+}
+
+.pdf-export-mode .user-details h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.pdf-export-mode .header-title h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+/* Vitals Grid */
+.pdf-export-mode .vitals-grid {
+    gap: 15px;
+    margin-bottom: 35px;
+}
+
+.pdf-export-mode .vital-card {
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.pdf-export-mode .card-header {
+    font-size: 0.7rem;
+    color: #64748b;
+}
+
+.pdf-export-mode .card-value {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #0f172a;
+    margin-top: 4px;
+}
+
+/* Two-column layout */
+.pdf-export-mode .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+/* Cards */
+.pdf-export-mode .card {
+    padding: 25px;
+    box-shadow: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.pdf-export-mode .card h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Diagnosis Section */
+.pdf-export-mode .scan-thumbnail-wrapper {
+    width: 180px;
+    height: 180px;
+}
+
+.pdf-export-mode .scan-badge {
+    bottom: -10px;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    background: #0f172a;
+    color: white;
+}
+
+.pdf-export-mode .diagnosis-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 10px;
+}
+
+.pdf-export-mode .severity-badge {
+    padding: 8px 20px;
+    font-size: 0.85rem;
+}
+
+/* Confidence Bar */
+.pdf-export-mode .confidence-container {
+    margin-top: 25px;
+}
+
+.pdf-export-mode .progress-bar {
+    height: 6px;
+    background: #f1f5f9;
+}
+
+.pdf-export-mode .progress-bar .fill {
+    background: #0ea5e9;
+}
+
+/* ABCD Grid */
+.pdf-export-mode .abcd-grid {
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 1px solid #f1f5f9;
+    gap: 15px;
+}
+
+.pdf-export-mode .abcd-item {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.pdf-export-mode .abcd-letter {
+    font-size: 0.85rem;
+    color: #0ea5e9;
+    font-weight: 700;
+}
+
+.pdf-export-mode .abcd-desc {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+/* Treatment Plan */
+.pdf-export-mode .treatment-steps {
+    border-left: 2px solid #e2e8f0;
+    padding-left: 0;
+    margin-left: 10px;
+}
+
+.pdf-export-mode .step-item {
+    margin-bottom: 25px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.pdf-export-mode .step-number {
+    left: -11px;
+    background: white;
+    border-color: #0ea5e9;
+    color: #0f172a;
+}
+
+.pdf-export-mode .step-content strong {
+    font-size: 1rem;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.pdf-export-mode .step-content p {
+    font-size: 0.95rem;
+    color: #475569;
+}
+
+/* Doctor Notes - Hide textarea, show rendered HTML */
+.pdf-export-mode .doctor-note-card {
+    margin-top: 30px;
+    padding: 25px;
+}
+
+/* Ensure original doctor notes are hidden in PDF export mode */
+.pdf-export-mode .doctor-notes-section,
+.pdf-export-mode .doctor-notes-input {
+    display: none !important;
+}
+
+/* Styling the injected rendered PDF notes */
+.pdf-export-mode .pdf-doctor-notes h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 15px;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pdf-export-mode .pdf-notes-list {
+    margin-top: 15px;
+}
+
+.pdf-export-mode .pdf-notes-list li {
+    font-size: 0.95rem;
+    color: #334155;
+    padding: 10px 0 10px 24px;
+    border-bottom: 1px solid #f8fafc;
+}
+
+.pdf-export-mode .pdf-notes-list li:last-child {
+    border-bottom: none;
+}
+
+.pdf-export-mode .pdf-notes-list li::before {
+    background: #0ea5e9;
+    top: 17px;
+}
+
+/* Print Fallback */
+@media print {
     body {
         background: white;
-        margin: 1cm;
-        /* Reduced margin to fit more */
-        padding: 0;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        font-size: 9pt;
-        /* Reduced from 11pt */
     }
 
     .report-container {
+        padding: 0;
         box-shadow: none;
-        max-width: 100%;
-        width: 100%;
-        border-radius: 0;
-        padding: 20px;
-        /* Reduced padding */
-        background: white;
     }
 
-    .btn-download,
-    .btn-icon,
     .action-section,
-    .footer-brand,
-    .model-selector {
+    .btn-download {
         display: none !important;
     }
 
-    /* Professional Header Alignment */
-    .report-header {
-        border-bottom: 2px solid #000;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: relative;
-    }
-
-    .profile-section {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
-
-    .avatar-wrapper {
-        display: block !important;
-    }
-
-    .avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-    }
-
-    .header-title {
-        position: static;
-        transform: none;
-        text-align: center;
-        margin: 0 auto;
-    }
-
-    .header-title h2 {
-        font-size: 18pt;
-        color: #000;
-        margin: 0;
-    }
-
-    .user-details {
-        position: static;
-    }
-
-    .user-details h1 {
-        font-size: 10pt;
-        color: #000;
-        margin: 0 0 2px 0;
-    }
-
-    .user-email {
-        font-size: 8pt;
-        color: #555;
-        margin: 0;
-    }
-
-    /* Card Cleanup */
-    .card {
-        box-shadow: none;
-        padding: 0;
-        border: none;
-        background: transparent;
-        margin-bottom: 20px;
-        /* Reduced margin */
-        page-break-inside: avoid;
-    }
-
-    .card h2 {
-        font-size: 11pt;
-        /* Reduced header size */
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 5px;
-        margin-bottom: 10px;
-        color: #000;
-    }
-
-    /* Grid Adjustments */
-    .main-grid {
-        gap: 30px;
-        /* Reduced gap */
-        display: block;
-    }
-
-    /* Force Keep Together */
-    .analysis-card,
-    .recommendation-card,
-    .diagnosis-summary,
-    .abcd-grid {
-        page-break-inside: avoid;
-        break-inside: avoid;
-    }
-
-    .abcd-item,
-    .step-item {
-        page-break-inside: avoid;
-        break-inside: avoid;
-    }
-
-    .treatment-steps {
-        border-left: 1px solid #ddd;
-        page-break-inside: avoid;
-    }
-
-    .step-number {
-        border-color: #000;
-        color: #000;
-    }
-
     .doctor-notes-input {
-        border: 1px solid #ddd;
-        background: white;
+        border: 1px solid #ccc;
     }
 }

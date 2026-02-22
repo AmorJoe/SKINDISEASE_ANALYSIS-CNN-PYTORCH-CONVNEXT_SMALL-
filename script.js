@@ -263,26 +263,62 @@ function initDashboardPage() {
             loader.style.display = 'none';
 
             if (data.status === 'success') {
-                // Show results
-                resultCard.style.display = 'flex';
-
                 const prediction = data.data;
+
+                // --- IMAGE RECOGNITION GUARD ---
+                if (prediction.is_inconclusive) {
+                    // Show results card with "Couldn't Recognize"
+                    resultCard.style.display = 'flex';
+                    diseaseName.innerText = "Detected: Couldn't Recognize";
+                    diseaseName.style.color = '#e74c3c';
+                    accuracyText.innerText = `${prediction.confidence}%`;
+
+                    // Hide View Report button and Body Location selector
+                    const viewReportBtn = document.getElementById('view-report-btn');
+                    if (viewReportBtn) viewReportBtn.style.display = 'none';
+
+                    const locationSelector = document.querySelector('.body-location-selector');
+                    if (locationSelector) locationSelector.style.display = 'none';
+
+                    // Halt savings
+                    localStorage.removeItem('latest_scan_result');
+                    localStorage.removeItem('latest_scan_image');
+                    localStorage.removeItem('latest_scan_location');
+
+                    showNotificationToast('Recognition Error', 'The AI couldn\'t clearly recognize this image. Please ensure it\'s a clear skin photo.', 'warning');
+
+                    // Animate confidence bar
+                    setTimeout(() => {
+                        meterFill.style.width = `${prediction.confidence}%`;
+                        meterFill.style.background = '#e74c3c'; // Red for low confidence
+                    }, 100);
+
+                    console.warn('Inconclusive prediction - Saving halted:', prediction);
+                    return; // HALT FURTHER PROCESSING
+                }
+
+                // --- NORMAL SUCCESS FLOW ---
+                resultCard.style.display = 'flex';
                 diseaseName.innerText = `Detected: ${prediction.disease_name}`;
+                diseaseName.style.color = ''; // Reset color
                 accuracyText.innerText = `${prediction.confidence}%`;
+
+                // Ensure elements are visible
+                const viewReportBtn = document.getElementById('view-report-btn');
+                if (viewReportBtn) viewReportBtn.style.display = 'inline-flex';
+
+                const locationSelector = document.querySelector('.body-location-selector');
+                if (locationSelector) locationSelector.style.display = 'block';
 
                 // Reset Body Location Dropdown
                 const quickLocation = document.getElementById('quickBodyLocation');
                 if (quickLocation) {
                     quickLocation.selectedIndex = 0; // Reset to "Select location..."
-                    // Clear previous location from storage to avoid carrying over old data
                     localStorage.removeItem('latest_scan_location');
 
-                    // Add listener to save immediately on change
                     quickLocation.onchange = function () {
                         if (this.value) {
                             localStorage.setItem('latest_scan_location', this.value);
-                            console.log('Location tagged for report:', this.value);
-                            // Clear validation styling when user selects a location
                             this.style.borderColor = '';
                             this.style.boxShadow = '';
                             this.classList.remove('shake-highlight');
@@ -291,19 +327,15 @@ function initDashboardPage() {
                 }
 
                 // View Report Button — requires body location
-                const viewReportBtn = document.getElementById('view-report-btn');
                 if (viewReportBtn) {
                     viewReportBtn.onclick = function () {
                         const loc = document.getElementById('quickBodyLocation');
                         if (!loc || !loc.value) {
-                            // Highlight the dropdown
                             loc.style.borderColor = '#e74c3c';
                             loc.style.boxShadow = '0 0 0 3px rgba(231, 76, 60, 0.25)';
                             loc.classList.add('shake-highlight');
                             loc.focus();
                             loc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                            // Remove shake after animation
                             setTimeout(() => loc.classList.remove('shake-highlight'), 600);
                             return;
                         }
@@ -314,10 +346,15 @@ function initDashboardPage() {
 
                 // SAVE DATA FOR REPORT
                 localStorage.setItem('latest_scan_result', JSON.stringify(prediction));
-                localStorage.setItem('needs_autosave', 'true'); // Trigger auto-save on report load
-                sessionStorage.removeItem('scan_already_saved'); // Clear dedup flag for new scan
 
-                // Save Image (already read in previewFile, but we need to ensure it's saved)
+                // Clear previous session cache
+                sessionStorage.removeItem('last_saved_prediction_id');
+                sessionStorage.removeItem('last_saved_result_summary');
+                sessionStorage.removeItem('scan_already_saved');
+
+                showNotificationToast('Analysis Complete', 'Your skin has been successfully analyzed.', 'success');
+
+                // Save Image
                 const reader = new FileReader();
                 reader.readAsDataURL(currentFile);
                 reader.onloadend = function () {
@@ -327,16 +364,17 @@ function initDashboardPage() {
                 // Animate confidence bar
                 setTimeout(() => {
                     meterFill.style.width = `${prediction.confidence}%`;
+                    meterFill.style.background = ''; // Reset to default
                 }, 100);
 
-                console.log('Prediction result:', prediction);
-
                 // Fire scan-complete notification
-                addNotification(
-                    'Scan Complete',
-                    `Analysis finished: ${prediction.disease_name} (${prediction.confidence}% confidence)`,
-                    'success'
-                );
+                if (typeof addNotification === 'function') {
+                    addNotification(
+                        'Scan Complete',
+                        `Analysis finished: ${prediction.disease_name} (${prediction.confidence}% confidence)`,
+                        'success'
+                    );
+                }
 
             } else if (response.status === 401) {
                 // Token expired or invalid
@@ -2565,6 +2603,17 @@ async function sendToDoctor() {
         }
 
         const result = JSON.parse(storedResult);
+        const storedResultSummary = storedResult.substring(0, 100);
+
+        // [FIX] Check if this exact scan was already saved to avoid "Doctor Referral" duplicates
+        const alreadySavedId = sessionStorage.getItem('last_saved_prediction_id');
+        const alreadySavedResult = sessionStorage.getItem('last_saved_result_summary');
+
+        if (alreadySavedId && alreadySavedResult === storedResultSummary) {
+            console.log('Using existing scan ID:', alreadySavedId);
+            window.location.href = `doctor-appointment.html?tab=share&report_id=${alreadySavedId}`;
+            return;
+        }
 
         // Convert image to Blob
         const fetchResp = await fetch(storedImage);
@@ -2582,7 +2631,12 @@ async function sendToDoctor() {
         formData.append('body_location', localStorage.getItem('latest_scan_location') || 'Unspecified');
         formData.append('severity', result.severity || 'Moderate');
         formData.append('title', `Scan on ${new Date().toLocaleDateString()} - Doctor Referral`);
-        formData.append('recommendation', result.recommendation || '');
+
+        let savedRecommendation = result.recommendation || '';
+        if (result.treatment && Array.isArray(result.treatment) && result.treatment.length > 0) {
+            savedRecommendation = 'JSON_TREATMENT:' + JSON.stringify(result.treatment);
+        }
+        formData.append('recommendation', savedRecommendation);
 
         // Save to DB
         const response = await fetch(`${API_BASE_URL}/predict/save-report`, {
@@ -2595,9 +2649,13 @@ async function sendToDoctor() {
 
         if (response.ok && data.status === 'success') {
             const predictionId = data.data.prediction_id;
-            // Mark as saved to prevent duplicate auto-saves
-            sessionStorage.setItem('scan_already_saved', storedResult.substring(0, 100));
-            // Navigate with exact report ID
+
+            // [FIX] Cache the ID so we don't save it again if user clicks stethoscope again
+            sessionStorage.setItem('last_saved_prediction_id', predictionId);
+            sessionStorage.setItem('last_saved_result_summary', storedResultSummary);
+            sessionStorage.setItem('scan_already_saved', storedResultSummary);
+
+            // Redirect to appointment page with the saved report ID
             window.location.href = `doctor-appointment.html?tab=share&report_id=${predictionId}`;
         } else {
             alert('Failed to save report: ' + (data.message || 'Unknown error'));

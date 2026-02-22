@@ -334,6 +334,10 @@ function initDashboardPage() {
                 // Persist scan data so the report page can read it
                 localStorage.setItem('latest_scan_result', JSON.stringify(prediction));
                 localStorage.setItem('needs_autosave', 'true');
+
+                // [FIX] Clear previous saved ID because this is a FRESH scan result
+                sessionStorage.removeItem('last_saved_prediction_id');
+                sessionStorage.removeItem('last_saved_result_summary');
                 sessionStorage.removeItem('scan_already_saved');
 
                 // Also persist the image as base64 for the report page

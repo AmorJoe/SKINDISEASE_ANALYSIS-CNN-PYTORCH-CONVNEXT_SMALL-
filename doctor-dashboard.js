@@ -395,7 +395,12 @@ async function loadReports() {
                             </div>
                         </td>
                         <td>
-                           <span class="status-tag ${r.status === 'REVIEWED' ? 'confirmed' : 'pending'}">${r.status || 'SENT'}</span>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <span class="status-tag ${r.status === 'REVIEWED' ? 'confirmed' : 'pending'}">${r.status || 'SENT'}</span>
+                                <button class="btn-text" onclick="window.open('doctor-printable-report.html?report_id=${r.id}', '_blank')" style="padding: 4px 10px; font-size: 0.8rem; border-radius: 4px; border: 1px solid var(--primary-color); color: var(--primary-color); cursor: pointer;">
+                                    <i class="fas fa-external-link-alt"></i> Open
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -432,8 +437,7 @@ async function loadPatients() {
                         <td>${p.gender || 'N/A'}</td>
                         <td>${p.last_visit}</td>
                         <td>${p.condition}</td>
-                        <td><button class="btn-text">${p.email}</button></td>
-                        <td><button class="icon-btn btn-view"><i class="fas fa-user-edit"></i></button></td>
+                        <td><a href="mailto:${p.email}" class="btn-text" style="color:#2b7da3;text-decoration:none;">${p.email}</a></td>
                     </tr>
                 `;
             });
