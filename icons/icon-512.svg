@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#0288d1"/>
+  <g transform="translate(256,256)">
+    <!-- Magnifying glass -->
+    <circle cx="-25" cy="-25" r="95" fill="none" stroke="white" stroke-width="20"/>
+    <line x1="42" y1="42" x2="120" y2="120" stroke="white" stroke-width="20" stroke-linecap="round"/>
+    <!-- Medical cross inside -->
+    <rect x="-58" y="-14" width="66" height="28" rx="5" fill="white"/>
+    <rect x="-39" y="-33" width="28" height="66" rx="5" fill="white"/>
+  </g>
+</svg>
