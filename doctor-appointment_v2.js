@@ -2,7 +2,7 @@
 // Doctor Appointment Page Logic
 // ============================================
 
-const API_BASE_URL_DA = 'http://localhost:8000/api';
+const API_BASE_URL_DA = 'https://skinscan-hjxo.onrender.com/api';
 
 // Re-use auth helper from script.js (assuming script.js is loaded or logic duplicated)
 function getAuthToken() {

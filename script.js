@@ -3,7 +3,7 @@
 // Connected to Django Backend API
 // ============================================
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'https://skinscan-hjxo.onrender.com/api';
 
 // Get JWT token from session storage
 function getAuthToken() {
