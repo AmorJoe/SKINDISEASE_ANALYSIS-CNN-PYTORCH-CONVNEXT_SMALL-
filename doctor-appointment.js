@@ -2,7 +2,7 @@
 // Doctor Appointment Page Logic
 // ============================================
 
-const API_BASE_URL_DA = 'https://skinscan-hjxo.onrender.com/api';
+const API_BASE_URL_DA = 'http://localhost:8000/api';
 
 // Re-use auth helper from script.js (assuming script.js is loaded or logic duplicated)
 function getAuthToken() {
@@ -227,15 +227,17 @@ async function loadDoctors() {
         });
         const data = await response.json();
 
-        const optionsHTML = (data.status === 'success' && data.data.length > 0)
-            ? data.data.map(doc => `<option value="${doc.id}">Dr. ${doc.first_name} ${doc.last_name} (${doc.specialization || 'Dermatology'})</option>`).join('')
-            : '<option value="" disabled>No doctors available</option>';
-
-        const defaultOption = '<option value="" disabled selected>Select Doctor</option>';
-
-        bookingSelect.innerHTML = defaultOption + optionsHTML;
-        if (shareSelect) {
-            shareSelect.innerHTML = defaultOption + optionsHTML;
+        if (data.status === 'success' && data.data.length > 0) {
+            window.loadedDoctors = data.data; // Store for availability check
+            const optionsHTML = data.data.map(doc => `<option value="${doc.id}">Dr. ${doc.first_name} ${doc.last_name} (${doc.specialization || 'Dermatology'})</option>`).join('');
+            const defaultOption = '<option value="" disabled selected>Select Doctor</option>';
+            bookingSelect.innerHTML = defaultOption + optionsHTML;
+            if (shareSelect) {
+                shareSelect.innerHTML = defaultOption + optionsHTML;
+            }
+        } else {
+            bookingSelect.innerHTML = '<option value="" disabled>No doctors available</option>';
+            if (shareSelect) shareSelect.innerHTML = '<option value="" disabled>No doctors available</option>';
         }
 
     } catch (error) {
@@ -410,6 +412,18 @@ async function handleBooking(e) {
     if (!doctorId || !date || !timeSlot) {
         alert('Please select a doctor, date, and time.');
         return;
+    }
+
+    // --- Validation: Check available days ---
+    if (window.loadedDoctors) {
+        const selectedDoctor = window.loadedDoctors.find(d => d.id == doctorId);
+        if (selectedDoctor && selectedDoctor.available_days) {
+            const selectedDateString = new Date(date).toLocaleDateString('en-US', { weekday: 'short' }); // e.g., 'Mon', 'Tue'
+            if (!selectedDoctor.available_days.includes(selectedDateString)) {
+                alert(`Appointment failed: Dr. ${selectedDoctor.last_name} is only available on ${selectedDoctor.available_days.join(', ')}.`);
+                return;
+            }
+        }
     }
 
     const originalText = submitBtn.innerText;

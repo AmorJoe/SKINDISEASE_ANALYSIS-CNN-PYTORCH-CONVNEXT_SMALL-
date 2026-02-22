@@ -2,7 +2,7 @@
 // SkinScan AI — Doctor Dashboard (Live API)
 // ============================================
 
-const API_BASE_URL = 'https://skinscan-hjxo.onrender.com/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 function getAuthToken() { return sessionStorage.getItem('jwt_token'); }
 function isAuthenticated() { return !!getAuthToken(); }
 function getUserData() {

@@ -3,7 +3,7 @@
 // Connected to Django Backend API
 // ============================================
 
-const API_BASE_URL = 'https://skinscan-hjxo.onrender.com/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 // Auto-redirect if already logged in
 if (sessionStorage.getItem('jwt_token')) {

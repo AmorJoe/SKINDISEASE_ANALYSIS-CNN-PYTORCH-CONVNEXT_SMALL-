@@ -2,7 +2,7 @@
 // SkinScan AI - Admin Dashboard JavaScript
 // ============================================
 
-const API_BASE_URL = 'https://skinscan-hjxo.onrender.com/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 // Admin authentication check
 function checkAdminAuth() {

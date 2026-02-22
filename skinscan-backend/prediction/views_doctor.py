@@ -147,6 +147,7 @@ class DoctorListView(APIView):
                 'email': doc.email,
                 'specialization': profile.specialization if profile else 'Dermatology',
                 'mrn': profile.medical_license_number if profile else '',
+                'available_days': profile.available_days if profile and profile.available_days else ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
             })
 
         return Response({

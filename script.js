@@ -1,9 +1,9 @@
-﻿// ============================================
+// ============================================
 // SkinScan AI - Dashboard JavaScript
 // Connected to Django Backend API
 // ============================================
 
-const API_BASE_URL = 'https://skinscan-hjxo.onrender.com/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 // Get JWT token from session storage
 function getAuthToken() {
@@ -326,7 +326,7 @@ function initDashboardPage() {
                     };
                 }
 
-                // View Report Button — requires body location
+                // View Report Button � requires body location
                 if (viewReportBtn) {
                     viewReportBtn.onclick = function () {
                         const loc = document.getElementById('quickBodyLocation');
@@ -501,12 +501,12 @@ async function sendMessage() {
             // 2. Bold (**text**)
             safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-            // 3. Markdown links [text](url) — must run BEFORE raw URL detection
+            // 3. Markdown links [text](url) � must run BEFORE raw URL detection
             safeText = safeText.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function (match, linkText, url) {
                 return `<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
             });
 
-            // 4. Raw URLs — split by existing <a> tags so we don't double-link
+            // 4. Raw URLs � split by existing <a> tags so we don't double-link
             const parts = safeText.split(/(<a\s[^>]*>.*?<\/a>)/g);
             safeText = parts.map(part => {
                 if (part.startsWith('<a ')) return part; // Already a link, skip
@@ -1203,7 +1203,7 @@ async function saveUserProfile() {
         }
 
         if (missingFields.length > 0) {
-            alert(`âš ï¸ Please fill in the following required fields:\n\nâ€¢ ${missingFields.join('\nâ€¢ ')}`);
+            alert(`⚠️ Please fill in the following required fields:\n\n• ${missingFields.join('\n• ')}`);
             btnSave.innerText = originalText;
             btnSave.disabled = false;
             return;
@@ -2128,7 +2128,7 @@ function initAnalysisSubmenu() {
     }
 }
 
-// 👇 ADD THIS - Actually call the function!
+// ?? ADD THIS - Actually call the function!
 document.addEventListener('DOMContentLoaded', initAnalysisSubmenu);
 
 // OR simply call it directly if script is at bottom of body:
@@ -2574,7 +2574,7 @@ function initThemeOptions() {
 }
 
 // ============================================
-// SEND TO DOCTOR — Auto-save scan and navigate
+// SEND TO DOCTOR � Auto-save scan and navigate
 // ============================================
 async function sendToDoctor() {
     const btn = document.getElementById('send-to-doctor-btn');
