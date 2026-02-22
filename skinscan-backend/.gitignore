@@ -59,11 +59,11 @@ htmlcov/
 .pytest_cache/
 
 # Machine Learning - EXCLUDE LARGE MODELS
-*.pth
+# *.pth  <-- Commented out to allow the 32MB model to be tracked
 *.pt
 *.h5
 *.keras
 *.ckpt
-ml_models/*.pth
+# ml_models/*.pth <-- Commented out for the same reason
 ml_models/*.h5
-skinscan-backend/ml_models/
+# skinscan-backend/ml_models/
