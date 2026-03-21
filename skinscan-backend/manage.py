@@ -3,6 +3,11 @@
 import os
 import sys
 
+# Fix Windows console encoding - prevents 'charmap' codec errors with Unicode characters
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 
 def main():
     """Run administrative tasks."""

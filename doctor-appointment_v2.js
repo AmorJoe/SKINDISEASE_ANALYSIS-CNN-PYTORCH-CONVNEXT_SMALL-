@@ -361,8 +361,8 @@ async function loadAppointments() {
                                         <i class="fas fa-video"></i> Join Video Call
                                     </a>
                                 ` : ''}
-                                ${appt.status === 'PENDING' ? `
-                                    <button onclick="alert('Cancel feature coming soon')" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 10px; background: transparent; color: #dc2626; border: 1px solid #fecaca; font-weight: 500; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;">
+                                ${appt.status === 'PENDING' || appt.status === 'CONFIRMED' ? `
+                                    <button onclick="cancelAppointment(${appt.id})" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 10px; background: transparent; color: #dc2626; border: 1px solid #fecaca; font-weight: 500; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;">
                                         <i class="fas fa-times"></i> Cancel
                                     </button>
                                 ` : ''}
@@ -388,6 +388,35 @@ async function loadAppointments() {
     } catch (error) {
         console.error('Error loading appointments:', error);
         container.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 30px;">Error loading appointments.</p>';
+    }
+}
+
+// Cancel an appointment (patient action)
+async function cancelAppointment(appointmentId) {
+    if (!confirm('Are you sure you want to cancel this appointment?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL_DA}/predict/appointments/cancel/${appointmentId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.status === 'success') {
+            alert('Appointment cancelled successfully.');
+            loadAppointments();
+        } else {
+            alert(`Failed to cancel: ${data.message}`);
+        }
+    } catch (error) {
+        console.error('Cancel error:', error);
+        alert('Network error while cancelling appointment.');
     }
 }
 

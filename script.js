@@ -839,7 +839,7 @@ function renderNotifications() {
             <div class="notif-body">
                 <div class="notif-title">${n.title}</div>
                 <div class="notif-msg">${n.message}</div>
-                <div class="notif-time"><i class="far fa-clock"></i> ${getTimeAgo(n.time)}</div>
+                <div class="notif-time"><i class="far fa-clock"></i> ${getTimeAgo(n.created_at || n.time)}</div>
             </div>
         </div>
     `).join('');
@@ -909,6 +909,17 @@ function clearAllNotifications() {
     renderNotifications();
     const dropdown = document.getElementById('notification-dropdown');
     if (dropdown) dropdown.classList.remove('show');
+
+    // Mark all notifications as read on the backend so they don't reappear on refresh
+    if (isAuthenticated()) {
+        fetch(`${API_BASE_URL}/auth/notifications`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        }).catch(e => console.error('Failed to clear notifications on server:', e));
+    }
 }
 
 function getTimeAgo(isoString) {

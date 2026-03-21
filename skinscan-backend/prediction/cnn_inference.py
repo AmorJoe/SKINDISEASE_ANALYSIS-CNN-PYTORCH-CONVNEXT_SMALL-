@@ -22,7 +22,7 @@ from .exceptions import ModelUnavailableError
 logger = logging.getLogger(__name__)
 
 # Medical safety thresholds
-INCONCLUSIVE_THRESHOLD: float = 60.0
+INCONCLUSIVE_THRESHOLD: float = 30.0
 MODERATE_CONFIDENCE_THRESHOLD: float = 60.0
 HIGH_CONFIDENCE_THRESHOLD: float = 80.0
 

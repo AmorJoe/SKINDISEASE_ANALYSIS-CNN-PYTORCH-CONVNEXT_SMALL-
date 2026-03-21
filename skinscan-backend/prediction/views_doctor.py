@@ -266,6 +266,33 @@ class DoctorAppointmentManageView(APIView):
         except Appointment.DoesNotExist:
             return Response({'status': 'error', 'message': 'Appointment not found'}, status=status.HTTP_404_NOT_FOUND)
 
+class CancelAppointmentView(APIView):
+    """
+    Patient can cancel their own PENDING or CONFIRMED appointments.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, appointment_id):
+        try:
+            appt = Appointment.objects.get(id=appointment_id, patient=request.user)
+
+            if appt.status not in ['PENDING', 'CONFIRMED']:
+                return Response(
+                    {'status': 'error', 'message': f'Cannot cancel an appointment that is {appt.status}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            appt.status = 'CANCELLED'
+            appt.save()
+            return Response({'status': 'success', 'message': 'Appointment cancelled successfully'})
+
+        except Appointment.DoesNotExist:
+            return Response(
+                {'status': 'error', 'message': 'Appointment not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
 class ShareReportView(APIView):
     """
     Share a report with a doctor.
