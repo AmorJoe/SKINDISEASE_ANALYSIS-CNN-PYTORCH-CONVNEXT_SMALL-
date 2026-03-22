@@ -99,10 +99,17 @@
 
                 <!-- Profile Header (Simplified) -->
                 <div class="dr-profile-header-simple">
-                    <div class="dr-profile-avatar-large">
+                    <div class="dr-profile-avatar-large" style="position: relative;">
                         <img id="dr-modal-avatar"
                             src="https://ui-avatars.com/api/?name=Doctor&background=0288d1&color=fff"
                             alt="Doctor Avatar">
+                        <div class="avatar-edit-overlay edit-mode-input"
+                            onclick="document.getElementById('edit-avatar').click()"
+                            style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.5); color: white; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.2s;">
+                            <i class="fas fa-camera" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <input type="file" id="edit-avatar" accept="image/*" style="display: none;"
+                            onchange="handleAvatarSelect(event)">
                     </div>
                     <div class="dr-profile-title">
                         <h2 id="dr-modal-name">Doctor Name</h2>
@@ -169,7 +176,24 @@
                             <div class="dr-professional-grid">
                                 <div class="dr-info-group">
                                     <label>Specialization</label>
-                                    <p id="dr-modal-spec">—</p>
+                                    <p class="view-mode" id="dr-modal-spec">—</p>
+                                    <select class="edit-mode-input" id="edit-specialization">
+                                        <option value="">Select Specialization</option>
+                                        <option value="Dermatologist">Dermatologist</option>
+                                        <option value="Dermatopathologist">Dermatopathologist</option>
+                                        <option value="Pediatric Dermatologist">Pediatric Dermatologist</option>
+                                        <option value="Cosmetic Dermatologist">Cosmetic Dermatologist</option>
+                                        <option value="Mohs Surgeon">Mohs Surgeon</option>
+                                        <option value="Dermatologic Oncologist">Dermatologic Oncologist</option>
+                                        <option value="Immunodermatologist">Immunodermatologist</option>
+                                        <option value="Trichologist">Trichologist</option>
+                                        <option value="Venereologist">Venereologist</option>
+                                        <option value="Allergist">Allergist</option>
+                                        <option value="Plastic Surgeon">Plastic Surgeon</option>
+                                        <option value="General Medicine">General Medicine</option>
+                                        <option value="General Physician">General Physician</option>
+                                        <option value="Other">Other</option>
+                                    </select>
                                 </div>
                                 <div class="dr-info-group">
                                     <label>Medical Reg. No.</label>
@@ -283,7 +307,7 @@
                             <i class="fas fa-dollar-sign"></i>
                         </div>
                         <div class="stat-info">
-                            <p>Revenue (Today)</p>
+                            <p>Revenue</p>
                             <h2 id="dash-revenue">--</h2>
                         </div>
                     </div>
@@ -353,36 +377,154 @@
                 </div>
 
                 <div class="card glass-panel" id="reports-accordion-container">
-                    <div class="reports-loading" style="text-align:center;padding:30px;color:#888;">Loading reports...</div>
+                    <div class="reports-loading" style="text-align:center;padding:30px;color:#888;">Loading reports...
+                    </div>
                 </div>
             </section>
 
             <!-- BILLING TAB -->
             <section class="tab-content" id="billing-tab">
-                <div class="billing-actions">
-                    <button class="btn-primary" onclick="openInvoiceModal()"><i class="fas fa-plus"></i> Create
-                        Invoice</button>
+                <!-- Financial Overview Cards -->
+                <div class="billing-stats-grid">
+                    <div class="billing-stat-card">
+                        <div class="billing-stat-icon" style="background:rgba(16,185,129,0.12);color:#10b981;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="billing-stat-info">
+                            <span class="billing-stat-label">Paid</span>
+                            <span class="billing-stat-value" id="billing-paid">₹0.00</span>
+                        </div>
+                    </div>
+                    <div class="billing-stat-card">
+                        <div class="billing-stat-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b;">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="billing-stat-info">
+                            <span class="billing-stat-label">Pending</span>
+                            <span class="billing-stat-value" id="billing-pending">₹0.00</span>
+                        </div>
+                    </div>
+                    <div class="billing-stat-card">
+                        <div class="billing-stat-icon" style="background:rgba(239,68,68,0.12);color:#ef4444;">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="billing-stat-info">
+                            <span class="billing-stat-label">Overdue</span>
+                            <span class="billing-stat-value" id="billing-overdue">₹0.00</span>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- Invoices Section -->
                 <div class="card glass-panel">
-                    <div class="card-header">
-                        <h3>Recent Invoices</h3>
+                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3><i class="fas fa-file-invoice-dollar" style="margin-right:8px;color:#0288d1;"></i>Recent
+                            Invoices</h3>
+                        <button class="btn-primary" onclick="openInvoiceModal()"
+                            style="font-size:0.85rem;padding:8px 18px;">
+                            <i class="fas fa-plus" style="margin-right:6px;"></i>New Invoice
+                        </button>
                     </div>
                     <table class="styled-table" id="billing-table">
                         <thead>
                             <tr>
                                 <th>Invoice #</th>
                                 <th>Patient</th>
-                                <th>Date</th>
+                                <th>Service</th>
                                 <th>Amount</th>
+                                <th>Due Date</th>
                                 <th>Status</th>
-                                <th>Action</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="billing-tbody">
-                            <!-- JS Populated -->
+                            <tr>
+                                <td colspan="7" style="text-align:center;padding:30px;color:#888;">Loading invoices...
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Revenue Chart -->
+                <div class="card glass-panel billing-chart-card">
+                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3><i class="fas fa-chart-area" style="margin-right:8px;color:#0288d1;"></i>Revenue Analytics
+                        </h3>
+                    </div>
+                    <div class="billing-chart-container">
+                        <canvas id="billingRevenueChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Generate Invoice Modal -->
+                <div class="modal-overlay" id="invoice-modal" style="display:none;">
+                    <div class="modal-card" style="max-width:520px;">
+                        <div class="modal-header"
+                            style="background:#0288d1;color:#fff;border-radius:16px 16px 0 0;padding:18px 24px;">
+                            <h3 style="margin:0;font-size:1.2rem;"><i class="fas fa-file-invoice"
+                                    style="margin-right:8px;"></i>Generate New Invoice</h3>
+                            <button class="modal-close-btn" onclick="closeInvoiceModal()"
+                                style="color:#fff;background:none;border:none;font-size:1.4rem;cursor:pointer;">&times;</button>
+                        </div>
+                        <div class="modal-body" style="padding:24px;">
+                            <div class="form-group" style="margin-bottom:16px;position:relative;">
+                                <label
+                                    style="font-weight:600;font-size:0.9rem;color:#334155;display:block;margin-bottom:6px;">Patient
+                                    Name *</label>
+                                <input type="text" id="invoice-patient-name" placeholder="Start typing patient name..."
+                                    autocomplete="off"
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.95rem;">
+                                <div id="patient-suggestions" class="patient-suggestions-dropdown"></div>
+                            </div>
+                            <div class="form-group" style="margin-bottom:16px;">
+                                <label
+                                    style="font-weight:600;font-size:0.9rem;color:#334155;display:block;margin-bottom:6px;">Patient
+                                    Email</label>
+                                <input type="email" id="invoice-patient-email" placeholder="Auto-filled from patient"
+                                    readonly
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.95rem;background:#f8fafc;color:#64748b;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:16px;">
+                                <label
+                                    style="font-weight:600;font-size:0.9rem;color:#334155;display:block;margin-bottom:6px;">Service</label>
+                                <select id="invoice-service"
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.95rem;background:#fff;">
+                                    <option value="AI Skin Analysis">AI Skin Analysis</option>
+                                    <option value="In-Person Consultation">In-Person Consultation</option>
+                                    <option value="Follow-Up Visit">Follow-Up Visit</option>
+                                    <option value="Treatment Plan">Treatment Plan</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div style="display:flex;gap:12px;margin-bottom:16px;">
+                                <div class="form-group" style="flex:1;">
+                                    <label
+                                        style="font-weight:600;font-size:0.9rem;color:#334155;display:block;margin-bottom:6px;">Amount
+                                        (₹) *</label>
+                                    <input type="number" id="invoice-amount" placeholder="0.00" min="0" step="0.01"
+                                        style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.95rem;">
+                                </div>
+                                <div class="form-group" style="flex:1;">
+                                    <label
+                                        style="font-weight:600;font-size:0.9rem;color:#334155;display:block;margin-bottom:6px;">Due
+                                        Date *</label>
+                                    <input type="date" id="invoice-due-date"
+                                        style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.95rem;">
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-bottom:20px;">
+                                <label
+                                    style="font-weight:600;font-size:0.9rem;color:#334155;display:block;margin-bottom:6px;">Notes</label>
+                                <textarea id="invoice-notes" placeholder="Optional notes..." rows="2"
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.95rem;resize:vertical;"></textarea>
+                            </div>
+                            <button class="btn-primary" onclick="createInvoice()"
+                                style="width:100%;padding:12px;font-size:1rem;border-radius:10px;">
+                                <i class="fas fa-paper-plane" style="margin-right:8px;"></i>Send Invoice
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -415,35 +557,6 @@
         </main>
     </div>
 
-    <!-- Invoice Modal -->
-    <div class="modal" id="invoice-modal">
-        <div class="modal-content glass-morphism">
-            <span class="close-modal" onclick="closeModal('invoice-modal')">&times;</span>
-            <h2>Create New Invoice</h2>
-            <form id="create-invoice-form">
-                <div class="input-group">
-                    <label>Patient Name</label>
-                    <input type="text" placeholder="Search patient..." required>
-                </div>
-                <div class="input-group">
-                    <label>Service Rendered</label>
-                    <select>
-                        <option>Consultation (First)</option>
-                        <option>Consultation (Follow-up)</option>
-                        <option>Biopsy Review</option>
-                        <option>Detailed Report Analysis</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Amount ($)</label>
-                    <input type="number" value="150" min="0">
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">Generate & Send</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <script src="doctor-dashboard.js"></script>
     <script>

@@ -97,6 +97,7 @@ class DoctorStatusView(APIView):
                     'mrn': profile.medical_license_number,
                     'name': f"Dr. {user.first_name} {user.last_name}".strip(),
                     'email': user.email,
+                    'avatar_url': request.build_absolute_uri(user.avatar.url) if user.avatar else None,
                     'phone': user.phone or '',
                     'gender': user.gender or '',
                     'years_of_experience': profile.years_of_experience,
@@ -128,6 +129,21 @@ class DoctorStatusView(APIView):
             # Update User fields
             if 'phone' in data: user.phone = data['phone']
             if 'gender' in data: user.gender = data['gender']
+            
+            # Handle Base64 Avatar
+            if 'avatarBase64' in data and data['avatarBase64']:
+                import base64
+                from django.core.files.base import ContentFile
+                import uuid
+                
+                try:
+                    format, imgstr = data['avatarBase64'].split(';base64,') 
+                    ext = format.split('/')[-1] 
+                    filename = f"avatar_{user.id}_{uuid.uuid4().hex[:8]}.{ext}"
+                    user.avatar.save(filename, ContentFile(base64.b64decode(imgstr)), save=False)
+                except Exception as e:
+                    print(f"Error saving avatar: {e}")
+
             user.save()
 
             # Update DoctorProfile fields
@@ -135,6 +151,7 @@ class DoctorStatusView(APIView):
             if 'years_of_experience' in data: profile.years_of_experience = data['years_of_experience']
             if 'consultation_fee' in data: profile.consultation_fee = data['consultation_fee']
             if 'bio' in data: profile.bio = data['bio']
+            if 'specialization' in data: profile.specialization = data['specialization']
             if 'available_days' in data: profile.available_days = data['available_days'] # Expecting list
             
             profile.save()
@@ -524,6 +541,18 @@ class DoctorDashboardStatsView(APIView):
         
         # Unique patients who have ever booked with this doctor
         total_patients = all_appointments.values('patient').distinct().count()
+
+        # Revenue from paid invoices (this month)
+        from billing.models import Invoice
+        from django.db.models import Sum
+        from django.utils import timezone
+        now = timezone.now()
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        monthly_revenue = Invoice.objects.filter(
+            doctor=request.user,
+            status='PAID',
+            paid_at__gte=current_month_start
+        ).aggregate(total=Sum('amount'))['total'] or 0
         
         # Weekly appointment data for chart (last 7 days)
         week_data = []
@@ -540,7 +569,7 @@ class DoctorDashboardStatsView(APIView):
                 'today_appointments': today_count,
                 'pending_requests': pending_count,
                 'total_patients': total_patients,
-                'revenue': 0,  # Billing not implemented yet
+                'revenue': float(monthly_revenue),
                 'chart_labels': day_labels,
                 'chart_data': week_data,
             }

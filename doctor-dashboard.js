@@ -80,7 +80,7 @@ async function loadSidebarProfile() {
             if (nameEl) nameEl.textContent = drName;
             if (specEl) specEl.textContent = d.specialization || 'General';
             if (avatarEl) {
-                avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(drName)}&background=0288d1&color=fff`;
+                avatarEl.src = d.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(drName)}&background=0288d1&color=fff`;
             }
             // Also update the page header greeting
             const titleEl = document.getElementById('page-title');
@@ -99,7 +99,7 @@ async function loadSidebarProfile() {
     if (nameEl) nameEl.textContent = drName || 'Doctor';
     if (specEl) specEl.textContent = user.specialty || 'General';
     if (avatarEl) {
-        avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(drName || 'Doctor')}&background=0288d1&color=fff`;
+        avatarEl.src = user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(drName || 'Doctor')}&background=0288d1&color=fff`;
     }
 }
 
@@ -132,6 +132,15 @@ function switchTab(tabId) {
         'billing': 'Billing & Invoices'
     };
     document.getElementById('page-title').innerText = titleMap[tabId] || 'Dashboard';
+
+    // Force chart resize when tab becomes visible (display: block)
+    // otherwise Chart.js renders a 0x0 canvas for hidden tabs
+    if (tabId === 'billing' && typeof billingChartInstance !== 'undefined' && billingChartInstance) {
+        setTimeout(() => {
+            billingChartInstance.resize();
+            billingChartInstance.update();
+        }, 50);
+    }
 }
 
 function setupMobileSidebar() {
@@ -162,7 +171,7 @@ async function loadStats() {
             document.getElementById('dash-today-count').innerText = d.today_appointments;
             document.getElementById('dash-request-count').innerText = d.pending_requests;
             document.getElementById('dash-patient-count').innerText = d.total_patients;
-            document.getElementById('dash-revenue').innerText = d.revenue > 0 ? `$${d.revenue}` : '$0';
+            document.getElementById('dash-revenue').innerText = d.revenue > 0 ? `₹${d.revenue}` : '₹0';
 
             // Update requests badge
             const badge = document.getElementById('requests-badge');
@@ -391,38 +400,72 @@ async function loadReports() {
             sortedNames.forEach((patientName, idx) => {
                 const reports = grouped[patientName];
                 const initials = patientName.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
-                const isOpen = idx === 0 ? 'open' : '';
+                const isOpen = '';
 
-                // Build table rows for this patient
-                let rowsHtml = '';
-                reports.forEach((r, rIdx) => {
-                    const confidence = Math.round(r.confidence || 0);
-                    const sharedDate = r.shared_at ? new Date(r.shared_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                // Separate into SENT and REVIEWED
+                const sentReports = reports.filter(r => !r.status || r.status === 'SENT');
+                const reviewedReports = reports.filter(r => r.status === 'REVIEWED');
 
-                    rowsHtml += `
-                        <tr>
-                            <td style="font-family:monospace;color:#555;">R-${String(r.report_id || rIdx + 1).padStart(4, '0')}</td>
-                            <td>${sharedDate}</td>
-                            <td style="font-weight:500;color:var(--primary-color)">${r.disease || 'N/A'}</td>
-                            <td>
-                                <div style="display:flex;align-items:center;gap:6px;">
-                                    <div style="width:50px;height:6px;background:#eee;border-radius:3px;overflow:hidden;">
-                                        <div style="width:${confidence}%;height:100%;background:${confidence > 80 ? '#10b981' : '#f59e0b'}"></div>
+                // Build table rows helper
+                function buildRows(reportList) {
+                    return reportList.map((r, rIdx) => {
+                        const confidence = Math.round(r.confidence || 0);
+                        const sharedDate = r.shared_at ? new Date(r.shared_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                        return `
+                            <tr>
+                                <td style="font-family:monospace;color:#555;">R-${String(r.report_id || rIdx + 1).padStart(4, '0')}</td>
+                                <td>${sharedDate}</td>
+                                <td style="font-weight:500;color:var(--primary-color)">${r.disease || 'N/A'}</td>
+                                <td>
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <div style="width:50px;height:6px;background:#eee;border-radius:3px;overflow:hidden;">
+                                            <div style="width:${confidence}%;height:100%;background:${confidence > 80 ? '#10b981' : '#f59e0b'}"></div>
+                                        </div>
+                                        <span style="font-size:0.8rem;">${confidence}%</span>
                                     </div>
-                                    <span style="font-size:0.8rem;">${confidence}%</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div style="display:flex; gap:10px; align-items:center;">
-                                    <span class="status-tag ${r.status === 'REVIEWED' ? 'confirmed' : 'pending'}">${r.status || 'SENT'}</span>
-                                    <button class="btn-text" onclick="window.open('doctor-printable-report.html?report_id=${r.id}', '_blank')" style="padding: 4px 10px; font-size: 0.8rem; border-radius: 4px; border: 1px solid var(--primary-color); color: var(--primary-color); cursor: pointer;">
-                                        <i class="fas fa-external-link-alt"></i> Open
+                                </td>
+                                <td>
+                                    <button class="inv-action-btn" onclick="window.open('doctor-printable-report.html?report_id=${r.id}', '_blank')" style="width:auto;padding:4px 12px;border-radius:6px;border:1px solid var(--primary-color);color:var(--primary-color);font-size:0.8rem;cursor:pointer;background:transparent;">
+                                        <i class="fas fa-external-link-alt" style="margin-right:4px;"></i>Open
                                     </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                });
+                                </td>
+                            </tr>`;
+                    }).join('');
+                }
+
+                function buildTable(rows) {
+                    return `<table class="styled-table patient-reports-table">
+                        <thead><tr>
+                            <th>Report ID</th><th>Date</th><th>Diagnosis</th><th>Confidence</th><th>Action</th>
+                        </tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>`;
+                }
+
+                // Count summary for header
+                const countParts = [];
+                if (sentReports.length > 0) countParts.push(`${sentReports.length} new`);
+                if (reviewedReports.length > 0) countParts.push(`${reviewedReports.length} reviewed`);
+                const countText = countParts.join(' · ');
+
+                // Build body sections
+                let bodyHtml = '';
+                if (sentReports.length > 0) {
+                    bodyHtml += `
+                        <div class="report-section-header report-section-sent">
+                            <i class="fas fa-inbox"></i> New Reports
+                            <span class="report-section-count">${sentReports.length}</span>
+                        </div>
+                        ${buildTable(buildRows(sentReports))}`;
+                }
+                if (reviewedReports.length > 0) {
+                    bodyHtml += `
+                        <div class="report-section-header report-section-reviewed">
+                            <i class="fas fa-check-double"></i> Reviewed
+                            <span class="report-section-count">${reviewedReports.length}</span>
+                        </div>
+                        ${buildTable(buildRows(reviewedReports))}`;
+                }
 
                 html += `
                     <div class="patient-report-group ${isOpen}" data-patient="${patientName.toLowerCase()}">
@@ -431,24 +474,13 @@ async function loadReports() {
                                 <div class="patient-group-avatar">${initials}</div>
                                 <div>
                                     <span class="patient-group-name">${patientName}</span>
-                                    <span class="patient-group-count">${reports.length} report${reports.length > 1 ? 's' : ''}</span>
+                                    <span class="patient-group-count">${countText}</span>
                                 </div>
                             </div>
                             <i class="fas fa-chevron-down patient-group-arrow"></i>
                         </div>
                         <div class="patient-group-body">
-                            <table class="styled-table patient-reports-table">
-                                <thead>
-                                    <tr>
-                                        <th>Report ID</th>
-                                        <th>Date</th>
-                                        <th>Diagnosis</th>
-                                        <th>Confidence</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>${rowsHtml}</tbody>
-                            </table>
+                            ${bodyHtml}
                         </div>
                     </div>
                 `;
@@ -485,6 +517,8 @@ function toggleReportGroup(header) {
 // ============================================
 // PATIENTS — LIVE API
 // ============================================
+let allPatientsData = [];
+
 async function loadPatients() {
     const tbody = document.getElementById('patients-tbody');
     if (!tbody) return;
@@ -496,6 +530,7 @@ async function loadPatients() {
         const result = await response.json();
 
         if (result.status === 'success' && result.data.length > 0) {
+            allPatientsData = result.data;
             let html = '';
             result.data.forEach(p => {
                 html += `
@@ -533,42 +568,283 @@ async function loadPatients() {
 }
 
 // ============================================
-// BILLING — PLACEHOLDER (No backend yet)
+// BILLING — FULL IMPLEMENTATION
 // ============================================
-function loadBilling() {
+let billingChartInstance = null;
+
+async function loadBilling() {
+    await loadBillingStats();
+    await loadInvoices();
+}
+
+async function loadBillingStats() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/billing/stats/`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        const data = await response.json();
+        console.log('[BILLING STATS] Response:', JSON.stringify(data));
+        if (data.status === 'success') {
+            const s = data.data;
+            console.log('[BILLING STATS] paid:', s.paid_amount, 'pending:', s.pending_amount, 'overdue:', s.overdue_amount);
+            document.getElementById('billing-paid').textContent = `₹${s.paid_amount.toFixed(2)}`;
+            document.getElementById('billing-pending').textContent = `₹${s.pending_amount.toFixed(2)}`;
+            document.getElementById('billing-overdue').textContent = `₹${s.overdue_amount.toFixed(2)}`;
+            initBillingChart(s.chart.labels, s.chart.values);
+        }
+    } catch (err) {
+        console.error('Failed to load billing stats:', err);
+    }
+}
+
+function initBillingChart(labels, values) {
+    const ctx = document.getElementById('billingRevenueChart');
+    if (!ctx) return;
+    if (billingChartInstance) billingChartInstance.destroy();
+
+    billingChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Revenue (₹)',
+                data: values,
+                borderColor: '#0288d1',
+                backgroundColor: 'rgba(2,136,209,0.08)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#0288d1',
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                borderWidth: 2.5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    titleFont: { size: 13 },
+                    bodyFont: { size: 12 },
+                    padding: 10,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: ctx => `₹${ctx.parsed.y.toFixed(2)}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#94a3b8', font: { size: 12 } }
+                },
+                y: {
+                    grid: { color: 'rgba(0,0,0,0.04)' },
+                    min: 0,
+                    suggestedMax: 1000,
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { size: 12 },
+                        callback: v => `₹${v}`
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function loadInvoices() {
     const tbody = document.getElementById('billing-tbody');
     if (!tbody) return;
 
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="6" style="text-align:center;padding:40px;color:#999;">
-                <div style="margin-bottom:12px;"><i class="fas fa-file-invoice-dollar" style="font-size:2rem;color:#d1d5db;"></i></div>
-                <p style="font-weight:600;color:#6b7280;">Billing Coming Soon</p>
-                <p style="font-size:0.85rem;">Invoice and payment tracking will be available in a future update.</p>
-            </td>
-        </tr>
-    `;
+    try {
+        const response = await fetch(`${API_BASE_URL}/billing/invoices/`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            if (!data.data || data.data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align:center;padding:40px;color:#999;">
+                            <div style="margin-bottom:12px;"><i class="fas fa-file-invoice-dollar" style="font-size:2rem;color:#d1d5db;"></i></div>
+                            <p style="font-weight:600;color:#6b7280;">No invoices yet</p>
+                            <p style="font-size:0.85rem;">Click "New Invoice" to create your first one.</p>
+                        </td>
+                    </tr>`;
+                return;
+            }
+            tbody.innerHTML = data.data.map(inv => {
+                const statusClass = inv.status === 'PAID' ? 'badge-paid' : inv.status === 'OVERDUE' ? 'badge-overdue' : 'badge-pending';
+                const statusLabel = inv.status === 'PAID' ? 'Paid' : inv.status === 'OVERDUE' ? 'Overdue' : 'Pending';
+                return `
+                <tr>
+                    <td><strong>#${inv.invoice_number}</strong></td>
+                    <td>${inv.patient_name}</td>
+                    <td>${inv.service}</td>
+                    <td><strong>₹${inv.amount.toFixed(2)}</strong></td>
+                    <td>${inv.due_date}</td>
+                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                    <td class="invoice-actions">
+                        ${inv.status !== 'PAID' ? `<button class="inv-action-btn inv-btn-paid" title="Mark as Paid" onclick="updateInvoiceStatus(${inv.id},'PAID')"><i class="fas fa-check"></i></button>` : ''}
+                        ${inv.status === 'PENDING' ? `<button class="inv-action-btn inv-btn-overdue" title="Mark as Overdue" onclick="updateInvoiceStatus(${inv.id},'OVERDUE')"><i class="fas fa-clock"></i></button>` : ''}
+                        <button class="inv-action-btn inv-btn-delete" title="Delete Invoice" onclick="deleteInvoice(${inv.id})"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+    } catch (err) {
+        console.error('Failed to load invoices:', err);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#ef4444;">Failed to load invoices</td></tr>';
+    }
 }
 
-// ============================================
-// MODALS
-// ============================================
 function openInvoiceModal() {
     document.getElementById('invoice-modal').style.display = 'flex';
-}
-function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
-}
-window.onclick = function (event) {
-    if (event.target.classList.contains('modal')) {
-        event.target.style.display = 'none';
+    
+    if (!window.invoiceAutocompleteSetup) {
+        setupPatientAutocomplete();
+        window.invoiceAutocompleteSetup = true;
     }
-};
+    // Default due date to 30 days from now
+    const future = new Date();
+    future.setDate(future.getDate() + 30);
+    document.getElementById('invoice-due-date').value = future.toISOString().split('T')[0];
+}
+function closeInvoiceModal() {
+    document.getElementById('invoice-modal').style.display = 'none';
+}
 
-document.getElementById('create-invoice-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    showToast('Billing feature coming soon!', 'info');
-    closeModal('invoice-modal');
+function setupPatientAutocomplete() {
+    const input = document.getElementById('invoice-patient-name');
+    const dropdown = document.getElementById('patient-suggestions');
+    const emailInput = document.getElementById('invoice-patient-email');
+
+    if (!input || !dropdown) return;
+
+    input.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        dropdown.innerHTML = '';
+        
+        if (query.length < 1) {
+            dropdown.style.display = 'none';
+            if (this.value === '') emailInput.value = '';
+            return;
+        }
+
+        const matches = allPatientsData.filter(p => p.name.toLowerCase().includes(query));
+
+        if (matches.length > 0) {
+            matches.forEach(patient => {
+                const item = document.createElement('div');
+                item.className = 'patient-suggestion-item';
+                item.innerHTML = `<i class="fas fa-user" style="color:#94a3b8;margin-right:8px;"></i> <strong>${patient.name}</strong> <span style="font-size:0.8rem;color:#64748b;margin-left:6px;">(${patient.email})</span>`;
+                item.addEventListener('click', () => {
+                    input.value = patient.name;
+                    emailInput.value = patient.email;
+                    dropdown.style.display = 'none';
+                });
+                dropdown.appendChild(item);
+            });
+            dropdown.style.display = 'block';
+        } else {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target !== input && e.target !== dropdown && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+}
+
+async function createInvoice() {
+    const patientName = document.getElementById('invoice-patient-name').value.trim();
+    const patientEmail = document.getElementById('invoice-patient-email').value.trim();
+    const service = document.getElementById('invoice-service').value;
+    const amount = document.getElementById('invoice-amount').value;
+    const dueDate = document.getElementById('invoice-due-date').value;
+    const notes = document.getElementById('invoice-notes').value.trim();
+
+    if (!patientName || !amount || !dueDate) {
+        showToast('Please fill in Patient Name, Amount and Due Date', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/billing/invoices/create/`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ patient_name: patientName, patient_email: patientEmail, service, amount, due_date: dueDate, notes })
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            showToast('Invoice created successfully!', 'success');
+            closeInvoiceModal();
+            // Clear fields
+            document.getElementById('invoice-patient-name').value = '';
+            document.getElementById('invoice-patient-email').value = '';
+            document.getElementById('invoice-amount').value = '';
+            document.getElementById('invoice-notes').value = '';
+            // Refresh data
+            loadBilling();
+        } else {
+            showToast(data.message || 'Failed to create invoice', 'error');
+        }
+    } catch (err) {
+        console.error('Invoice Creation Error:', err);
+        showToast('Network error creating invoice. See console.', 'error');
+    }
+}
+
+async function updateInvoiceStatus(id, newStatus) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/billing/invoices/${id}/`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            showToast(`Invoice marked as ${newStatus}`, 'success');
+            loadBilling();
+        }
+    } catch (err) {
+        showToast('Failed to update invoice', 'error');
+    }
+}
+
+async function deleteInvoice(id) {
+    if (!confirm('Are you sure you want to delete this invoice?')) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/billing/invoices/${id}/`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            showToast('Invoice deleted', 'success');
+            loadBilling();
+        }
+    } catch (err) {
+        showToast('Failed to delete invoice', 'error');
+    }
+}
+
+// Close modal on overlay click
+window.addEventListener('click', function(event) {
+    if (event.target.id === 'invoice-modal') {
+        closeInvoiceModal();
+    }
 });
 
 // ============================================
@@ -822,7 +1098,16 @@ async function openDrProfileModal() {
                 badge.innerHTML = '<i class="fas fa-clock"></i> Pending';
             }
 
-            document.getElementById('dr-modal-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=0288d1&color=fff&size=128`;
+            let avatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=0288d1&color=fff&size=128`;
+            if (d.avatar_url) avatarSrc = d.avatar_url;
+            document.getElementById('dr-modal-avatar').src = avatarSrc;
+            
+            // Sidebar avatar sync
+            const mainAvatar = document.getElementById('sidebar-avatar');
+            if (mainAvatar) mainAvatar.src = avatarSrc;
+
+            // Reset temp avatar state
+            window.tempAvatarBase64 = null;
 
             // Personal - View
             document.getElementById('dr-modal-email').textContent = d.email;
@@ -847,6 +1132,7 @@ async function openDrProfileModal() {
             document.getElementById('dr-modal-verified-on').textContent = d.verified_on || 'Pending';
 
             // Professional - Edit
+            document.getElementById('edit-specialization').value = d.specialization || '';
             document.getElementById('edit-exp').value = d.years_of_experience || '';
             document.getElementById('edit-hospital').value = d.hospital_affiliation || '';
             document.getElementById('edit-fee').value = d.consultation_fee || '';
@@ -889,10 +1175,12 @@ window.saveDrProfile = async function () {
         phone: document.getElementById('edit-phone').value,
         gender: document.getElementById('edit-gender').value,
         bio: document.getElementById('edit-bio').value,
+        specialization: document.getElementById('edit-specialization').value,
         years_of_experience: document.getElementById('edit-exp').value,
         hospital_affiliation: document.getElementById('edit-hospital').value,
         consultation_fee: document.getElementById('edit-fee').value,
-        available_days: Array.from(document.querySelectorAll('.availability-selector input:checked')).map(cb => cb.value)
+        available_days: Array.from(document.querySelectorAll('.availability-selector input:checked')).map(cb => cb.value),
+        avatarBase64: window.tempAvatarBase64 || null
     };
 
     try {
@@ -929,6 +1217,24 @@ window.closeDrProfileModal = function () {
         // Reset mode on close
         const content = document.querySelector('.dr-profile-modal-content');
         if (content) content.classList.remove('editing');
+    }
+}
+
+window.handleAvatarSelect = function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        // Validate size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Image size must be less than 5MB', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('dr-modal-avatar').src = e.target.result;
+            window.tempAvatarBase64 = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 }
 
