@@ -11,6 +11,8 @@ from .views import (
     ValidateTokenView,
     ProfileView,
     ChangePasswordView,
+    VerifyRegistrationOTPView,
+    ResendOTPView,
     check_profile_completion,
 )
 from .notification_views import NotificationView
@@ -29,6 +31,8 @@ urlpatterns = [
     path('verify-otp', VerifyOTPView.as_view(), name='verify_otp'),
     path('reset-password', ResetPasswordView.as_view(), name='reset_password'),
     path('validate-token', ValidateTokenView.as_view(), name='validate_token'),
+    path('verify-registration-otp', VerifyRegistrationOTPView.as_view(), name='verify_registration_otp'),
+    path('resend-otp', ResendOTPView.as_view(), name='resend_otp'),
     path('profile/check-completion', check_profile_completion, name='check_profile_completion'),
     
     # Notifications

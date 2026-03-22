@@ -38,10 +38,26 @@ function requireAuth() {
     return true;
 }
 
-/** Clears session storage and redirects to login */
+/** Clears session storage and all user-specific localStorage, then redirects to login */
 function logout() {
+    // Session-scoped auth
     sessionStorage.removeItem('jwt_token');
     sessionStorage.removeItem('user_data');
+
+    // User-specific localStorage (profile, scans, notifications)
+    localStorage.removeItem('skinscan_user_profile');
+    localStorage.removeItem('latest_scan_result');
+    localStorage.removeItem('latest_scan_image');
+    localStorage.removeItem('latest_scan_location');
+    localStorage.removeItem('skinscan_notifications');
+    localStorage.removeItem('needs_autosave');
+    localStorage.removeItem('selected_model');
+
+    // Session-scoped flags
+    sessionStorage.removeItem('last_saved_prediction_id');
+    sessionStorage.removeItem('last_saved_result_summary');
+    sessionStorage.removeItem('scan_already_saved');
+
     window.location.href = 'dashboard.html';
 }
 

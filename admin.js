@@ -42,6 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('admin-logout-btn').addEventListener('click', () => {
         sessionStorage.removeItem('jwt_token');
         sessionStorage.removeItem('user_data');
+            localStorage.removeItem('skinscan_user_profile');
+            localStorage.removeItem('latest_scan_result');
+            localStorage.removeItem('latest_scan_image');
+            localStorage.removeItem('latest_scan_location');
+            localStorage.removeItem('skinscan_notifications');
+            localStorage.removeItem('needs_autosave');
+            localStorage.removeItem('selected_model');
         window.location.href = 'dashboard.html';
     });
 });
@@ -289,8 +296,8 @@ function renderUsers(usersToRender) {
                 <div class="user-info-cell">
                     <div class="avatar-small">${index + 1}</div>
                     <div>
-                        <strong>${user.email}</strong>
-                        <span class="sub-text" style="color:var(--text-dim);font-size:0.8rem">${user.first_name || ''} ${user.last_name || ''}</span>
+                        <strong>${user.first_name || user.last_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : (user.is_admin || user.email.includes('admin') ? 'Admin' : 'Unknown Name')}</strong>
+                        <span class="sub-text" style="color:var(--text-dim);font-size:0.8rem">${user.email}</span>
                     </div>
                 </div>
             </td>
@@ -546,6 +553,15 @@ async function loadReports() {
                 return;
             }
 
+            // Ensure allUsers is loaded to resolve names
+            if (allUsers.length === 0) {
+                try {
+                    const uRes = await fetch(`${API_BASE_URL}/admin/users/`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                    const uData = await uRes.json();
+                    if (uData.status === 'success') allUsers = uData.data;
+                } catch(e) {}
+            }
+
             // Group by user email
             const grouped = data.data.reduce((acc, report) => {
                 const user = report.user || 'Unknown User';
@@ -558,12 +574,24 @@ async function loadReports() {
                 const reports = grouped[email];
                 const displayNum = index + 1;
 
+                // Lookup name
+                const userObj = allUsers.find(u => u.email === email);
+                let displayName = email; // Fallback
+                if (userObj && (userObj.first_name || userObj.last_name)) {
+                    displayName = `${userObj.first_name || ''} ${userObj.last_name || ''}`.trim();
+                } else if (userObj && (userObj.is_admin || email.includes('admin'))) {
+                    displayName = 'Admin';
+                }
+
                 return `
                     <div class="report-group glass-morphism">
                         <div class="group-header" onclick="this.parentElement.classList.toggle('active')">
                             <div class="user-info">
                                 <div class="user-avatar">${displayNum}</div>
-                                <span class="user-email">${email}</span>
+                                <div>
+                                    <strong style="color:var(--text-color); font-size:1.1rem; display:block;">${displayName}</strong>
+                                    <span class="sub-text" style="font-size:0.8rem; color:var(--text-dim);">${email}</span>
+                                </div>
                             </div>
                             <div class="report-meta">
                                 <span class="report-count">${reports.length} Reports</span>
@@ -837,5 +865,6 @@ function initSidebarToggle() {
         localStorage.setItem('sidebar_collapsed', collapsed);
     });
 }
+
 
 

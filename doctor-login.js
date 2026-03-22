@@ -121,6 +121,12 @@ document.getElementById('loginForm').addEventListener('submit', async function (
             setTimeout(() => {
                 window.location.href = 'doctor-dashboard.html';
             }, 800);
+        } else if (data.requires_verification) {
+            // Email not verified — show OTP modal
+            btn.innerHTML = '<span>Access Portal</span>';
+            btn.disabled = false;
+            btn.style.background = 'var(--primary-blue)';
+            showOTPModal(email, 'doctor');
         } else {
             throw new Error(data.message || 'Login failed');
         }
@@ -182,11 +188,16 @@ document.getElementById('signupForm').addEventListener('submit', async function 
         const data = await response.json();
 
         if (data.status === 'success') {
-            alert("Application Submitted Successfully!\n\nYou can now log in to the Doctor Portal.");
-            switchToLogin();
-            btn.innerHTML = '<span>Submit Application</span>';
-            document.getElementById('signupForm').reset();
-            btn.disabled = false;
+            btn.style.background = '#2e7d32';
+            btn.innerHTML = '<i class="fas fa-check"></i> Application Received!';
+
+            // Show OTP verification modal
+            setTimeout(() => {
+                btn.innerHTML = '<span>Submit Application</span>';
+                btn.style.background = 'var(--primary-blue)';
+                btn.disabled = false;
+                showOTPModal(email, 'doctor');
+            }, 800);
         } else {
             // Handle specific field errors
             if (data.errors) {
@@ -202,3 +213,123 @@ document.getElementById('signupForm').addEventListener('submit', async function 
         btn.disabled = false;
     }
 });
+
+// ============================================
+// OTP VERIFICATION MODAL (Doctor Portal)
+// ============================================
+function createOTPModal() {
+    if (document.getElementById('otp-verification-modal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'otp-verification-modal';
+    modal.style.cssText = `
+        display:none; position:fixed; inset:0; z-index:9999;
+        background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
+        align-items:center; justify-content:center;
+    `;
+    modal.innerHTML = `
+        <div style="background:#fff; border-radius:16px; padding:40px; max-width:400px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:slideUp 0.3s ease-out;">
+            <div style="width:64px;height:64px;margin:0 auto 20px;border-radius:50%;background:linear-gradient(135deg,#0288d1,#01579b);display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-envelope-open-text" style="color:#fff;font-size:1.6rem;"></i>
+            </div>
+            <h2 style="margin-bottom:8px;color:#1a1a2e;font-size:1.4rem;">Verify Your Email</h2>
+            <p id="otp-modal-subtitle" style="color:#666;font-size:0.9rem;margin-bottom:24px;">We've sent a 6-digit code to your email</p>
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
+                <input type="text" maxlength="1" class="otp-digit" style="width:48px;height:56px;text-align:center;font-size:1.4rem;font-weight:700;border:2px solid #e0e0e0;border-radius:12px;outline:none;transition:border-color 0.2s;" />
+                <input type="text" maxlength="1" class="otp-digit" style="width:48px;height:56px;text-align:center;font-size:1.4rem;font-weight:700;border:2px solid #e0e0e0;border-radius:12px;outline:none;transition:border-color 0.2s;" />
+                <input type="text" maxlength="1" class="otp-digit" style="width:48px;height:56px;text-align:center;font-size:1.4rem;font-weight:700;border:2px solid #e0e0e0;border-radius:12px;outline:none;transition:border-color 0.2s;" />
+                <input type="text" maxlength="1" class="otp-digit" style="width:48px;height:56px;text-align:center;font-size:1.4rem;font-weight:700;border:2px solid #e0e0e0;border-radius:12px;outline:none;transition:border-color 0.2s;" />
+                <input type="text" maxlength="1" class="otp-digit" style="width:48px;height:56px;text-align:center;font-size:1.4rem;font-weight:700;border:2px solid #e0e0e0;border-radius:12px;outline:none;transition:border-color 0.2s;" />
+                <input type="text" maxlength="1" class="otp-digit" style="width:48px;height:56px;text-align:center;font-size:1.4rem;font-weight:700;border:2px solid #e0e0e0;border-radius:12px;outline:none;transition:border-color 0.2s;" />
+            </div>
+            <p id="otp-error-msg" style="color:#ef4444;font-size:0.85rem;min-height:20px;margin-bottom:12px;"></p>
+            <button id="otp-verify-btn" style="width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#0288d1,#01579b);color:#fff;font-size:1rem;font-weight:600;cursor:pointer;margin-bottom:16px;transition:opacity 0.2s;">Verify Email</button>
+            <p style="color:#888;font-size:0.85rem;">Didn't receive the code? <a href="#" id="otp-resend-link" style="color:#0288d1;text-decoration:none;font-weight:600;">Resend</a></p>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const digits = modal.querySelectorAll('.otp-digit');
+    digits.forEach((input, idx) => {
+        input.addEventListener('input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value && idx < digits.length - 1) digits[idx + 1].focus();
+        });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && !this.value && idx > 0) digits[idx - 1].focus();
+        });
+        input.addEventListener('focus', function () { this.style.borderColor = '#0288d1'; });
+        input.addEventListener('blur', function () { this.style.borderColor = '#e0e0e0'; });
+    });
+}
+
+function showOTPModal(email, portal) {
+    createOTPModal();
+    const modal = document.getElementById('otp-verification-modal');
+    modal.style.display = 'flex';
+    document.getElementById('otp-modal-subtitle').textContent = `We've sent a 6-digit code to ${email}`;
+    document.getElementById('otp-error-msg').textContent = '';
+
+    const digits = modal.querySelectorAll('.otp-digit');
+    digits.forEach(d => d.value = '');
+    digits[0].focus();
+
+    document.getElementById('otp-verify-btn').onclick = async () => {
+        const code = Array.from(digits).map(d => d.value).join('');
+        if (code.length !== 6) {
+            document.getElementById('otp-error-msg').textContent = 'Please enter all 6 digits';
+            return;
+        }
+
+        const btn = document.getElementById('otp-verify-btn');
+        btn.textContent = 'Verifying...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/verify-registration-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, otp_code: code })
+            });
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                btn.textContent = '✓ Verified!';
+                btn.style.background = '#2e7d32';
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    switchToLogin();
+                    alert('Email verified! Please log in to the Doctor Portal.');
+                }, 800);
+            } else {
+                document.getElementById('otp-error-msg').textContent = data.message || 'Verification failed';
+                btn.textContent = 'Verify Email';
+                btn.disabled = false;
+            }
+        } catch (err) {
+            document.getElementById('otp-error-msg').textContent = 'Network error. Try again.';
+            btn.textContent = 'Verify Email';
+            btn.disabled = false;
+        }
+    };
+
+    document.getElementById('otp-resend-link').onclick = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            });
+            const data = await response.json();
+            document.getElementById('otp-error-msg').style.color = '#10b981';
+            document.getElementById('otp-error-msg').textContent = data.message || 'New code sent!';
+            setTimeout(() => {
+                document.getElementById('otp-error-msg').style.color = '#ef4444';
+                document.getElementById('otp-error-msg').textContent = '';
+            }, 3000);
+        } catch (err) {
+            document.getElementById('otp-error-msg').textContent = 'Failed to resend. Try again.';
+        }
+    };
+}

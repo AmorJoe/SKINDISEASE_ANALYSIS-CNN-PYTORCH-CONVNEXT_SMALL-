@@ -298,7 +298,8 @@ async function approveAppt(id) {
 }
 
 async function rejectAppt(id) {
-    if (!confirm('Are you sure you want to reject this request?')) return;
+    const reason = prompt('Please enter a reason for rejecting this request:');
+    if (reason === null) return; // User cancelled the prompt
 
     try {
         const response = await fetch(`${API_BASE_URL}/predict/appointments/manage/${id}`, {
@@ -307,7 +308,7 @@ async function rejectAppt(id) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${getAuthToken()}`
             },
-            body: JSON.stringify({ action: 'reject' })
+            body: JSON.stringify({ action: 'reject', reason: reason })
         });
         const result = await response.json();
 
@@ -365,8 +366,8 @@ function loadUrgentRequests() {
 // REPORTS — LIVE API
 // ============================================
 async function loadReports() {
-    const tbody = document.getElementById('reports-tbody');
-    if (!tbody) return;
+    const container = document.getElementById('reports-accordion-container');
+    if (!container) return;
 
     try {
         const response = await fetch(`${API_BASE_URL}/predict/reports/shared`, {
@@ -375,44 +376,110 @@ async function loadReports() {
         const result = await response.json();
 
         if (result.status === 'success' && result.data.length > 0) {
+            // Group reports by patient name
+            const grouped = {};
+            result.data.forEach(r => {
+                const name = r.patient_name || 'Unknown Patient';
+                if (!grouped[name]) grouped[name] = [];
+                grouped[name].push(r);
+            });
+
+            // Sort patient names alphabetically
+            const sortedNames = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
             let html = '';
-            result.data.forEach((r, index) => {
-                const confidence = Math.round(r.confidence || 0);
-                const sharedDate = r.shared_at ? new Date(r.shared_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+            sortedNames.forEach((patientName, idx) => {
+                const reports = grouped[patientName];
+                const initials = patientName.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+                const isOpen = idx === 0 ? 'open' : '';
+
+                // Build table rows for this patient
+                let rowsHtml = '';
+                reports.forEach((r, rIdx) => {
+                    const confidence = Math.round(r.confidence || 0);
+                    const sharedDate = r.shared_at ? new Date(r.shared_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+
+                    rowsHtml += `
+                        <tr>
+                            <td style="font-family:monospace;color:#555;">R-${String(r.report_id || rIdx + 1).padStart(4, '0')}</td>
+                            <td>${sharedDate}</td>
+                            <td style="font-weight:500;color:var(--primary-color)">${r.disease || 'N/A'}</td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <div style="width:50px;height:6px;background:#eee;border-radius:3px;overflow:hidden;">
+                                        <div style="width:${confidence}%;height:100%;background:${confidence > 80 ? '#10b981' : '#f59e0b'}"></div>
+                                    </div>
+                                    <span style="font-size:0.8rem;">${confidence}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <span class="status-tag ${r.status === 'REVIEWED' ? 'confirmed' : 'pending'}">${r.status || 'SENT'}</span>
+                                    <button class="btn-text" onclick="window.open('doctor-printable-report.html?report_id=${r.id}', '_blank')" style="padding: 4px 10px; font-size: 0.8rem; border-radius: 4px; border: 1px solid var(--primary-color); color: var(--primary-color); cursor: pointer;">
+                                        <i class="fas fa-external-link-alt"></i> Open
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
 
                 html += `
-                    <tr>
-                        <td style="font-family:monospace;color:#555;">R-${String(r.report_id || index + 1).padStart(4, '0')}</td>
-                        <td>${r.patient_name || 'N/A'}</td>
-                        <td>${sharedDate}</td>
-                        <td style="font-weight:500;color:var(--primary-color)">${r.disease || 'N/A'}</td>
-                        <td>
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <div style="width:50px;height:6px;background:#eee;border-radius:3px;overflow:hidden;">
-                                    <div style="width:${confidence}%;height:100%;background:${confidence > 80 ? '#10b981' : '#f59e0b'}"></div>
+                    <div class="patient-report-group ${isOpen}" data-patient="${patientName.toLowerCase()}">
+                        <div class="patient-group-header" onclick="toggleReportGroup(this)">
+                            <div class="patient-group-info">
+                                <div class="patient-group-avatar">${initials}</div>
+                                <div>
+                                    <span class="patient-group-name">${patientName}</span>
+                                    <span class="patient-group-count">${reports.length} report${reports.length > 1 ? 's' : ''}</span>
                                 </div>
-                                <span style="font-size:0.8rem;">${confidence}%</span>
                             </div>
-                        </td>
-                        <td>
-                            <div style="display:flex; gap:10px; align-items:center;">
-                                <span class="status-tag ${r.status === 'REVIEWED' ? 'confirmed' : 'pending'}">${r.status || 'SENT'}</span>
-                                <button class="btn-text" onclick="window.open('doctor-printable-report.html?report_id=${r.id}', '_blank')" style="padding: 4px 10px; font-size: 0.8rem; border-radius: 4px; border: 1px solid var(--primary-color); color: var(--primary-color); cursor: pointer;">
-                                    <i class="fas fa-external-link-alt"></i> Open
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                            <i class="fas fa-chevron-down patient-group-arrow"></i>
+                        </div>
+                        <div class="patient-group-body">
+                            <table class="styled-table patient-reports-table">
+                                <thead>
+                                    <tr>
+                                        <th>Report ID</th>
+                                        <th>Date</th>
+                                        <th>Diagnosis</th>
+                                        <th>Confidence</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rowsHtml}</tbody>
+                            </table>
+                        </div>
+                    </div>
                 `;
             });
-            tbody.innerHTML = html;
+
+            container.innerHTML = html;
         } else {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:30px;">No shared reports yet.</td></tr>';
+            container.innerHTML = '<div style="text-align:center;color:#888;padding:30px;">No shared reports yet.</div>';
         }
     } catch (error) {
         console.error('Error loading reports:', error);
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Error loading reports.</td></tr>';
+        container.innerHTML = '<div style="text-align:center;color:#ef4444;padding:30px;">Error loading reports.</div>';
     }
+
+    // Wire up search filter
+    const searchInput = document.getElementById('report-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            document.querySelectorAll('.patient-report-group').forEach(group => {
+                const name = group.getAttribute('data-patient');
+                group.style.display = name.includes(query) ? '' : 'none';
+            });
+        });
+    }
+}
+
+/** Toggle a patient report group open/closed */
+function toggleReportGroup(header) {
+    const group = header.closest('.patient-report-group');
+    group.classList.toggle('open');
 }
 
 // ============================================
@@ -448,6 +515,20 @@ async function loadPatients() {
     } catch (error) {
         console.error('Error loading patients:', error);
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Error loading patients.</td></tr>';
+    }
+
+    // Wire up patient search filter
+    const patientSearch = document.getElementById('patient-search');
+    if (patientSearch && !patientSearch._listenerAttached) {
+        patientSearch._listenerAttached = true;
+        patientSearch.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#patients-tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
     }
 }
 
@@ -540,6 +621,17 @@ function setupLogout() {
         logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem('jwt_token');
             sessionStorage.removeItem('user_data');
+
+            // User-specific localStorage (profile, scans, notifications)
+            localStorage.removeItem('skinscan_user_profile');
+            localStorage.removeItem('skinscan_dr_notifications');
+            localStorage.removeItem('latest_scan_result');
+            localStorage.removeItem('latest_scan_image');
+            localStorage.removeItem('latest_scan_location');
+            localStorage.removeItem('skinscan_notifications');
+            localStorage.removeItem('needs_autosave');
+            localStorage.removeItem('selected_model');
+
             window.location.href = 'dashboard.html';
         });
     }
@@ -839,3 +931,4 @@ window.closeDrProfileModal = function () {
         if (content) content.classList.remove('editing');
     }
 }
+

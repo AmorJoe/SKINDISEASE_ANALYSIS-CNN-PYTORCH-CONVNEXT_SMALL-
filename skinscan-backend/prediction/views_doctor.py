@@ -3,12 +3,37 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.db.models import Q
+from django.db import transaction
+from django.conf import settings
 from authentication.models import User, DoctorProfile, DoctorDocument
 from authentication.serializers import UserSerializer
 from .models import Appointment, SharedReport, PredictionResult
 from .serializers import PredictionResultSerializer
 import datetime
 import uuid
+import requests
+import logging
+from django.core.mail import send_mail
+
+logger = logging.getLogger('prediction')
+
+
+def send_n8n_webhook(payload):
+    """
+    Best-effort fire-and-forget webhook to n8n.
+    Never raises — logs errors and returns silently.
+    """
+    webhook_url = getattr(settings, 'N8N_WEBHOOK_URL', None)
+    if not webhook_url:
+        logger.debug('N8N_WEBHOOK_URL not configured, skipping webhook.')
+        return
+
+    timeout = getattr(settings, 'N8N_WEBHOOK_TIMEOUT', 5)
+    try:
+        resp = requests.post(webhook_url, json=payload, timeout=timeout)
+        logger.info(f'n8n webhook sent ({resp.status_code}): {payload.get("event")}')
+    except requests.RequestException as e:
+        logger.warning(f'n8n webhook failed (non-blocking): {e}')
 
 
 
@@ -220,7 +245,7 @@ class UserAppointmentsView(APIView):
         for appt in appointments:
             data.append({
                 'id': appt.id,
-                'patient_name': f"{appt.patient.first_name or ''} {appt.patient.last_name or ''}".strip() or appt.patient.email,
+                'patient_name': appt.patient.full_name if appt.patient.full_name != 'User' else appt.patient.email,
                 'patient_avatar': appt.patient.avatar.url if appt.patient.avatar else None,
                 'doctor_name': f"Dr. {appt.doctor.first_name or ''} {appt.doctor.last_name or ''}".strip(),
                 'doctor_specialty': getattr(getattr(appt.doctor, 'doctor_profile', None), 'specialization', 'Dermatology'),
@@ -236,6 +261,8 @@ class UserAppointmentsView(APIView):
 class DoctorAppointmentManageView(APIView):
     """
     Doctor can Confirm/Reject appointments.
+    Auto-rejects conflicting PENDING appointments when one is confirmed.
+    Sends best-effort webhooks to n8n for confirmation/rejection notifications.
     """
     permission_classes = [IsAuthenticated]
 
@@ -243,28 +270,135 @@ class DoctorAppointmentManageView(APIView):
         if not request.user.is_doctor:
              return Response({'status': 'error', 'message': 'Only doctors can manage appointments'}, status=status.HTTP_403_FORBIDDEN)
              
-        action = request.data.get('action') # 'confirm' or 'reject'
-        
+        action = request.data.get('action')  # 'confirm', 'reject', or 'complete'
+        reason = request.data.get('reason', '')
+
         try:
             appt = Appointment.objects.get(id=appointment_id, doctor=request.user)
-            
-            if action == 'confirm':
-                appt.status = 'CONFIRMED'
-                # Auto-generate a unique Jitsi Meet video link
-                room_id = str(uuid.uuid4())[:12].replace('-', '')
-                appt.video_link = f"https://meet.jit.si/SkinScan-{room_id}"
-            elif action == 'reject':
-                appt.status = 'REJECTED'
-            elif action == 'complete':
-                appt.status = 'COMPLETED'
-            else:
-                return Response({'status': 'error', 'message': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
-                
-            appt.save()
-            return Response({'status': 'success', 'message': f'Appointment {action}ed', 'state': appt.status})
-            
         except Appointment.DoesNotExist:
             return Response({'status': 'error', 'message': 'Appointment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        rejected_appointments = []
+
+        if action == 'confirm':
+            # Guard: prevent double-confirming the same slot
+            already_confirmed = Appointment.objects.filter(
+                doctor=appt.doctor,
+                date=appt.date,
+                time_slot=appt.time_slot,
+                status='CONFIRMED'
+            ).exclude(id=appt.id).exists()
+
+            if already_confirmed:
+                return Response({
+                    'status': 'error',
+                    'message': 'This time slot is already confirmed for another patient. Please reject this appointment instead.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            with transaction.atomic():
+                appt.status = 'CONFIRMED'
+                room_id = str(uuid.uuid4())[:12].replace('-', '')
+                appt.video_link = f"https://meet.jit.si/SkinScan-{room_id}"
+                appt.save()
+
+                # Auto-reject all other PENDING appointments for the same slot
+                conflicting = Appointment.objects.filter(
+                    doctor=appt.doctor,
+                    date=appt.date,
+                    time_slot=appt.time_slot,
+                    status='PENDING'
+                ).exclude(id=appt.id)
+
+                for conflicting_appt in conflicting:
+                    conflicting_appt.status = 'REJECTED'
+                    conflicting_appt.save()
+                    rejected_appointments.append(conflicting_appt)
+
+            # --- Best-effort webhooks (outside transaction) ---
+            doctor_name = f"Dr. {request.user.first_name or ''} {request.user.last_name or ''}".strip() or request.user.email
+
+            # Notify confirmed patient
+            send_n8n_webhook({
+                'event': 'APPOINTMENT_CONFIRMED',
+                'appointment_id': appt.id,
+                'patient_name': f"{appt.patient.first_name or ''} {appt.patient.last_name or ''}".strip() or appt.patient.email,
+                'patient_email': appt.patient.email,
+                'doctor_name': doctor_name,
+                'date': str(appt.date),
+                'time_slot': appt.time_slot,
+                'video_link': appt.video_link,
+            })
+
+            # Notify each auto-rejected patient
+            auto_reason = getattr(settings, 'AUTO_REJECTION_REASON', 'The time slot you requested was booked by another patient.')
+            for rej_appt in rejected_appointments:
+                # 1. Webhook
+                send_n8n_webhook({
+                    'event': 'APPOINTMENT_REJECTED',
+                    'appointment_id': rej_appt.id,
+                    'patient_name': f"{rej_appt.patient.first_name or ''} {rej_appt.patient.last_name or ''}".strip() or rej_appt.patient.email,
+                    'patient_email': rej_appt.patient.email,
+                    'doctor_name': doctor_name,
+                    'date': str(rej_appt.date),
+                    'time_slot': rej_appt.time_slot,
+                    'reason': auto_reason,
+                })
+                # 2. Direct Email
+                try:
+                    send_mail(
+                        subject='Appointment Request Update',
+                        message=f"Hello,\n\nUnfortunately, your appointment request with {doctor_name} on {rej_appt.date} at {rej_appt.time_slot} has been cancelled.\n\nReason: {auto_reason}\n\nPlease try booking a different time slot.",
+                        from_email=settings.EMAIL_HOST_USER,
+                        recipient_list=[rej_appt.patient.email],
+                        fail_silently=True,
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send auto-rejection email: {str(e)}")
+
+        elif action == 'reject':
+            appt.status = 'REJECTED'
+            appt.save()
+
+            doctor_name = f"Dr. {request.user.first_name or ''} {request.user.last_name or ''}".strip() or request.user.email
+            rejection_reason = reason or 'The doctor is unavailable at this time.'
+            
+            # 1. Webhook
+            send_n8n_webhook({
+                'event': 'APPOINTMENT_REJECTED',
+                'appointment_id': appt.id,
+                'patient_name': f"{appt.patient.first_name or ''} {appt.patient.last_name or ''}".strip() or appt.patient.email,
+                'patient_email': appt.patient.email,
+                'doctor_name': doctor_name,
+                'date': str(appt.date),
+                'time_slot': appt.time_slot,
+                'reason': rejection_reason,
+            })
+            
+            # 2. Direct Email
+            try:
+                send_mail(
+                    subject='Appointment Request Update',
+                    message=f"Hello,\n\nUnfortunately, your appointment request with {doctor_name} on {appt.date} at {appt.time_slot} has been rejected.\n\nReason: {rejection_reason}\n\nPlease try booking a different time slot.",
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[appt.patient.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                logger.error(f"Failed to send rejection email: {str(e)}")
+
+        elif action == 'complete':
+            appt.status = 'COMPLETED'
+            appt.save()
+
+        else:
+            return Response({'status': 'error', 'message': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'status': 'success',
+            'message': f'Appointment {action}ed',
+            'state': appt.status,
+            'auto_rejected_count': len(rejected_appointments),
+        })
 
 class CancelAppointmentView(APIView):
     """
@@ -292,6 +426,32 @@ class CancelAppointmentView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+
+class DeleteAppointmentView(APIView):
+    """
+    Patient can permanently delete their own CANCELLED, REJECTED, or COMPLETED appointments.
+    Active appointments (PENDING/CONFIRMED) must be cancelled first.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, appointment_id):
+        try:
+            appt = Appointment.objects.get(id=appointment_id, patient=request.user)
+
+            if appt.status in ['PENDING', 'CONFIRMED']:
+                return Response(
+                    {'status': 'error', 'message': 'Please cancel the appointment before deleting it.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            appt.delete()
+            return Response({'status': 'success', 'message': 'Appointment deleted successfully'})
+
+        except Appointment.DoesNotExist:
+            return Response(
+                {'status': 'error', 'message': 'Appointment not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 class ShareReportView(APIView):
     """

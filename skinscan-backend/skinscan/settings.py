@@ -242,3 +242,8 @@ GEMINI_MODEL_NAME = config('GEMINI_MODEL_NAME', default='gemini-2.5-flash')
 NVIDIA_API_KEY = config('NVIDIA_API_KEY', default=None)
 NVIDIA_MODEL_NAME = config('NVIDIA_MODEL_NAME', default='meta/llama-3.1-8b-instruct')
 
+# n8n WEBHOOK SETTINGS
+N8N_WEBHOOK_URL = config('N8N_WEBHOOK_URL', default=None)
+N8N_WEBHOOK_TIMEOUT = 5  # seconds - webhook is best-effort, don't block the request
+AUTO_REJECTION_REASON = "The time slot you requested was booked by another patient. Please choose a different time."
+

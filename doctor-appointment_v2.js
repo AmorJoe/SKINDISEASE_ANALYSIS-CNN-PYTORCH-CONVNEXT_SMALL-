@@ -366,6 +366,11 @@ async function loadAppointments() {
                                         <i class="fas fa-times"></i> Cancel
                                     </button>
                                 ` : ''}
+                                ${appt.status === 'CANCELLED' || appt.status === 'REJECTED' || appt.status === 'COMPLETED' ? `
+                                    <button onclick="deleteAppointment(${appt.id})" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 10px; background: transparent; color: #dc2626; border: 1px solid #fecaca; font-weight: 500; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;">
+                                        <i class="fas fa-trash-alt"></i> Delete
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -417,6 +422,34 @@ async function cancelAppointment(appointmentId) {
     } catch (error) {
         console.error('Cancel error:', error);
         alert('Network error while cancelling appointment.');
+    }
+}
+
+// Delete a finished appointment (CANCELLED / REJECTED / COMPLETED)
+async function deleteAppointment(appointmentId) {
+    if (!confirm('Are you sure you want to permanently delete this appointment from your list?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL_DA}/predict/appointments/delete/${appointmentId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.status === 'success') {
+            alert('Appointment deleted successfully.');
+            loadAppointments();
+        } else {
+            alert(`Failed to delete: ${data.message}`);
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        alert('Network error while deleting appointment.');
     }
 }
 

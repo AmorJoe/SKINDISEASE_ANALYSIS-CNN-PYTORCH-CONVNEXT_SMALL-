@@ -6,6 +6,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 import logging
+import random
+from datetime import timedelta
+from django.core.mail import send_mail
 
 logger = logging.getLogger(__name__)
 logger.info("SERVER RELOADING - VIEWS MODULE IMPORTED")
@@ -43,13 +46,20 @@ class RegisterView(APIView):
                 'errors': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
         
+        # Generate 6-digit OTP
+        otp_code = str(random.randint(100000, 999999))
+        otp_expiry = timezone.now() + timedelta(minutes=getattr(settings, 'OTP_EXPIRATION_MINUTES', 10))
+        
         # Create user in database
         user = User.objects.create(
             email=serializer.validated_data['email'],
             first_name=serializer.validated_data.get('first_name', ''),
             last_name=serializer.validated_data.get('last_name', ''),
             is_doctor=serializer.validated_data.get('is_doctor', False),
-            account_status='ACTIVE'
+            account_status='ACTIVE',
+            is_email_verified=False,
+            otp_code=otp_code,
+            otp_expiry=otp_expiry,
         )
         user.set_password(serializer.validated_data['password'])
         user.save()
@@ -66,16 +76,30 @@ class RegisterView(APIView):
                 specialization=serializer.validated_data.get('specialization', 'General')
             )
         
+        # Send OTP email
+        try:
+            send_mail(
+                subject='SkinScan AI — Verify Your Email',
+                message=f'Hello,\n\nYour email verification code is: {otp_code}\n\nThis code will expire in {getattr(settings, "OTP_EXPIRATION_MINUTES", 10)} minutes.\n\nIf you did not create an account, please ignore this email.',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+            logger.info(f"Verification OTP sent to {user.email}")
+        except Exception as e:
+            logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
+        
         logger.info(f"New user registered: {user.email} (ID: {user.id}) IsDoctor: {user.is_doctor}")
 
         token = generate_jwt_token(user)
         
         return Response({
             'status': 'success',
-            'message': 'Registration successful',
+            'message': 'Registration successful. Please verify your email.',
             'data': {
                 'user': UserSerializer(user).data,
-                'token': token
+                'token': token,
+                'requires_verification': True
             }
         }, status=status.HTTP_201_CREATED)
 
@@ -124,6 +148,15 @@ class LoginView(APIView):
             except:
                 # Fallback if profile missing
                 pass
+        
+        # Check email verification
+        if not user.is_email_verified:
+            return Response({
+                'status': 'error',
+                'message': 'Email not verified. Please check your inbox for the verification code.',
+                'requires_verification': True,
+                'email': user.email
+            }, status=status.HTTP_403_FORBIDDEN)
         
         # Check account status
         if user.account_status != 'ACTIVE':
@@ -211,6 +244,122 @@ class ResetPasswordView(APIView):
                 'status': 'error',
                 'message': 'User not found'
             }, status=status.HTTP_404_NOT_FOUND)
+
+
+class VerifyRegistrationOTPView(APIView):
+    """Verify email OTP after registration"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email', '').strip().lower()
+        otp_code = request.data.get('otp_code', '').strip()
+
+        if not email or not otp_code:
+            return Response({
+                'status': 'error',
+                'message': 'Email and OTP code are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({
+                'status': 'error',
+                'message': 'User not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        if user.is_email_verified:
+            return Response({
+                'status': 'success',
+                'message': 'Email is already verified'
+            })
+
+        # Check expiry
+        if user.otp_expiry and timezone.now() > user.otp_expiry:
+            return Response({
+                'status': 'error',
+                'message': 'OTP has expired. Please request a new one.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check code
+        if user.otp_code != otp_code:
+            return Response({
+                'status': 'error',
+                'message': 'Invalid OTP code'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Mark verified
+        user.is_email_verified = True
+        user.otp_code = None
+        user.otp_expiry = None
+        user.save(update_fields=['is_email_verified', 'otp_code', 'otp_expiry'])
+
+        logger.info(f"Email verified for user: {user.email}")
+
+        token = generate_jwt_token(user)
+
+        return Response({
+            'status': 'success',
+            'message': 'Email verified successfully',
+            'data': {
+                'user': UserSerializer(user).data,
+                'token': token
+            }
+        })
+
+
+class ResendOTPView(APIView):
+    """Resend verification OTP to user email"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email', '').strip().lower()
+
+        if not email:
+            return Response({
+                'status': 'error',
+                'message': 'Email is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({
+                'status': 'error',
+                'message': 'User not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        if user.is_email_verified:
+            return Response({
+                'status': 'success',
+                'message': 'Email is already verified'
+            })
+
+        # Generate new OTP
+        otp_code = str(random.randint(100000, 999999))
+        user.otp_code = otp_code
+        user.otp_expiry = timezone.now() + timedelta(minutes=getattr(settings, 'OTP_EXPIRATION_MINUTES', 10))
+        user.save(update_fields=['otp_code', 'otp_expiry'])
+
+        try:
+            send_mail(
+                subject='SkinScan AI — Verify Your Email',
+                message=f'Hello,\n\nYour new verification code is: {otp_code}\n\nThis code will expire in {getattr(settings, "OTP_EXPIRATION_MINUTES", 10)} minutes.',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            logger.error(f"Failed to resend OTP to {user.email}: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': 'Failed to send email. Please try again.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            'status': 'success',
+            'message': 'A new verification code has been sent to your email'
+        })
 
 
 class ValidateTokenView(APIView):

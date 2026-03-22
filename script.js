@@ -34,6 +34,7 @@ function requireAuth() {
 function logout() {
     sessionStorage.removeItem('jwt_token');
     sessionStorage.removeItem('user_data');
+            localStorage.removeItem('skinscan_user_profile');
     window.location.href = 'dashboard.html';
 }
 
@@ -326,7 +327,7 @@ function initDashboardPage() {
                     };
                 }
 
-                // View Report Button — requires body location
+                // View Report Button ï¿½ requires body location
                 if (viewReportBtn) {
                     viewReportBtn.onclick = function () {
                         const loc = document.getElementById('quickBodyLocation');
@@ -501,12 +502,12 @@ async function sendMessage() {
             // 2. Bold (**text**)
             safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-            // 3. Markdown links [text](url) — must run BEFORE raw URL detection
+            // 3. Markdown links [text](url) ï¿½ must run BEFORE raw URL detection
             safeText = safeText.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function (match, linkText, url) {
                 return `<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
             });
 
-            // 4. Raw URLs — split by existing <a> tags so we don't double-link
+            // 4. Raw URLs ï¿½ split by existing <a> tags so we don't double-link
             const parts = safeText.split(/(<a\s[^>]*>.*?<\/a>)/g);
             safeText = parts.map(part => {
                 if (part.startsWith('<a ')) return part; // Already a link, skip
@@ -2585,7 +2586,7 @@ function initThemeOptions() {
 }
 
 // ============================================
-// SEND TO DOCTOR — Auto-save scan and navigate
+// SEND TO DOCTOR ï¿½ Auto-save scan and navigate
 // ============================================
 async function sendToDoctor() {
     const btn = document.getElementById('send-to-doctor-btn');
@@ -2681,3 +2682,4 @@ async function sendToDoctor() {
         }
     }
 }
+

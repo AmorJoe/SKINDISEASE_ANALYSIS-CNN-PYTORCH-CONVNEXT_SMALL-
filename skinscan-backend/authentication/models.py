@@ -39,6 +39,11 @@ class User(models.Model):
     )
     last_login = models.DateTimeField(blank=True, null=True)
     
+    # Email Verification
+    is_email_verified = models.BooleanField(default=False)
+    otp_code = models.CharField(max_length=6, blank=True, null=True)
+    otp_expiry = models.DateTimeField(blank=True, null=True)
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

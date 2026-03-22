@@ -1342,3 +1342,127 @@ body.doctor-body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================ */
+/* PATIENT REPORTS ACCORDION                    */
+/* ============================================ */
+.patient-report-group {
+    border: 1px solid #e8ecf1;
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+}
+
+.patient-report-group:hover {
+    box-shadow: 0 4px 16px rgba(2, 136, 209, 0.08);
+}
+
+.patient-report-group:last-child {
+    margin-bottom: 0;
+}
+
+.patient-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    background: #f8fafc;
+    border-bottom: 1px solid transparent;
+    transition: background 0.2s ease;
+}
+
+.patient-report-group.open .patient-group-header {
+    background: linear-gradient(135deg, #e1f5fe 0%, #f0f7ff 100%);
+    border-bottom-color: #e0ecf5;
+}
+
+.patient-group-header:hover {
+    background: #eef4fa;
+}
+
+.patient-group-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.patient-group-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0288d1, #4fc3f7);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(2, 136, 209, 0.25);
+}
+
+.patient-group-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-main);
+    display: block;
+}
+
+.patient-group-count {
+    font-size: 0.82rem;
+    color: var(--text-light);
+    display: block;
+    margin-top: 2px;
+}
+
+.patient-group-arrow {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    transition: transform 0.3s ease;
+}
+
+.patient-report-group.open .patient-group-arrow {
+    transform: rotate(180deg);
+    color: var(--primary-color);
+}
+
+/* Accordion body — hidden by default */
+.patient-group-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+}
+
+.patient-report-group.open .patient-group-body {
+    max-height: 2000px;
+}
+
+.patient-reports-table {
+    margin: 0;
+}
+
+.patient-reports-table thead tr {
+    background: #fafbfc;
+}
+
+.patient-reports-table th {
+    font-size: 0.78rem;
+    padding: 10px 16px;
+}
+
+.patient-reports-table td {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+}
+
+.patient-reports-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Empty state inside accordion container */
+#reports-accordion-container .reports-loading {
+    font-size: 0.95rem;
+}
