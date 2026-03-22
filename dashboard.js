@@ -21,6 +21,12 @@ function getUserData() {
     return data ? JSON.parse(data) : null;
 }
 
+/** Returns the current user's ID for scoped settings, or null */
+function getUserId() {
+    const data = getUserData();
+    return data ? data.id : null;
+}
+
 /** Returns true if a JWT token exists in storage */
 function isAuthenticated() {
     return !!getAuthToken();
@@ -705,13 +711,14 @@ function initTheme() {
     // Retrieve saved preferences, defaulting to light mode and default palette
     // logic: if saved is 'dark', use dark. If saved is 'light', use light. 
     // If nothing saved, check system preference? No, let's default to light as per previous logic for consistency.
-    let savedMode = localStorage.getItem('skinscan_mode') || 'light';
-    const savedPalette = localStorage.getItem('skinscan_palette') || 'default';
+    const uid = getUserId();
+    let savedMode = (uid ? localStorage.getItem(`skinscan_mode_${uid}`) : null) || 'light';
+    const savedPalette = (uid ? localStorage.getItem(`skinscan_palette_${uid}`) : null) || 'default';
 
     // Helper to apply mode
     const applyMode = (mode) => {
         html.setAttribute('data-mode', mode);
-        localStorage.setItem('skinscan_mode', mode);
+        if (uid) localStorage.setItem(`skinscan_mode_${uid}`, mode);
 
         // Legacy support
         if (mode === 'dark') {
@@ -799,7 +806,8 @@ function initTheme() {
  */
 function setThemePalette(paletteName) {
     document.documentElement.setAttribute('data-palette', paletteName);
-    localStorage.setItem('skinscan_palette', paletteName);
+    const uid = getUserId();
+    if (uid) localStorage.setItem(`skinscan_palette_${uid}`, paletteName);
 }
 
 // ─────────────────────────────────────────────

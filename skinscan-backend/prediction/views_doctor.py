@@ -211,6 +211,25 @@ class BookAppointmentView(APIView):
         if not all([doctor_id, date_str, time_slot]):
             return Response({'status': 'error', 'message': 'All fields are required'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validation: Check past dates and past times
+        try:
+            from django.utils import timezone
+            import datetime
+            
+            # Use naive parsing then make timezone aware
+            start_time_str = time_slot.split(' - ')[0].strip() # '09:00 AM'
+            slot_dt_str = f"{date_str} {start_time_str}"
+            slot_dt = datetime.datetime.strptime(slot_dt_str, "%Y-%m-%d %I:%M %p")
+            
+            if settings.USE_TZ:
+                current_tz = timezone.get_current_timezone()
+                slot_dt = timezone.make_aware(slot_dt, current_tz)
+            
+            if slot_dt <= timezone.now():
+                return Response({'status': 'error', 'message': 'You cannot book appointments in the past. Please select a valid date and time.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'status': 'error', 'message': f'Invalid date or time format. Details: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             doctor = User.objects.get(id=doctor_id, is_doctor=True)
             # Basic validation: check if slot is already taken (for simplicity, we'll just check exact match)

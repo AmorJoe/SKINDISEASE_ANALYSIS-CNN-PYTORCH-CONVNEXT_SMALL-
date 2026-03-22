@@ -214,6 +214,14 @@ if (loginForm) {
                 sessionStorage.setItem('jwt_token', data.data.token);
                 sessionStorage.setItem('user_data', JSON.stringify(data.data.user));
 
+                // Apply user-scoped settings from backend
+                if (data.data.settings) {
+                    const uid = data.data.user.id;
+                    localStorage.setItem(`skinscan_mode_${uid}`, data.data.settings.theme || 'light');
+                    localStorage.setItem(`skinscan_palette_${uid}`, data.data.settings.palette || 'default');
+                    localStorage.setItem(`selected_model_${uid}`, data.data.settings.ai_model || 'gemini');
+                }
+
                 btn.classList.add('success');
                 btn.innerHTML = '<i class="fas fa-check-circle"></i><span>Success!</span>';
 

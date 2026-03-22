@@ -42,9 +42,86 @@ document.addEventListener('DOMContentLoaded', () => {
     if (reportSelect) {
         reportSelect.addEventListener('change', updateReportPreview);
     }
+
+    // --- Date/Time Validation Hooks ---
+    const dateInput = document.getElementById('appt-date');
+    const timeSlotSelect = document.getElementById('time-slot');
+    if (dateInput && timeSlotSelect) {
+        // Set min attribute to today to prevent selecting past dates visually
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateInput.min = `${yyyy}-${mm}-${dd}`;
+
+        // Bind dynamic time slot disabling
+        dateInput.addEventListener('change', updateAvailableTimeSlots);
+        
+        // Initial call
+        updateAvailableTimeSlots();
+    }
 });
 
 let appointmentPollingInterval;
+
+function updateAvailableTimeSlots() {
+    const dateInput = document.getElementById('appt-date');
+    const timeSlotSelect = document.getElementById('time-slot');
+    if (!dateInput || !timeSlotSelect) return;
+
+    if (!dateInput.value) {
+        for (let i = 1; i < timeSlotSelect.options.length; i++) {
+            timeSlotSelect.options[i].disabled = false;
+        }
+        return;
+    }
+
+    const now = new Date();
+    // Safely parse local date (YYYY-MM-DD)
+    const [year, month, day] = dateInput.value.split('-');
+    const selectedDate = new Date(year, month - 1, day);
+    
+    // Check if selected date is today
+    const isToday = selectedDate.toDateString() === now.toDateString();
+
+    let hasSelectedDisabled = false;
+
+    // Loop through options (skip 0 which is placeholder)
+    for (let i = 1; i < timeSlotSelect.options.length; i++) {
+        const option = timeSlotSelect.options[i];
+        const timeStr = option.value.split(' - ')[0]; // E.g., '09:00 AM'
+        
+        if (isToday) {
+            const timeMatch = timeStr.match(/(\d+):(\d+)\s(AM|PM)/);
+            if (timeMatch) {
+                let [_, hours, minutes, modifier] = timeMatch;
+                hours = parseInt(hours, 10);
+                if (modifier === 'PM' && hours < 12) hours += 12;
+                if (modifier === 'AM' && hours === 12) hours = 0;
+                
+                const slotTime = new Date();
+                slotTime.setHours(hours, parseInt(minutes, 10), 0, 0);
+
+                if (slotTime <= now) {
+                    option.disabled = true;
+                    if (timeSlotSelect.selectedIndex === i) {
+                        hasSelectedDisabled = true;
+                    }
+                } else {
+                    option.disabled = false;
+                }
+            }
+        } else {
+            // Future date, re-enable all
+            option.disabled = false;
+        }
+    }
+
+    // Reset dropdown if the previously selected time is now disabled
+    if (hasSelectedDisabled) {
+        timeSlotSelect.value = "";
+    }
+}
 
 async function initDoctorAppointmentPage() {
     await Promise.all([
@@ -569,6 +646,38 @@ async function handleBooking(e) {
             const selectedDateString = new Date(date).toLocaleDateString('en-US', { weekday: 'short' }); // e.g., 'Mon', 'Tue'
             if (!selectedDoctor.available_days.includes(selectedDateString)) {
                 alert(`Appointment failed: Dr. ${selectedDoctor.last_name} is only available on ${selectedDoctor.available_days.join(', ')}.`);
+                return;
+            }
+        }
+    }
+
+    // --- Real-Time Validation: Prevent past date/time ---
+    const now = new Date();
+    const [year, month, day] = date.split('-');
+    const selectedDate = new Date(year, month - 1, day);
+    
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0); // normalize for pure date compare
+
+    if (selectedDate < todayDate) {
+        alert('You cannot book appointments in the past. Please select a valid date and time.');
+        return;
+    }
+
+    if (selectedDate.toDateString() === now.toDateString()) {
+        const timeStr = timeSlot.split(' - ')[0];
+        const timeMatch = timeStr.match(/(\d+):(\d+)\s(AM|PM)/);
+        if (timeMatch) {
+            let [_, hours, minutes, modifier] = timeMatch;
+            hours = parseInt(hours, 10);
+            if (modifier === 'PM' && hours < 12) hours += 12;
+            if (modifier === 'AM' && hours === 12) hours = 0;
+            
+            const slotTime = new Date();
+            slotTime.setHours(hours, parseInt(minutes, 10), 0, 0);
+            
+            if (slotTime <= now) {
+                alert('You cannot book appointments in the past. Please select a valid date and time.');
                 return;
             }
         }

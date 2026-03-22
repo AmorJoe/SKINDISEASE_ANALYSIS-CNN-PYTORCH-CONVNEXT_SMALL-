@@ -14,6 +14,8 @@ from .views import (
     VerifyRegistrationOTPView,
     ResendOTPView,
     check_profile_completion,
+    UserSettingsView,
+    DeleteAccountView,
 )
 from .notification_views import NotificationView
 from .admin_views import (
@@ -43,4 +45,8 @@ urlpatterns = [
     path('admin/users/', AdminUserListView.as_view(), name='admin_user_list'),
     path('admin/users/<int:user_id>/<str:action>/', AdminUserStateView.as_view(), name='admin_user_state'),
     path('admin/users/<int:user_id>/', AdminUserDetailView.as_view(), name='admin_user_detail'),
+
+    # User Settings & Account Management
+    path('settings', UserSettingsView.as_view(), name='user_settings'),
+    path('delete-account', DeleteAccountView.as_view(), name='delete_account'),
 ]

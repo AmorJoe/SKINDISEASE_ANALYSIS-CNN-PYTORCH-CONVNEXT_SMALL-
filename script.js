@@ -16,6 +16,12 @@ function getUserData() {
     return data ? JSON.parse(data) : null;
 }
 
+// Get user ID for scoped settings
+function getUserId() {
+    const data = getUserData();
+    return data ? data.id : null;
+}
+
 // Check if user is authenticated
 function isAuthenticated() {
     return !!getAuthToken();
@@ -32,9 +38,24 @@ function requireAuth() {
 
 // Logout function
 function logout() {
+    // Clear user-scoped settings from localStorage
+    const uid = getUserId();
+    if (uid) {
+        localStorage.removeItem(`skinscan_mode_${uid}`);
+        localStorage.removeItem(`skinscan_palette_${uid}`);
+        localStorage.removeItem(`selected_model_${uid}`);
+    }
     sessionStorage.removeItem('jwt_token');
     sessionStorage.removeItem('user_data');
-            localStorage.removeItem('skinscan_user_profile');
+    localStorage.removeItem('skinscan_user_profile');
+
+    // Reset theme to defaults on logout
+    document.documentElement.removeAttribute('data-mode');
+    document.documentElement.removeAttribute('data-theme');
+    document.documentElement.setAttribute('data-palette', 'default');
+    document.body.classList.remove('dark-mode');
+    document.body.classList.add('light-mode');
+
     window.location.href = 'dashboard.html';
 }
 
@@ -246,7 +267,8 @@ function initDashboardPage() {
             formData.append('image', file);
 
             // Add selected AI model
-            const selectedModel = localStorage.getItem('selected_model') || 'gemini';
+            const uid = getUserId();
+            const selectedModel = (uid ? localStorage.getItem(`selected_model_${uid}`) : null) || 'gemini';
             formData.append('model', selectedModel);
 
             // Upload to Django backend
@@ -653,9 +675,10 @@ function initNavigation() {
 }
 
 function initTheme() {
-    // 1. Load Saved Settings (Unified Key)
-    const savedMode = localStorage.getItem('skinscan_mode') || 'light';
-    const savedPalette = localStorage.getItem('skinscan_palette') || 'default';
+    // 1. Load Saved Settings (User-scoped keys)
+    const uid = getUserId();
+    const savedMode = (uid ? localStorage.getItem(`skinscan_mode_${uid}`) : null) || 'light';
+    const savedPalette = (uid ? localStorage.getItem(`skinscan_palette_${uid}`) : null) || 'default';
 
     const html = document.documentElement;
     const body = document.body;
@@ -663,7 +686,7 @@ function initTheme() {
     // Helper to apply mode
     const applyMode = (mode) => {
         html.setAttribute('data-mode', mode);
-        localStorage.setItem('skinscan_mode', mode);
+        if (uid) localStorage.setItem(`skinscan_mode_${uid}`, mode);
 
         // Legacy & Body Class Support
         if (mode === 'dark') {
@@ -726,7 +749,8 @@ function initTheme() {
 function setThemePalette(paletteName) {
     const html = document.documentElement;
     html.setAttribute('data-palette', paletteName);
-    localStorage.setItem('skinscan_palette', paletteName);
+    const uid = getUserId();
+    if (uid) localStorage.setItem(`skinscan_palette_${uid}`, paletteName);
     console.log(`Theme palette set to: ${paletteName}`);
 }
 
@@ -2429,7 +2453,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // AI Model Selection
 function initAIModels() {
     const modelRadios = document.querySelectorAll('input[name="ai-model"]');
-    const savedModel = localStorage.getItem('selected_model') || 'gemini';
+    const uid = getUserId();
+    const savedModel = (uid ? localStorage.getItem(`selected_model_${uid}`) : null) || 'gemini';
 
     // Set initial state
     modelRadios.forEach(radio => {
@@ -2467,7 +2492,7 @@ function initAIModels() {
                     // Trigger change event manually if needed
                     radio.dispatchEvent(new Event('change'));
 
-                    localStorage.setItem('selected_model', radio.value);
+                    localStorage.setItem(`selected_model_${uid}`, radio.value);
 
                     // Update styles
                     updateModelStyle(radio);
@@ -2508,14 +2533,21 @@ function updateModelStyle(radio) {
 // Toast Notification Helper
 
 
-// Mock Backend Call
+// Sync model to backend
 function switchModelBackend(model) {
     return new Promise(resolve => {
-        setTimeout(() => {
-            // Simulate 90% success rate
-            const isSuccess = true;
-            resolve(isSuccess);
-        }, 800); // 800ms delay
+        const token = getAuthToken();
+        if (token) {
+            fetch(`${API_BASE_URL}/auth/settings`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ ai_model: model })
+            }).catch(err => console.error('Failed to sync model setting:', err));
+        }
+        resolve(true);
     });
 }
 
@@ -2525,9 +2557,10 @@ function initThemeOptions() {
     const paletteBtns = document.querySelectorAll('.palette-option');
     const html = document.documentElement;
 
-    // 1. Load saved settings or defaults (MATCHING initTheme KEYS)
-    const savedTheme = localStorage.getItem('skinscan_mode') || 'light';
-    const savedPalette = localStorage.getItem('skinscan_palette') || 'default';
+    // 1. Load saved settings or defaults (user-scoped keys)
+    const uid = getUserId();
+    const savedTheme = (uid ? localStorage.getItem(`skinscan_mode_${uid}`) : null) || 'light';
+    const savedPalette = (uid ? localStorage.getItem(`skinscan_palette_${uid}`) : null) || 'default';
 
     // Helper to apply theme
     const applyTheme = (theme) => {
@@ -2560,7 +2593,21 @@ function initThemeOptions() {
 
             // Apply
             html.setAttribute('data-palette', palette);
-            localStorage.setItem('skinscan_palette', palette);
+            const paletteUid = getUserId();
+            if (paletteUid) localStorage.setItem(`skinscan_palette_${paletteUid}`, palette);
+
+            // Sync to backend
+            const token = getAuthToken();
+            if (token) {
+                fetch(`${API_BASE_URL}/auth/settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ palette: palette })
+                }).catch(err => console.error('Failed to sync palette:', err));
+            }
 
             // Update UI
             document.querySelectorAll('.palette-option').forEach(p => p.classList.remove('active'));
@@ -2574,12 +2621,26 @@ function initThemeOptions() {
         themeToggle.checked = (savedTheme === 'dark');
 
         themeToggle.addEventListener('change', () => {
+            const themeUid = getUserId();
             if (themeToggle.checked) {
                 applyTheme('dark');
-                localStorage.setItem('skinscan_mode', 'dark');
+                if (themeUid) localStorage.setItem(`skinscan_mode_${themeUid}`, 'dark');
             } else {
                 applyTheme('light');
-                localStorage.setItem('skinscan_mode', 'light');
+                if (themeUid) localStorage.setItem(`skinscan_mode_${themeUid}`, 'light');
+            }
+
+            // Sync to backend
+            const token = getAuthToken();
+            if (token) {
+                fetch(`${API_BASE_URL}/auth/settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ theme: themeToggle.checked ? 'dark' : 'light' })
+                }).catch(err => console.error('Failed to sync theme:', err));
             }
         });
     }

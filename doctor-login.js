@@ -299,7 +299,7 @@ function showOTPModal(email, portal) {
                 setTimeout(() => {
                     modal.style.display = 'none';
                     switchToLogin();
-                    alert('Email verified! Please log in to the Doctor Portal.');
+                    alert('OTP verified successfully. Your request has been sent for admin approval.');
                 }, 800);
             } else {
                 document.getElementById('otp-error-msg').textContent = data.message || 'Verification failed';
@@ -313,23 +313,59 @@ function showOTPModal(email, portal) {
         }
     };
 
+    let resendCooldown = 0;
+    
     document.getElementById('otp-resend-link').onclick = async (e) => {
         e.preventDefault();
+        
+        if (resendCooldown > 0) {
+            return;
+        }
+
+        const resendLink = document.getElementById('otp-resend-link');
+        const originalText = resendLink.textContent;
+        
         try {
+            resendLink.style.pointerEvents = 'none';
+            resendLink.style.opacity = '0.5';
+            
             const response = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email })
             });
             const data = await response.json();
-            document.getElementById('otp-error-msg').style.color = '#10b981';
-            document.getElementById('otp-error-msg').textContent = data.message || 'New code sent!';
-            setTimeout(() => {
-                document.getElementById('otp-error-msg').style.color = '#ef4444';
-                document.getElementById('otp-error-msg').textContent = '';
-            }, 3000);
+            
+            if (data.status === 'success') {
+                document.getElementById('otp-error-msg').style.color = '#10b981';
+                document.getElementById('otp-error-msg').textContent = data.message || 'New code sent!';
+                setTimeout(() => {
+                    document.getElementById('otp-error-msg').style.color = '#ef4444';
+                    document.getElementById('otp-error-msg').textContent = '';
+                }, 3000);
+                
+                // Start cooldown
+                resendCooldown = 60;
+                const interval = setInterval(() => {
+                    resendCooldown--;
+                    if (resendCooldown > 0) {
+                        resendLink.textContent = `Resend (${resendCooldown}s)`;
+                    } else {
+                        clearInterval(interval);
+                        resendLink.textContent = 'Resend';
+                        resendLink.style.pointerEvents = 'auto';
+                        resendLink.style.opacity = '1';
+                    }
+                }, 1000);
+            } else {
+                document.getElementById('otp-error-msg').textContent = data.message || 'Failed to resend. Try again.';
+                resendLink.style.pointerEvents = 'auto';
+                resendLink.style.opacity = '1';
+            }
         } catch (err) {
             document.getElementById('otp-error-msg').textContent = 'Failed to resend. Try again.';
+            resendLink.style.pointerEvents = 'auto';
+            resendLink.style.opacity = '1';
         }
     };
 }

@@ -20,7 +20,8 @@ from django_ratelimit.decorators import ratelimit
 from django.conf import settings
 import jwt
 import logging
-from .models import User
+from django.db import IntegrityError
+from .models import User, PendingRegistration, UserProfile, DoctorProfile, UserSettings
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer,
     ForgotPasswordSerializer, VerifyOTPSerializer,
@@ -48,57 +49,39 @@ class RegisterView(APIView):
         
         # Generate 6-digit OTP
         otp_code = str(random.randint(100000, 999999))
-        otp_expiry = timezone.now() + timedelta(minutes=getattr(settings, 'OTP_EXPIRATION_MINUTES', 10))
+        otp_expiry = timezone.now() + timedelta(minutes=5)
         
-        # Create user in database
-        user = User.objects.create(
+        # Overwrite or create pending registration
+        PendingRegistration.objects.update_or_create(
             email=serializer.validated_data['email'],
-            first_name=serializer.validated_data.get('first_name', ''),
-            last_name=serializer.validated_data.get('last_name', ''),
-            is_doctor=serializer.validated_data.get('is_doctor', False),
-            account_status='ACTIVE',
-            is_email_verified=False,
-            otp_code=otp_code,
-            otp_expiry=otp_expiry,
+            defaults={
+                'registration_data': serializer.validated_data,
+                'otp_code': otp_code,
+                'otp_expiry': otp_expiry,
+                'otp_attempts': 0
+            }
         )
-        user.set_password(serializer.validated_data['password'])
-        user.save()
-        
-        # Create empty profile
-        from .models import UserProfile, DoctorProfile
-        UserProfile.objects.create(user=user)
-        
-        # Create Doctor Profile if applicable
-        if serializer.validated_data.get('is_doctor', False):
-            DoctorProfile.objects.create(
-                user=user,
-                medical_license_number=serializer.validated_data.get('medical_license_number'),
-                specialization=serializer.validated_data.get('specialization', 'General')
-            )
         
         # Send OTP email
         try:
             send_mail(
                 subject='SkinScan AI — Verify Your Email',
-                message=f'Hello,\n\nYour email verification code is: {otp_code}\n\nThis code will expire in {getattr(settings, "OTP_EXPIRATION_MINUTES", 10)} minutes.\n\nIf you did not create an account, please ignore this email.',
+                message=f'Hello,\n\nYour email verification code is: {otp_code}\n\nThis code will expire in 5 minutes.\n\nIf you did not create an account, please ignore this email.',
                 from_email=settings.EMAIL_HOST_USER,
-                recipient_list=[user.email],
+                recipient_list=[serializer.validated_data['email']],
                 fail_silently=False,
             )
-            logger.info(f"Verification OTP sent to {user.email}")
+            logger.info(f"Verification OTP sent to pending user {serializer.validated_data['email']}")
         except Exception as e:
-            logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
+            logger.error(f"Failed to send verification email to pending user {serializer.validated_data['email']}: {str(e)}")
         
-        logger.info(f"New user registered: {user.email} (ID: {user.id}) IsDoctor: {user.is_doctor}")
+        logger.info(f"New pending registration: {serializer.validated_data['email']} IsDoctor: {serializer.validated_data.get('is_doctor', False)}")
 
-        token = generate_jwt_token(user)
-        
         return Response({
             'status': 'success',
-            'message': 'Registration successful. Please verify your email.',
+            'message': 'Registration initiated. Please verify your email with the OTP sent.',
             'data': {
-                'user': UserSerializer(user).data,
-                'token': token,
+                'email': serializer.validated_data['email'],
                 'requires_verification': True
             }
         }, status=status.HTTP_201_CREATED)
@@ -173,12 +156,20 @@ class LoginView(APIView):
         
         token = generate_jwt_token(user)
         
+        # Fetch or create user settings
+        settings_obj, _ = UserSettings.objects.get_or_create(user=user)
+        
         return Response({
             'status': 'success',
             'message': 'Login successful',
             'data': {
                 'user': UserSerializer(user).data,
-                'token': token
+                'token': token,
+                'settings': {
+                    'theme': settings_obj.theme,
+                    'palette': settings_obj.palette,
+                    'ai_model': settings_obj.ai_model,
+                }
             }
         }, status=status.HTTP_200_OK)
 
@@ -260,39 +251,74 @@ class VerifyRegistrationOTPView(APIView):
                 'message': 'Email and OTP code are required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({
-                'status': 'error',
-                'message': 'User not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        if user.is_email_verified:
+        if User.objects.filter(email=email, is_email_verified=True).exists():
             return Response({
                 'status': 'success',
                 'message': 'Email is already verified'
             })
 
-        # Check expiry
-        if user.otp_expiry and timezone.now() > user.otp_expiry:
+        try:
+            pending = PendingRegistration.objects.get(email=email)
+        except PendingRegistration.DoesNotExist:
             return Response({
                 'status': 'error',
-                'message': 'OTP has expired. Please request a new one.'
+                'message': 'No pending registration found. Please register again.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Check attempts limit
+        if pending.otp_attempts >= 3:
+            pending.delete()
+            return Response({
+                'status': 'error',
+                'message': 'Maximum verification attempts exceeded. Please register again.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check expiry
+        if timezone.now() > pending.otp_expiry:
+            pending.delete()
+            return Response({
+                'status': 'error',
+                'message': 'Invalid or expired OTP. Please try registering again.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # Check code
-        if user.otp_code != otp_code:
+        if pending.otp_code != otp_code:
+            pending.otp_attempts += 1
+            pending.save(update_fields=['otp_attempts'])
             return Response({
                 'status': 'error',
-                'message': 'Invalid OTP code'
+                'message': 'Invalid or expired OTP. Please try again.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Mark verified
-        user.is_email_verified = True
-        user.otp_code = None
-        user.otp_expiry = None
-        user.save(update_fields=['is_email_verified', 'otp_code', 'otp_expiry'])
+        # Mark verified & Create Actual User
+        reg_data = pending.registration_data
+        user, created = User.objects.get_or_create(
+            email=pending.email,
+            defaults={
+                'first_name': reg_data.get('first_name', ''),
+                'last_name': reg_data.get('last_name', ''),
+                'is_doctor': reg_data.get('is_doctor', False),
+                'account_status': 'ACTIVE',
+                'is_email_verified': True,
+                'otp_attempts': 0
+            }
+        )
+        if created:
+            user.set_password(reg_data['password'])
+            user.save()
+            UserProfile.objects.create(user=user)
+            UserSettings.objects.create(user=user)
+            if reg_data.get('is_doctor', False):
+                DoctorProfile.objects.create(
+                    user=user,
+                    medical_license_number=reg_data.get('medical_license_number'),
+                    specialization=reg_data.get('specialization', 'General')
+                )
+        else:
+            user.is_email_verified = True
+            user.save(update_fields=['is_email_verified'])
+            
+        pending.delete()
 
         logger.info(f"Email verified for user: {user.email}")
 
@@ -321,36 +347,37 @@ class ResendOTPView(APIView):
                 'message': 'Email is required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({
-                'status': 'error',
-                'message': 'User not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        if user.is_email_verified:
+        if User.objects.filter(email=email, is_email_verified=True).exists():
             return Response({
                 'status': 'success',
                 'message': 'Email is already verified'
             })
 
+        try:
+            pending = PendingRegistration.objects.get(email=email)
+        except PendingRegistration.DoesNotExist:
+            return Response({
+                'status': 'error',
+                'message': 'No pending registration found to resend OTP for.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
         # Generate new OTP
         otp_code = str(random.randint(100000, 999999))
-        user.otp_code = otp_code
-        user.otp_expiry = timezone.now() + timedelta(minutes=getattr(settings, 'OTP_EXPIRATION_MINUTES', 10))
-        user.save(update_fields=['otp_code', 'otp_expiry'])
+        pending.otp_code = otp_code
+        pending.otp_expiry = timezone.now() + timedelta(minutes=5)
+        pending.otp_attempts = 0
+        pending.save(update_fields=['otp_code', 'otp_expiry', 'otp_attempts'])
 
         try:
             send_mail(
                 subject='SkinScan AI — Verify Your Email',
-                message=f'Hello,\n\nYour new verification code is: {otp_code}\n\nThis code will expire in {getattr(settings, "OTP_EXPIRATION_MINUTES", 10)} minutes.',
+                message=f'Hello,\n\nYour new verification code is: {otp_code}\n\nThis code will expire in 5 minutes.',
                 from_email=settings.EMAIL_HOST_USER,
-                recipient_list=[user.email],
+                recipient_list=[pending.email],
                 fail_silently=False,
             )
         except Exception as e:
-            logger.error(f"Failed to resend OTP to {user.email}: {str(e)}")
+            logger.error(f"Failed to resend OTP to {pending.email}: {str(e)}")
             return Response({
                 'status': 'error',
                 'message': 'Failed to send email. Please try again.'
@@ -537,3 +564,79 @@ def check_profile_completion(request):
             'status': 'error',
             'message': 'Invalid token'
         }, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class UserSettingsView(APIView):
+    """GET/PUT user-scoped settings (theme, palette, ai_model)."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        settings_obj, _ = UserSettings.objects.get_or_create(user=request.user)
+        return Response({
+            'status': 'success',
+            'data': {
+                'theme': settings_obj.theme,
+                'palette': settings_obj.palette,
+                'ai_model': settings_obj.ai_model,
+            }
+        })
+
+    def put(self, request):
+        settings_obj, _ = UserSettings.objects.get_or_create(user=request.user)
+
+        VALID_THEMES = ['light', 'dark']
+        VALID_PALETTES = ['default', 'lavender', 'matcha', 'midnight', 'sunset', 'monochrome']
+        VALID_MODELS = ['gemini', 'llama']
+
+        changed = []
+        theme = request.data.get('theme')
+        if theme and theme in VALID_THEMES:
+            settings_obj.theme = theme
+            changed.append('theme')
+
+        palette = request.data.get('palette')
+        if palette and palette in VALID_PALETTES:
+            settings_obj.palette = palette
+            changed.append('palette')
+
+        ai_model = request.data.get('ai_model')
+        if ai_model and ai_model in VALID_MODELS:
+            settings_obj.ai_model = ai_model
+            changed.append('ai_model')
+
+        if changed:
+            settings_obj.save(update_fields=changed)
+
+        return Response({
+            'status': 'success',
+            'message': 'Settings updated',
+            'data': {
+                'theme': settings_obj.theme,
+                'palette': settings_obj.palette,
+                'ai_model': settings_obj.ai_model,
+            }
+        })
+
+
+class DeleteAccountView(APIView):
+    """Secure account deletion endpoint"""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        user = request.user
+        user_email = user.email
+        try:
+            # We explicitly delete the user, and Django's CASCADE handles related models.
+            user.delete()
+            logger.info(f"User account deleted: {user_email}")
+            return Response({
+                'status': 'success',
+                'message': 'Account deleted successfully'
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Failed to delete account for {user_email}: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': 'Failed to delete account',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

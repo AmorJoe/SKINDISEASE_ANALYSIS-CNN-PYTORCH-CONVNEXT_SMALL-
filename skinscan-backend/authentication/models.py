@@ -43,6 +43,7 @@ class User(models.Model):
     is_email_verified = models.BooleanField(default=False)
     otp_code = models.CharField(max_length=6, blank=True, null=True)
     otp_expiry = models.DateTimeField(blank=True, null=True)
+    otp_attempts = models.IntegerField(default=0)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -191,3 +192,44 @@ class DoctorDocument(models.Model):
 
     def __str__(self):
         return f"Doc: {self.name} from {self.doctor.email} to {self.patient.email}"
+
+
+class PendingRegistration(models.Model):
+    """
+    Temporary table to store registration details before an email is fully verified.
+    Users only graduate to the main `users` table after OTP success.
+    """
+    email = models.EmailField(unique=True, db_index=True)
+    registration_data = models.JSONField(help_text="Serialized user profile & registration parameters")
+    otp_code = models.CharField(max_length=6)
+    otp_expiry = models.DateTimeField()
+    otp_attempts = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'pending_registrations'
+        ordering = ['-created_at']
+
+    def __str__(self):
+         return f"Pending: {self.email} (Expires: {self.otp_expiry})"
+
+
+class UserSettings(models.Model):
+    """Per-user settings for theme, palette, and AI model selection."""
+    THEME_CHOICES = [('light', 'Light'), ('dark', 'Dark')]
+    PALETTE_CHOICES = [
+        ('default', 'Default'), ('lavender', 'Lavender'), ('matcha', 'Matcha'),
+        ('midnight', 'Midnight'), ('sunset', 'Sunset'), ('monochrome', 'Monochrome'),
+    ]
+    AI_MODEL_CHOICES = [('gemini', 'Gemini'), ('llama', 'Llama')]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='settings')
+    theme = models.CharField(max_length=10, choices=THEME_CHOICES, default='light')
+    palette = models.CharField(max_length=20, choices=PALETTE_CHOICES, default='default')
+    ai_model = models.CharField(max_length=20, choices=AI_MODEL_CHOICES, default='gemini')
+
+    class Meta:
+        db_table = 'user_settings'
+
+    def __str__(self):
+        return f"Settings for {self.user.email}"

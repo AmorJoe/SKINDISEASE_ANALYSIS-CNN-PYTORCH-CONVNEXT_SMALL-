@@ -299,7 +299,7 @@ class DoctorManagementView(APIView):
     def get(self, request):
         """List pending and active doctors"""
         # Fetch doctors (users with is_doctor=True)
-        doctors = User.objects.filter(is_doctor=True).select_related('doctor_profile').order_by('-created_at')
+        doctors = User.objects.filter(is_doctor=True, is_email_verified=True).select_related('doctor_profile').order_by('-created_at')
         
         pending = []
         active = []

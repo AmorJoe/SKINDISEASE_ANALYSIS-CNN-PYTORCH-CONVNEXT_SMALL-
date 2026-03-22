@@ -228,11 +228,24 @@
         </div>
     </div>
 
+    <!-- Delete Account Confirmation Modal -->
+    <div id="delete-modal" class="modal" style="display: none;">
+        <div class="modal-content danger-modal">
+            <span class="close-modal" id="close-delete-modal">&times;</span>
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle" style="color: #ef4444; margin-right: 10px;"></i> Delete Account</h2>
+            </div>
+            <div class="modal-body">
+                <p>This action is <strong>permanent</strong> and cannot be undone.</p>
+                <p>All your data, including profile info, uploaded images, scan history, and appointments, will be permanently erased.</p>
+                <div class="input-group" style="margin-top: 20px;">
+                    <label for="delete-confirm-input">Please type <strong>DELETE</strong> to confirm.</label>
+                    <input type="text" id="delete-confirm-input" placeholder="DELETE" autocomplete="off" style="border-color: #ef4444;">
                 </div>
-                <div class="modal-footer">
-                    <button class="btn-secondary" id="cancel-delete-btn">Cancel</button>
-                    <button class="btn-danger" id="confirm-delete-btn" disabled>Delete Account</button>
-                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button class="btn-secondary" id="cancel-delete-btn">Cancel</button>
+                <button class="btn-danger" id="confirm-delete-btn" disabled>Confirm Delete</button>
             </div>
         </div>
     </div>

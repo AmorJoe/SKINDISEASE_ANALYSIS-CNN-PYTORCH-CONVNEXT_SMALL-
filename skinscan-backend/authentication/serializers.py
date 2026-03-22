@@ -32,8 +32,13 @@ class UserRegistrationSerializer(serializers.Serializer):
     def validate(self, data):
         """Cross-field validation"""
         if data.get('is_doctor'):
-            if not data.get('medical_license_number'):
+            mrn = data.get('medical_license_number')
+            if not mrn:
                 raise serializers.ValidationError({"medical_license_number": "Required for doctor registration"})
+            
+            from .models import DoctorProfile
+            if DoctorProfile.objects.filter(medical_license_number=mrn).exists():
+                raise serializers.ValidationError({"medical_license_number": "This Medical Registration Number is already registered."})
         return data
     
     def validate_password(self, value):
