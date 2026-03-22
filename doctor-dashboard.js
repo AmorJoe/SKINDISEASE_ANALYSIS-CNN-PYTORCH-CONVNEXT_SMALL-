@@ -221,7 +221,7 @@ function loadAppointments(type) {
     if (type === 'requests') {
         filtered = allAppointments.filter(a => a.status === 'PENDING');
     } else if (type === 'today') {
-        filtered = allAppointments.filter(a => a.date === today && a.status !== 'REJECTED' && a.status !== 'CANCELLED');
+        filtered = allAppointments.filter(a => a.date === today && a.status !== 'REJECTED' && a.status !== 'CANCELLED' && a.status !== 'COMPLETED');
     } else if (type === 'upcoming') {
         filtered = allAppointments.filter(a => a.date >= today && a.status === 'CONFIRMED');
     }
@@ -244,8 +244,8 @@ function loadAppointments(type) {
         } else {
             actions = `
                 <div class="action-btn-group">
-                    <button class="icon-btn btn-view" title="View Details"><i class="fas fa-eye"></i></button>
-                    ${appt.status === 'CONFIRMED' && appt.video_link ? `<a href="${appt.video_link}" target="_blank" class="icon-btn btn-approve" title="Join Call"><i class="fas fa-video"></i></a>` : ''}
+                    ${appt.status === 'CONFIRMED' ? `<button class="icon-btn btn-approve" title="Mark as Done" onclick="completeAppt(${appt.id})"><i class="fas fa-check"></i></button>` : `<button class="icon-btn btn-view" title="View Details"><i class="fas fa-eye"></i></button>`}
+                    ${appt.status === 'CONFIRMED' && appt.video_link ? `<a href="${appt.video_link}" target="_blank" class="icon-btn btn-view" style="color: #059669; border-color: #a7f3d0;" title="Join Call"><i class="fas fa-video"></i></a>` : ''}
                 </div>
             `;
         }
@@ -302,6 +302,44 @@ async function approveAppt(id) {
         }
     } catch (error) {
         console.error('Approve error:', error);
+        showToast('Network error', 'error');
+    }
+}
+
+async function completeAppt(id) {
+    if (!confirm('Mark this appointment as Completed?')) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/predict/appointments/manage/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ action: 'complete' })
+        });
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            const appt = allAppointments.find(a => a.id === id);
+            if (appt) appt.status = 'COMPLETED';
+            
+            // Reload the current active view wrapper
+            const activeTab = document.querySelector('.sub-tab.active');
+            let type = 'upcoming'; // Default
+            if (activeTab && activeTab.getAttribute('onclick')) {
+                const match = activeTab.getAttribute('onclick').match(/'([^']+)'/);
+                if (match) type = match[1];
+            }
+            loadAppointments(type);
+            
+            loadStats();
+            showToast('Appointment marked as Completed!', 'success');
+        } else {
+            showToast(result.message || 'Failed to complete appointment', 'error');
+        }
+    } catch (error) {
+        console.error('Complete error:', error);
         showToast('Network error', 'error');
     }
 }

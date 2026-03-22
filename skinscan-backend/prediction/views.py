@@ -374,7 +374,7 @@ class PredictionHistoryView(APIView):
         try:
             predictions = PredictionResult.objects.filter(
                 user=request.user
-            ).select_related('image').order_by('-created_at')
+            ).select_related('image').prefetch_related('shares').order_by('-created_at')
             
             history = []
             for p in predictions:
@@ -385,6 +385,7 @@ class PredictionHistoryView(APIView):
                     'recommendation': p.recommendation or '',
                     'created_at': p.created_at.isoformat() if p.created_at else None,
                     'image_url': p.image.image_url if p.image else None,
+                    'shared_with': list(p.shares.values_list('doctor_id', flat=True)),
                 })
             
             return Response({

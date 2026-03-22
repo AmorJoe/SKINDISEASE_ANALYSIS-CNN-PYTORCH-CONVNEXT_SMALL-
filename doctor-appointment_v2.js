@@ -259,21 +259,9 @@ async function loadReports() {
         });
         const data = await response.json();
 
-        select.innerHTML = '<option value="" disabled selected>Select Report to Share</option>';
-
         if (data.status === 'success' && data.data.history.length > 0) {
             loadedReports = data.data.history;
-            loadedReports.forEach(report => {
-                const option = document.createElement('option');
-                option.value = report.id;
-
-                // Format: Disease Name - DD/MM/YYYY
-                const dateObj = new Date(report.created_at);
-                const dateStr = dateObj.toLocaleDateString('en-GB'); // DD/MM/YYYY
-
-                option.textContent = `${report.disease_name} - ${dateStr} (${report.confidence_score}%)`;
-                select.appendChild(option);
-            });
+            renderReportDropdown();
 
             // Auto-select specific report if report_id is in URL (from sendToDoctor)
             const urlParams = new URLSearchParams(window.location.search);
@@ -282,12 +270,87 @@ async function loadReports() {
                 select.value = targetReportId;
                 updateReportPreview();
             }
+            
+            // Re-render when selected doctor changes
+            const doctorSelect = document.getElementById('doctor-select-share');
+            if (doctorSelect && !doctorSelect.hasAttribute('data-listener-added')) {
+                doctorSelect.addEventListener('change', renderReportDropdown);
+                doctorSelect.setAttribute('data-listener-added', 'true');
+            }
         } else {
-            select.innerHTML = '<option value="" disabled>No reports found in history</option>';
+            select.innerHTML = '<option value="" disabled selected>No reports found in history</option>';
         }
     } catch (error) {
         console.error('Error loading reports:', error);
         select.innerHTML = '<option value="" disabled>Error loading reports</option>';
+    }
+}
+
+function renderReportDropdown() {
+    const select = document.getElementById('report-select');
+    const doctorSelect = document.getElementById('doctor-select-share');
+    if (!select) return;
+    
+    // Remember current selection if any
+    const currentValue = select.value;
+    
+    select.innerHTML = '<option value="" disabled selected>Select Report to Share</option>';
+    if (!loadedReports || loadedReports.length === 0) return;
+    
+    const selectedDoctorId = doctorSelect && doctorSelect.value ? parseInt(doctorSelect.value) : null;
+    
+    const unsharedReports = [];
+    const sharedReports = [];
+    
+    loadedReports.forEach(report => {
+        const isShared = selectedDoctorId && report.shared_with && report.shared_with.includes(selectedDoctorId);
+        if (isShared) {
+            sharedReports.push(report);
+        } else {
+            unsharedReports.push(report);
+        }
+    });
+    
+    const createOption = (report, isShared) => {
+        const option = document.createElement('option');
+        option.value = report.id;
+        const dateObj = new Date(report.created_at);
+        const dateStr = dateObj.toLocaleDateString('en-GB');
+        
+        if (isShared) {
+            option.textContent = `${report.disease_name} - ${dateStr} (${report.confidence_score}%) (Already Shared)`;
+            option.disabled = true;
+            option.style.color = '#9ca3af';
+        } else {
+            option.textContent = `${report.disease_name} - ${dateStr} (${report.confidence_score}%)`;
+        }
+        return option;
+    };
+    
+    if (unsharedReports.length > 0) {
+        const unsharedGroup = document.createElement('optgroup');
+        unsharedGroup.label = '--- Not Shared Reports ---';
+        unsharedReports.forEach(r => unsharedGroup.appendChild(createOption(r, false)));
+        select.appendChild(unsharedGroup);
+    }
+    
+    if (sharedReports.length > 0) {
+        const sharedGroup = document.createElement('optgroup');
+        sharedGroup.label = '--- Shared Reports ---';
+        sharedReports.forEach(r => sharedGroup.appendChild(createOption(r, true)));
+        select.appendChild(sharedGroup);
+    }
+    
+    // Restore selection if it's still valid
+    if (currentValue) {
+        const option = Array.from(select.options).find(opt => opt.value === currentValue);
+        if (option && !option.disabled) {
+            select.value = currentValue;
+        } else {
+            select.value = ""; // Reset
+            const preview = document.getElementById('report-preview');
+            if (preview) preview.style.display = 'none'; // Clear preview
+        }
     }
 }
 
@@ -317,66 +380,89 @@ async function loadAppointments() {
         const data = await response.json();
 
         if (data.status === 'success' && data.data.length > 0) {
-            container.innerHTML = data.data.map(appt => {
-                const statusConfig = {
-                    'PENDING': { color: '#d97706', bg: 'rgba(245, 158, 11, 0.08)', icon: 'fa-hourglass-half', label: 'Pending' },
-                    'CONFIRMED': { color: '#059669', bg: 'rgba(16, 185, 129, 0.08)', icon: 'fa-check-circle', label: 'Confirmed' },
-                    'REJECTED': { color: '#dc2626', bg: 'rgba(220, 38, 38, 0.08)', icon: 'fa-times-circle', label: 'Rejected' },
-                    'COMPLETED': { color: '#6366f1', bg: 'rgba(99, 102, 241, 0.08)', icon: 'fa-flag-checkered', label: 'Completed' },
-                    'CANCELLED': { color: '#9ca3af', bg: 'rgba(156, 163, 175, 0.08)', icon: 'fa-ban', label: 'Cancelled' }
-                };
-                const s = statusConfig[appt.status] || statusConfig['PENDING'];
-                const initials = (appt.doctor_name || 'Dr').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+            const activeAppts = data.data.filter(a => a.status === 'PENDING' || a.status === 'CONFIRMED');
+            const historyAppts = data.data.filter(a => a.status === 'COMPLETED' || a.status === 'CANCELLED' || a.status === 'REJECTED');
 
-                return `
-                <div style="background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; margin-bottom: 16px; overflow: hidden; transition: box-shadow 0.3s; position: relative;">
-                    <!-- Status accent line -->
-                    <div style="height: 4px; background: ${s.color}; opacity: 0.7;"></div>
+            const renderAppts = (appts) => {
+                return appts.map(appt => {
+                    const statusConfig = {
+                        'PENDING': { color: '#d97706', bg: 'rgba(245, 158, 11, 0.08)', icon: 'fa-hourglass-half', label: 'Pending' },
+                        'CONFIRMED': { color: '#059669', bg: 'rgba(16, 185, 129, 0.08)', icon: 'fa-check-circle', label: 'Confirmed' },
+                        'REJECTED': { color: '#dc2626', bg: 'rgba(220, 38, 38, 0.08)', icon: 'fa-times-circle', label: 'Rejected' },
+                        'COMPLETED': { color: '#6366f1', bg: 'rgba(99, 102, 241, 0.08)', icon: 'fa-flag-checkered', label: 'Completed' },
+                        'CANCELLED': { color: '#9ca3af', bg: 'rgba(156, 163, 175, 0.08)', icon: 'fa-ban', label: 'Cancelled' }
+                    };
+                    const s = statusConfig[appt.status] || statusConfig['PENDING'];
+                    const initials = (appt.doctor_name || 'Dr').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
-                    <div style="padding: 24px; display: flex; align-items: flex-start; gap: 20px;">
-                        <!-- Doctor Avatar -->
-                        <div style="width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, ${s.bg}, ${s.color}15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid ${s.color}20;">
-                            <span style="font-weight: 700; font-size: 0.9rem; color: ${s.color};">${initials}</span>
-                        </div>
+                    return `
+                    <div style="background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; margin-bottom: 16px; overflow: hidden; transition: box-shadow 0.3s; position: relative;">
+                        <!-- Status accent line -->
+                        <div style="height: 4px; background: ${s.color}; opacity: 0.7;"></div>
 
-                        <!-- Info -->
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
-                                <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-dark);">${appt.doctor_name || 'Doctor'}</h4>
-                                <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 14px; border-radius: 9999px; background: ${s.bg}; color: ${s.color}; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; border: 1px solid ${s.color}20;">
-                                    <i class="fas ${s.icon}" style="font-size: 0.7rem;"></i> ${s.label}
-                                </span>
+                        <div style="padding: 24px; display: flex; align-items: flex-start; gap: 20px;">
+                            <!-- Doctor Avatar -->
+                            <div style="width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, ${s.bg}, ${s.color}15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid ${s.color}20;">
+                                <span style="font-weight: 700; font-size: 0.9rem; color: ${s.color};">${initials}</span>
                             </div>
-                            <p style="margin: 0 0 4px; color: #6b7280; font-size: 0.85rem;">
-                                <i class="fas fa-stethoscope" style="width: 16px; color: #9ca3af;"></i> ${appt.doctor_specialty || 'Dermatology'}
-                            </p>
-                            <p style="margin: 0; color: #6b7280; font-size: 0.85rem;">
-                                <i class="far fa-calendar-alt" style="width: 16px; color: #9ca3af;"></i> ${appt.date} &nbsp;&bull;&nbsp; <i class="far fa-clock" style="color: #9ca3af;"></i> ${appt.time_slot}
-                            </p>
 
-                            <!-- Actions Row -->
-                            <div style="display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;">
-                                ${appt.status === 'CONFIRMED' && appt.video_link ? `
-                                    <a href="${appt.video_link}" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border-radius: 12px; background: linear-gradient(135deg, #059669, #10b981); color: #fff; text-decoration: none; font-weight: 600; font-size: 0.85rem; transition: all 0.3s; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);">
-                                        <i class="fas fa-video"></i> Join Video Call
-                                    </a>
-                                ` : ''}
-                                ${appt.status === 'PENDING' || appt.status === 'CONFIRMED' ? `
-                                    <button onclick="cancelAppointment(${appt.id})" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 10px; background: transparent; color: #dc2626; border: 1px solid #fecaca; font-weight: 500; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;">
-                                        <i class="fas fa-times"></i> Cancel
-                                    </button>
-                                ` : ''}
-                                ${appt.status === 'CANCELLED' || appt.status === 'REJECTED' || appt.status === 'COMPLETED' ? `
-                                    <button onclick="deleteAppointment(${appt.id})" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 10px; background: transparent; color: #dc2626; border: 1px solid #fecaca; font-weight: 500; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;">
-                                        <i class="fas fa-trash-alt"></i> Delete
-                                    </button>
-                                ` : ''}
+                            <!-- Info -->
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                                    <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-dark);">${appt.doctor_name || 'Doctor'}</h4>
+                                    <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 14px; border-radius: 9999px; background: ${s.bg}; color: ${s.color}; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; border: 1px solid ${s.color}20;">
+                                        <i class="fas ${s.icon}" style="font-size: 0.7rem;"></i> ${s.label}
+                                    </span>
+                                </div>
+                                <p style="margin: 0 0 4px; color: #6b7280; font-size: 0.85rem;">
+                                    <i class="fas fa-stethoscope" style="width: 16px; color: #9ca3af;"></i> ${appt.doctor_specialty || 'Dermatology'}
+                                </p>
+                                <p style="margin: 0; color: #6b7280; font-size: 0.85rem;">
+                                    <i class="far fa-calendar-alt" style="width: 16px; color: #9ca3af;"></i> ${appt.date} &nbsp;&bull;&nbsp; <i class="far fa-clock" style="color: #9ca3af;"></i> ${appt.time_slot}
+                                </p>
+
+                                <!-- Actions Row -->
+                                <div style="display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;">
+                                    ${appt.status === 'CONFIRMED' && appt.video_link ? `
+                                        <a href="${appt.video_link}" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border-radius: 12px; background: linear-gradient(135deg, #059669, #10b981); color: #fff; text-decoration: none; font-weight: 600; font-size: 0.85rem; transition: all 0.3s; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);">
+                                            <i class="fas fa-video"></i> Join Video Call
+                                        </a>
+                                    ` : ''}
+                                    ${appt.status === 'PENDING' || appt.status === 'CONFIRMED' ? `
+                                        <button onclick="cancelAppointment(${appt.id})" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 10px; background: transparent; color: #dc2626; border: 1px solid #fecaca; font-weight: 500; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </button>
+                                    ` : ''}
+                                    ${appt.status === 'CANCELLED' || appt.status === 'REJECTED' || appt.status === 'COMPLETED' ? `
+                                        <button onclick="deleteAppointment(${appt.id})" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 10px; background: transparent; color: #dc2626; border: 1px solid #fecaca; font-weight: 500; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;">
+                                            <i class="fas fa-trash-alt"></i> Delete
+                                        </button>
+                                    ` : ''}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+            };
+
+            let htmlOutput = '';
+            
+            htmlOutput += '<h4 style="margin: 0 0 16px; color: var(--text-dark); font-size: 1.1rem;"><i class="fas fa-calendar-check" style="color: var(--primary-color); margin-right: 8px;"></i>Active Appointments</h4>';
+            if (activeAppts.length > 0) {
+                htmlOutput += renderAppts(activeAppts);
+            } else {
+                htmlOutput += '<div style="background: #fff; border-radius: 16px; border: 1px dashed #e5e7eb; padding: 30px; text-align: center; color: #9ca3af; margin-bottom: 30px;"><i class="fas fa-calendar-times" style="font-size: 1.5rem; margin-bottom: 10px; display: block; filter: grayscale(1); opacity: 0.5;"></i>No active appointments.</div>';
+            }
+
+            htmlOutput += '<h4 style="margin: 40px 0 16px; color: var(--text-dark); font-size: 1.1rem; border-top: 1px solid #eee; padding-top: 25px;"><i class="fas fa-history" style="color: #6b7280; margin-right: 8px;"></i>History</h4>';
+            if (historyAppts.length > 0) {
+                htmlOutput += renderAppts(historyAppts);
+            } else {
+                htmlOutput += '<div style="background: #fff; border-radius: 16px; border: 1px dashed #e5e7eb; padding: 30px; text-align: center; color: #9ca3af;"><i class="fas fa-inbox" style="font-size: 1.5rem; margin-bottom: 10px; display: block; filter: grayscale(1); opacity: 0.5;"></i>No history available.</div>';
+            }
+
+            container.innerHTML = htmlOutput;
         } else {
             container.innerHTML = `
                 <div style="text-align: center; padding: 50px 20px;">
