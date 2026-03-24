@@ -1,0 +1,165 @@
+SKINSCAN AI - VIVA MASTER Q&A (MARCH 2026)
+===========================================
+
+LEVEL 1: BASIC (FUNDAMENTALS)
+------------------------------
+
+Q1: What is the primary objective of SkinScan AI, and who are the three main types of users it serves?
+A1: SkinScan AI is a medical technology platform designed for preliminary skin lesion analysis and connecting patients with doctors. It serves:
+   1. Patients (Users): Seeking quick, private checks on skin concerns.
+   2. Doctors: managing appointments and reviewing AI-pre-screened reports.
+   3. Admins: Moderating models, verifying users/doctors, and monitoring system health.
+
+Q2: You have used a "decoupled architecture." What does this mean in the context of your project?
+A2: It means the Presentation Layer (Frontend) and Business Logic (Backend) are separate. The Frontend (HTML/JS) communicates with the Backend (Django) via a REST API. This allows either part to be updated independently without breaking the other.
+
+Q3: Why did you choose Vanilla JavaScript and CSS instead of a framework like React or Vue for this phase?
+A3: To ensure maximum performance and minimal overhead during rapid prototyping (Phase 1 & 2). It avoids "build-step" complexity and keeps the application lightweight and mobile-first, which is critical for medical triage.
+
+Q4: Which database management system does the project currently use, and how is it different from the initial development phase?
+A4: We currently use PostgreSQL (hosted on Supabase) for its production stability and scalability. During development, we used SQLite for its simplicity and "zero-configuration" setup.
+
+Q5: In simple terms, how does the AI help a patient before they even talk to a doctor?
+A5: It provides immediate triage. It analyzes a photo to detect high-risk lesions early using high-accuracy CNN models, giving the user a "safety-first" preliminary result.
+
+Q6: Explain the purpose of the OTP (One-Time Password) system during user registration.
+A6: It verifies the user's email address, ensuring they are a real person and preventing the creation of fake accounts. This is essential for maintaining data integrity in a medical application.
+
+Q7: What is the specific workflow for a doctor to join the platform and start seeing patients?
+A7: Doctors register with their Medical Registration Number (MRN) and specialty. Their account is initially "Pending Verification." An Admin must review their credentials and manually approve them before they appear in user searches.
+
+Q8: What are the primary responsibilities of the System Administrator in SkinScan AI?
+A8: Full control over user/doctor management (approval/lockout), moderating and switching AI models, and monitoring system health/logs.
+
+Q9: How many images can a user upload for a single scan, and why did you choose this number?
+A9: Users can upload up to 3 images. This provides more "visual context" and allows the model (or a doctor) to view the lesion from different angles, reducing the chance of error due to poor lighting or focus in a single shot.
+
+Q10: What is "Bcrypt," and why is it used for storing user passwords instead of plain text?
+A10: Bcrypt is a robust password-hashing function. It converts passwords into an irreversible string (hash). If the database is breached, the actual passwords remain safe because they cannot be "decrypted."
+
+Q11: Define "Triage" in the context of your medical chatbot.
+Q11: Triage is the sorting of patients based on the severity of their condition. Our rule-based chatbot helps users decide if their concern needs urgent care or can be managed with routine monitoring.
+
+Q12: Explain the purpose of the dashboard.html and how it differs from the doctor-dashboard.html.
+A12: dashboard.html is the patient's view (scans, history, doctor booking). doctor-dashboard.html is a specialized view for providers to manage their schedule and review professional-grade reports.
+
+
+LEVEL 2: INTERMEDIATE (WORKING & LOGIC)
+----------------------------------------
+
+Q13: Describe the step-by-step process that happens when a user clicks "Login" (include token generation).
+A13: 1. Frontend sends credentials to /api/login. 2. Backend validates with Bcrypt. 3. If valid, Backend generates a JWT (JSON Web Token) containing the user ID. 4. Frontend receives and stores this token in localStorage for all future authorized requests.
+
+Q14: How does the system protect itself from "Brute-Force" attacks on the login page?
+A14: We use a @ratelimit decorator in Django. It tracks the requester's IP and blocks them (e.g., 5 attempts per 15 minutes) if they repeatedly fail to log in.
+
+Q15: Your system uses specific confidence scores (e.g., 30%, 60%, 80%). Explain exactly what happens to the output at each of these levels.
+A15: 
+    - <30%: Results are "Inconclusive"; the system refuses to label the disease.
+    - 30-60%: Moderate uncertainty; label shown with a strong warning.
+    - >80%: High confidence; results presented with specific medical recommendations.
+
+Q16: Why did you separate User credentials from DoctorProfile in your database schema? (Refers to 3NF compliance).
+A16: To follow the Third Normal Form (3NF). This separates the core identity (Auth) from professional data, reducing redundancy and making the database easier to audit and scale.
+
+Q17: How does the backend handle a prediction request without freezing the entire user interface?
+A17: We use a ThreadPoolExecutor. This runs the heavy AI inference in a background thread, while the main thread instantly returns a "Processing" status to the frontend.
+
+Q18: Your documentation mentions "Laplacian variance" for image quality detection. Why is this necessary?
+A18: Blurry images cause "garbage-in, garbage-out" errors. Laplacian variance calculates the sharpness of an image. If it’s below a threshold, the system asks the user for a clearer photo.
+
+Q19: How does the system ensure that a random user cannot sign up as a doctor and start giving medical advice?
+A19: By using an 'is_verified' Boolean flag in the DoctorProfile. Even if a user registers as a doctor, their features are locked until an Admin manually verifies their medical credentials.
+
+Q20: Is your chatbot currently using a Generative AI model (like ChatGPT) or a Rule-Based system? What are the pros and cons?
+A20: Currently Rule-Based. Pros: Strict medical safety, zero "hallucinations." Cons: Less conversational flexibility compared to LLMs.
+
+Q21: How does the model combine or choose between three different images of the same lesion?
+A21: Currently, the system takes the highest confidence result from the set, but allows the doctor to view all three for a human clinical decision.
+
+Q22: What are the advantages of using Serializers for your data models instead of passing raw JSON?
+A22: Serializers handle complex data types (like DateTime), perform automated validation, and ensure consistent data structure between the Database and the Frontend.
+
+Q23: Explain how the frontend maintains a user's session using JWT tokens without using traditional cookies.
+A23: JWT is "Stateless." The frontend sends the token in the "Authorization" header of every HTTP request. The server verifies this token using a secret key on every call.
+
+Q24: What happens if the AI model file (.pth) is missing from the server? How does the user see this error?
+A24: The system raises a ModelUnavailableError. The backend returns a 500 Internal Server Error status with a friendly "AI Engine Offline" message to the user.
+
+
+LEVEL 3: ADVANCED (TECHNICAL DEPTH)
+------------------------------------
+
+Q25: Why did you choose ConvNeXt Small over more common architectures like ResNet or standard Vision Transformers (ViT)?
+A25: ConvNeXt modernizes the CNN architecture, matching the accuracy of Transformers while remaining much faster and easier to train on specialized medical datasets without massive GPU resources.
+
+Q26: Explain the concept of GeM (Generalized Mean Pooling) used in your model. Why is it better than standard Global Average Pooling?
+A26: GeM focuses on the most "salient" (important) pixels in the image. Skin lesions often have irregular features; GeM helps the model ignore the healthy skin and focus on the lesion's core patterns.
+
+Q27: Describe the exact image transformations applied to a raw photo before it enters the neural network.
+A27: 1. Resize to 256x256. 2. Convert to Tensor (0-1 range). 3. Normalize using ImageNet means [0.485, 0.456, 0.406] and std [0.229, 0.224, 0.225].
+
+Q28: How do you handle token expiration in your JWT implementation?
+A28: We use jwt.decode(). If the token is too old, it raises an ExpiredSignatureError. The backend returns a 401 Unauthorized, and the frontend redirects the user to the Login page.
+
+Q29: Explain the "Main-module Config injection" logic in your cnn_inference.py.
+A29: Since the model was trained in a Jupyter Notebook with a custom 'Config' class, we had to "inject" a dummy class into the __main__ module of Django so Torch could unpickle the saved weights.
+
+Q30: Describe the challenges you faced while migrating from SQLite to PostgreSQL (Supabase).
+A30: Handling strict schema constraints and ensuring character-set compatibility (UTF-8) for all text fields, specifically for medical case notes, while moving to a cloud-hosted relational database.
+
+Q31: How did your training process address dataset imbalance (e.g., more "Acne" than "Melanoma")?
+A31: We used Weighted Cross-Entropy Loss to give rare diseases higher importance during training, along with Synthetic Data Augmentation (rotations, flips, color jitter).
+
+Q32: Why is the CNNPredictor implemented as a Singleton in your Python code?
+A32: Loading an AI model (several hundred MB) into RAM is a heavy task. A Singleton ensures we only load it once, saving memory and speeding up subsequent requests.
+
+Q33: In authentication/views.py, explain the logic behind the PendingRegistration table.
+A33: It acts as a temporary "waiting room." We don't create an actual 'User' in the main table until their email is verified via OTP. This keeps the primary database clean.
+
+Q34: How does the final layer of your CNN convert "logits" into the "confidence percentages" shown to the user?
+A34: Via the Softmax function, which exponentiates the scores and normalizes them so the sum of all predicted classes equals 1 (or 100%).
+
+
+LEVEL 4: EXPERT (PROBLEM SOLVING & CRITICAL THINKING)
+------------------------------------------------------
+
+Q35: What is the "False Negative" risk in your model, and how do your confidence gates specifically mitigate medical liability?
+A35: A false negative is missing a dangerous condition. Our 60/80% gates ensure that we only give "high confidence" results when the model is very sure; otherwise, we explicitly state the result is "Inconclusive" to force a doctor's visit.
+
+Q36: If the AI predicts "Benign" with 85% confidence, but the Rule-Based chatbot identifies high-risk symptoms (bleeding), which system takes priority?
+A36: The "Safety Default" takes priority. In medical triage, clinical symptoms (bleeding) outweigh a visual scan. The system is designed to recommend an urgent consultation regardless of the scan score.
+
+Q37: How would you implement Explainable AI (XAI) so a doctor can see exactly which pixels the AI used to make its decision?
+A37: I would use Grad-CAM (Gradient-weighted Class Activation Mapping). It creates a "Heatmap" overlay on the original photo, highlighting the regions that triggered the AI's diagnosis.
+
+Q38: How does your model ensure it isn't biased against different skin types (Fitzpatrick scale) across global populations?
+A38: By curating a diverse training dataset and testing model performance across different demographic subgroups to ensure the F1-score remains consistent for all skin tones.
+
+Q39: If a user uploads a photo of a non-skin object (like a carpet), how does your system detect and reject this data?
+A39: We could implement "Out-of-Distribution" (OOD) detection, where an auxiliary classifier checks "Is this Skin?" before the main disease classifier runs.
+
+Q40: If a malicious actor intercepts a JWT token, what safeguards does SkinScan AI have?
+A40: We use short-lived tokens and require HTTPS (SSL/TLS) for all production traffic to encrypt data in transit. In higher-security phases, we could implement refresh tokens.
+
+Q41: How would you modify the system to be compliant with medical data laws like HIPAA or GDPR?
+A41: 1. Data encryption at rest (AES-256). 2. Detailed audit logs of all access to medical reports. 3. Implementing a clear "Data Deletion" (Right to be Forgotten) workflow.
+
+Q42: Propose a more advanced algorithm to ensemble the results of the 3 uploaded images.
+A42: "Soft Voting": We average the probability vectors of all 3 images and then select the class with the highest average probability. This reduces individual image noise.
+
+
+TRICKY FOLLOW-UPS & DEFENSE STRATEGIES
+--------------------------------------
+
+Q47: Examiner: "You used PostgreSQL (Supabase) for production. How many concurrent connections can your instance handle before the scan history page crashes?"
+A47: Defense: "Our Supabase instance is configured with a connection pooler to handle high concurrency. We further optimize performance using database indexing on fields like user_id to ensure fast lookups of scan history."
+
+Q43: Examiner: "You claim 90% accuracy. But what if the 10% errors are all on Melanoma? Isn't the model dangerous?"
+A43: Defense: "We evaluate the model using 'Recall' and 'Sensitivity,' not just accuracy. Our goal is to minimize false negatives for life-threatening diseases, even if it lowers the overall accuracy."
+
+Q44: Examiner: "Why use Django? Wouldn't Node.js be more performant for real-time scans?"
+A44: Defense: "Django offers superior built-in security features and handles the Python-based AI libraries (PyTorch) much more natively. We further enhanced performance by using PostgreSQL on Supabase for robust, cloud-native data storage."
+
+Q45: Examiner: "If the AI says 'Inconclusive' for 40% of users, isn't the project a failure?"
+A45: Defense: "An 'Inconclusive' result is a success because it prevents a false diagnosis. In medical AI, 'No Result' is always safer than a 'Wrong Result.' It successfully directs the user to a licensed doctor."

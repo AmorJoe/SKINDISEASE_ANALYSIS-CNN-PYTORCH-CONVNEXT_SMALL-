@@ -1,0 +1,78 @@
+SKINSCAN AI - VIVA ANSWERS (COMPREHENSIVE)
+===========================================
+
+1. BASIC LEVEL (VERY EASY)
+---------------------------
+* Project Overview: SkinScan AI aims to provide a "safety first" preliminary analysis of skin lesions and connect patients with doctors. It serves Users (Patients), Doctors (Healthcare Providers), and Admins (System Moderators).
+* Core Technology: A "decoupled architecture" means the Frontend (HTML/JS) and Backend (Django) are separate. They communicate via a REST API (JSON), making it flexible for future upgrades (e.g., converting the frontend to React).
+* Frontend Choice: Vanilla JS/CSS was chosen for "Phase 1 & 2" to ensure maximum performance and zero build-time overhead during rapid prototyping, keeping the application lightweight and mobile-first.
+* Database: The project transitioned from SQLite (standard for development) to MySQL (for production-ready stability, concurrency, and scalability).
+* AI Goal: It provides immediate triage. It identifies high-risk lesions early using CNN models, reducing patient anxiety and helping prioritize clinical care.
+* Authentication OTP: OTP is used to ensure the email provided is valid and belongs to the user, preventing fake accounts and improving data security.
+* Doctor Workflow: Doctors register, provide their Medical Registration Number (MRN) and specialty. They then wait for an Admin to verify their credentials before they can see patients or manage appointments.
+* Admin Power: Admins moderate AI models, manage user/doctor verification, monitor system health, and handle role-based access control.
+* Input Data: Users can upload up to 3 images of the same lesion. This provides more "visual context" and improves the AI's prediction accuracy by viewing the lesion from different angles.
+* Bcrypt: Bcrypt is a "hashing" algorithm. It stores a non-reversible hash of the password rather than the plain text, protecting user data if the database is ever compromised.
+* Definitions (Triage): Triage is the process of sorting patients based on the severity of their condition. The chatbot helps decide if a user needs urgent care or just routine monitoring.
+* Navigation: dashboard.html is for patients (scans, reports, bookings). doctor-dashboard.html is for doctors (managing appointments, reviewing pre-screened patient reports).
+
+
+2. INTERMEDIATE LEVEL
+----------------------
+* Auth Flow: User submits email/password -> Backend validates credentials -> If valid, Backend generates a JWT token and sends it to the Frontend -> Frontend stores the token (localStorage) and includes it in the "Authorization" header for all future API calls.
+* Ratelimiting: The @ratelimit decorator in Django tracks the requester's IP. If a user tries to log in 5 times within 15 minutes and fails, the system blocks further attempts to prevent brute-force attacks.
+* AI Thresholds: 
+  - <30%: Results are marked "Inconclusive" (UI warns user).
+  - 30-60%: Disease label shown with a "low confidence" warning.
+  - 60-80%: Moderate confidence.
+  - >80%: High confidence result with specific medical recommendations.
+* Data Integrity (3NF): User auth details (email/password) are kept in the 'User' table. Specific professional details (license, specialty) are in 'DoctorProfile'. This prevents redundancy and ensures 'User' remains a clean base identity for all.
+* Prediction Pipeline: The backend uses a 'ThreadPoolExecutor'. When a scan starts, the AI processing runs in a "background thread," while the main thread immediately tells the frontend "Processing Started," keeping the UI responsive.
+* Image Quality: Laplacian variance measures the "sharpness" of the image. If an image is blurry, the AI might give a wrong result (garbage-in, garbage-out). We reject blurry photos to maintain medical safety.
+* Doctor Verification: There is an 'is_verified' flag in the DoctorProfile. Only when an Admin sets this to True can the doctor access professional features.
+* Chatbot Logic: Currently rule-based (static). This is safer for medical use as it follows strict, hardcoded medical guidelines and doesn't "hallucinate" like some LLMs.
+* 3-Image Upload: Currently, the system can take the highest confidence score among the 3 or average the probabilities. (In our code, it currently processes the primary image while allowing the others for doctor review).
+* API Design (Serializers): Serializers convert complex Django model instances into JSON data. They also handle data validation (checking if an email is valid) before saving to the database.
+* Session Management: We use "Stateless Authentication." The server doesn't store a "session ID." Instead, the JWT token itself contains the user identity, which is verified using a secret key on every request.
+* Error Handling: If the AI model is missing, the code catches a 'ModelUnavailableError' and returns a 500 status with an "AI Engine Offline" message to the user.
+
+
+3. ADVANCED LEVEL
+------------------
+* AI Backbone: ConvNeXt Small was chosen because it re-introduces the best elements of ResNet into a modern CNN architecture. It rivals Transformers (ViT) in accuracy but is much faster and doesn't require massive datasets to perform well.
+* GeM Pooling: GeM allows the model to capture more "fine-grained" features. Unlike Global Average Pooling (which averages everything), GeM focuses on the most prominent features of the lesion, which is critical for skin cancer detection.
+* Preprocessing: Raw images are resized to 256x256, converted to Tensors, and normalized using ImageNet means (0.485, 0.456, 0.406) so the pixel values match the distribution the model was trained on.
+* JWT Implementation: We use jwt.decode(). If the signature has expired, it raises an 'ExpiredSignatureError'. The frontend then detects this 401 response and redirects the user to the login page.
+* Model Loading: To load the AI model, we had to "inject" the Config class into the __main__ module. This is because the training notebook saved the model using a custom class that isn't naturally available in a raw Django environment.
+* Database Migrations: Transitioning to MySQL required changing from SQLite's flexible typing to MySQL's strict schemas, and ensuring that Foreign Key constraints were properly handled during the initial dump/load.
+* Imbalance Handling: We used "Weighted Loss" (giving more importance to rare diseases like Melanoma during training) and "Synthetic Data Augmentation" (rotating/flipping images) to ensure the model doesn't just predict the most common disease.
+* Inference Singleton: The 'CNNPredictor' is a Singleton because loading an AI model (several hundred megabytes) into RAM is expensive. We only want one instance of the model in memory, shared by all users.
+* Validation Logic (PendingRegistration): We use a separate table so that we don't clog our 'User' table with junk sign-ups that never verify their email. Once OTP is verified, the user is "promoted" to the actual User table.
+* Softmax Output: The CNN outputs "logits" (raw scores). The Softmax function takes these and normalizes them into a probability distribution where all percentages add up to 100%.
+* Evaluation Metrics (F1-Score): Accuracy can be misleading if 90% of the data is "Benign." F1-Score balances Precision and Recall, ensuring we don't miss "True Positives" (Melanoma) even if they are rare in the dataset.
+
+
+4. EXPERT LEVEL
+----------------
+* Clinical Safety: We mitigate liability by using "Confidence Gates." If the model is not highly certain, it refuses to label. We also add a bold disclaimer: "Preliminary analysis only—Not a medical diagnosis."
+* Scenario (AI vs Chatbot): In clinical medicine, symptoms (bleeding) often outweigh a visual analysis. If there is a conflict, the system is hardcoded to recommend "Urgent Doctor Visit" (Safe Default).
+* Explainability (Grad-CAM): Grad-CAM uses the gradients flowing into the last convolutional layer of the CNN to produce a "Heatmap" showing exactly where the AI "looked."
+* Demographic Bias: We address skin-tone bias by diversifying our training dataset with images from across the Fitzpatrick scale and testing the model's performance specifically on different skin tones.
+* Out-of-Distribution: We can implement an "Anomaly Detection" layer (e.g., an Autoencoder). If the reconstruction error of the input image is too high compared to a "Standard Skin" baseline, we reject the image.
+* Security (MITM): We use JWT with a secret key stored in the .env file. For production, we must use HTTPS (SSL/TLS) to encrypt the data in transit, preventing tokens from being stolen.
+* Privacy (HIPAA): To be HIPAA compliant, we would need to implement: 1. Data Encryption at rest (AES-256). 2. Detailed audit logs of who accessed which report. 3. Signed BAA (Business Associate Agreement) with cloud providers.
+* Multi-View Logic: A "Soft Voting" approach is best. We average the probability vectors from all 3 images and then take the ArgMax (highest score) of the resulting vector.
+* Retraining: We use "Active Learning." When a doctor provides a verified diagnosis that differs from the AI, that image is tagged and put into a "High Priority" retraining queue to fix the model's error.
+
+
+TRICKY CROSS-QUESTIONING (DEFENSE STRATEGIES)
+---------------------------------------------
+1. Defense for Accuracy: "We recognize that 90% is a mathematical score. In medical practice, we prioritize 'Sensitivity.' We tune our thresholds so that the system would rather say 'I don't know' (Inconclusive) than give a false negative for a dangerous disease."
+
+2. Defense for Django vs Node: "While Node.js is fast for I/O, Django was chosen for its 'Batteries-Included' security features and the fact that PyTorch (our AI core) is natively Python. Using Django allowed us to avoid complex cross-language communication layers."
+
+3. Defense for 'Decoupled' vs 'Hardcoded': "Currently, the API endpoints are in a config file. In Phase 3, we would move toward an Environment Variable system (like .env) to make the frontend completely independent of the backend's IP/Port."
+
+4. Defense for 'Inconclusive' rate: "An 'Inconclusive' result is a success, not a failure. It prevents a user from receiving a wrong medical diagnosis and directs them to the safest possible path: a human doctor. Our goal is Safety first, convenience second."
+
+5. Defense for DB Scaling: "Our MySQL queries are optimized using Foreign Key indexing and query caching. For higher scale, we would implement a 'Read Replica' strategy to ensure the dashboard remains fast even under heavy load."
