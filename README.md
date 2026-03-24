@@ -49,18 +49,18 @@ FIREBASE/
 ├── manifest.json           # PWA manifest
 ├── start_server.ps1        # Server startup script
 │
-├── skinscan-backend/       # Django backend
-│   ├── authentication/     # User/Doctor auth & profiles
-│   ├── prediction/         # ML prediction & scan history
-│   ├── chatbot/            # AI chatbot module
-│   ├── billing/            # Invoice & billing
-│   ├── admin_module/       # Admin management
-│   ├── skinscan/           # Django project settings
-│   ├── ml_models/          # Trained CNN models (.pth)
-│   ├── manage.py
-│   └── requirements.txt
-│
-└── docs/                   # Documentation & diagrams
+├── CNN_MODEL_TRAINNING_CODE/   # CNN training Jupyter Notebooks
+├── docs/                   # Documentation & diagrams
+└── skinscan-backend/       # Django backend
+    ├── authentication/     # User/Doctor auth & profiles
+    ├── prediction/         # ML prediction & scan history
+    ├── chatbot/            # AI chatbot module
+    ├── billing/            # Invoice & billing
+    ├── admin_module/       # Admin management
+    ├── skinscan/           # Django project settings
+    ├── ml_models/          # Trained CNN models (.pth)
+    ├── manage.py
+    └── requirements.txt
 ```
 
 ## 🚀 Setup & Installation
